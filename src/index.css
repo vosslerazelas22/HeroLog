@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cinzel", "Georgia", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-quest-deep: #050409;
+  --color-quest-panel: #0b0915;
+  --color-quest-card: #120f21;
+}
+
+body {
+  background-color: var(--color-quest-deep);
+  color: #e8dfc8;
+}
+
+/* Custom scrollbars stylized as medieval metal paths */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-quest-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(232, 201, 106, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 201, 106, 0.4);
+}
+

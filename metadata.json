@@ -1,0 +1,6 @@
+{
+  "name": "HeroLog",
+  "description": "Um RPG de Pomodoro gamificado e plataforma de foco mística para sua jornada de estudos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
