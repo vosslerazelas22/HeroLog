@@ -9,6 +9,7 @@ interface HeatmapTabProps {
 
 export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const [monthsLimit, setMonthsLimit] = React.useState<3 | 6>(3);
   const [hoveredCell, setHoveredCell] = React.useState<{
     date: string;
     dateObj: Date;
@@ -78,6 +79,19 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
     }
   });
 
+  // CÁLCULO DE CONSISTÊNCIA DE ÚLTIMOS 30 DIAS
+  let studyDaysInLast30 = 0;
+  for (let i = 0; i < 30; i++) {
+    const checkDate = new Date(todayMidnight);
+    checkDate.setDate(todayMidnight.getDate() - i);
+    const dateKey = checkDate.toLocaleDateString('pt-BR');
+    const mins = minutesByDay[dateKey] || 0;
+    if (mins > 0) {
+      studyDaysInLast30++;
+    }
+  }
+  const consistencyPercentage = Math.round((studyDaysInLast30 / 30) * 100);
+
   // Formatar minutos para string amigável (ex: "85 Min", "15 Min" ou "2h 15m")
   const formatMinutes = (minutes: number) => {
     if (!minutes || minutes <= 0) return '0 Min';
@@ -87,11 +101,12 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
     return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
   };
 
-  // 3. Montar a Grelha de 24 Semanas (últimas 24 semanas - 168 dias, Segunda a Domingo)
-  // A última semana na grelha inicia na segunda-feira atual (thisMonday) e finaliza no próximo domingo.
-  // Então, a data de início da grelha é segunda-feira de 23 semanas atrás.
+  // 3. Montar a Grelha dependente do escopo (3 ou 6 meses)
+  // 3 meses = 12 semanas (84 dias), 6 meses = 24 semanas (168 dias)
+  const weeksCount = monthsLimit === 3 ? 12 : 24;
   const startMondayOfGrid = new Date(thisMonday);
-  startMondayOfGrid.setDate(thisMonday.getDate() - 23 * 7);
+  startMondayOfGrid.setDate(thisMonday.getDate() - (weeksCount - 1) * 7);
+  const totalDaysInGrid = weeksCount * 7;
 
   const cells: {
     date: string;
@@ -102,7 +117,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
     isToday: boolean;
   }[] = [];
 
-  for (let i = 0; i < 168; i++) {
+  for (let i = 0; i < totalDaysInGrid; i++) {
     const d = new Date(startMondayOfGrid);
     d.setDate(startMondayOfGrid.getDate() + i);
 
@@ -114,11 +129,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
     const isToday = d.toDateString() === todayMidnight.toDateString();
 
     // Determinar a classe de cor conforme escala:
-    // 0 MIN: Sem preenchimento sob moldura escura.
-    // 1–29 MIN: Verde escuro místico.
-    // 30–59 MIN: Verde médio vívido.
-    // 60–89 MIN: Verde claro brilhante.
-    // 90+ MIN: Dourado heráldico refinado.
     let fillClass = '';
 
     if (isFuture) {
@@ -147,11 +157,11 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
     });
   }
 
-  // 4. Mapear rótulos mensais nas colunas da grelha (24 colunas)
+  // 4. Mapear rótulos mensais nas colunas da grelha
   const monthLabels: { col: number; name: string }[] = [];
   const monthNames = ['JAN.', 'FEV.', 'MAR.', 'ABR.', 'MAI.', 'JUN.', 'JUL.', 'AGO.', 'SET.', 'OUT.', 'NOV.', 'DEZ.'];
 
-  for (let col = 0; col < 24; col++) {
+  for (let col = 0; col < weeksCount; col++) {
     // Pegamos a segunda-feira correspondente àquela semana
     const wMonday = new Date(startMondayOfGrid);
     wMonday.setDate(startMondayOfGrid.getDate() + col * 7);
@@ -176,19 +186,98 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
 
   return (
     <div className="p-1 space-y-5 text-amber-100 font-serif">
+      
+      {/* CARD DE DESTAQUE: CONSISTÊNCIA DOS ÚLTIMOS 30 DIAS */}
+      <div className="bg-gradient-to-r from-stone-950 via-purple-950/20 to-stone-950 border border-amber-500/15 p-4 rounded-lg shadow-xl relative overflow-hidden select-none animate-in fade-in duration-300">
+        <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-amber-500/35"></span>
+        <span className="absolute top-0 right-0 w-2 h-2 border-t border-r border-amber-500/35"></span>
+        <span className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-amber-500/35"></span>
+        <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-amber-500/35"></span>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[#E2B054] font-black text-xs md:text-sm tracking-widest font-serif">
+              <span>🛡️</span>
+              <span>CONSISTÊNCIA DO GUERREIRO (ÚLTIMOS 30 DIAS)</span>
+            </div>
+            <p className="text-[10px] md:text-xs text-amber-100/50 italic leading-snug">
+              Seu comprometimento diário molda o seu heroísmo. Cada dia de foco é um golpe contra a estagnação.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4 flex-shrink-0 self-start md:self-center">
+            <div className="text-left md:text-right">
+              <div className="text-3xl md:text-4xl font-black text-amber-200 font-mono tracking-tight drop-shadow-[0_4px_10px_rgba(226,176,84,0.25)] flex items-baseline gap-1 md:justify-end">
+                <span>{consistencyPercentage}</span>
+                <span className="text-xs text-amber-500/70 font-semibold">%</span>
+              </div>
+              <div className="text-[8.5px] font-mono text-emerald-400 font-bold uppercase mt-0.5 tracking-wider">
+                {studyDaysInLast30} / 30 DIAS CUMPRIDOS
+              </div>
+            </div>
+            
+            {/* RPG Segmented Progress Bar */}
+            <div className="flex gap-1 bg-stone-950 border border-amber-500/10 p-1.5 rounded h-[38px] items-center">
+              {Array.from({ length: 10 }).map((_, idx) => {
+                const isActive = idx < Math.round(consistencyPercentage / 10);
+                return (
+                  <div
+                    key={idx}
+                    className={`w-2 h-5 rounded-[1px] transition-all duration-300 ${
+                      isActive
+                        ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.35)] border-t border-emerald-300/20'
+                        : 'bg-stone-900 border border-stone-850'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Bloco do Mapa de Calor com visual medieval/computação RPG */}
       <div ref={containerRef} className="bg-stone-950/25 border border-amber-500/10 p-4 rounded-lg space-y-4 relative shadow-2xl">
         
-        {/* Título do Painel superior */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-amber-500/10 pb-2 mb-1 gap-1 select-none">
+        {/* Título do Painel superior + Toggle de Escopo Temporal */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-amber-500/10 pb-3 mb-1 gap-3 select-none">
           <div>
-            <h4 className="text-[10px] sm:text-xs uppercase tracking-widest text-[#E2B054] font-bold font-serif">
-              CONSERVAÇÃO DO DEVER — ÚLTIMAS 24 SEMANAS
+            <h4 className="text-[10px] sm:text-xs uppercase tracking-widest text-[#E2B054] font-bold font-serif flex items-center gap-1.5">
+              <span>📜</span> CONSERVAÇÃO DO DEVER — {monthsLimit === 3 ? 'ÚLTIMOS 3 MESES' : 'ÚLTIMOS 6 MESES'}
             </h4>
             <p className="text-[9px] text-amber-100/35 font-serif italic mt-0.5">Sua consagração é medida em horas e minutos focados</p>
           </div>
-          <div className="text-[10px] font-mono text-[#E2B054] font-black bg-[#C29544]/5 px-2 py-0.5 rounded border border-[#C29544]/20">
-            Streak Atual: {streak} {streak === 1 ? 'Dia' : 'Dias'} 🔥
+          
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* TOGGLE DE ESCOPO TEMPORAL */}
+            <div className="flex items-center bg-stone-950/80 border border-amber-500/20 p-0.5 rounded font-mono text-[9px] font-bold overflow-hidden shadow-inner">
+              <button
+                type="button"
+                onClick={() => setMonthsLimit(3)}
+                className={`px-2.5 py-1 rounded-sm transition-all duration-200 cursor-pointer ${
+                  monthsLimit === 3
+                    ? 'bg-amber-500/15 text-[#E2B054] border border-amber-500/25 shadow-sm'
+                    : 'text-amber-100/40 hover:text-amber-100/75 border border-transparent'
+                }`}
+              >
+                3 MESES
+              </button>
+              <button
+                type="button"
+                onClick={() => setMonthsLimit(6)}
+                className={`px-2.5 py-1 rounded-sm transition-all duration-200 cursor-pointer ${
+                  monthsLimit === 6
+                    ? 'bg-amber-500/15 text-[#E2B054] border border-amber-500/25 shadow-sm'
+                    : 'text-amber-100/40 hover:text-amber-100/75 border border-transparent'
+                }`}
+              >
+                6 MESES
+              </button>
+            </div>
+
+            <div className="text-[10px] font-mono text-[#E2B054] font-black bg-[#C29544]/5 px-2 py-0.5 rounded border border-[#C29544]/20">
+              Streak Atual: {streak} {streak === 1 ? 'Dia' : 'Dias'} 🔥
+            </div>
           </div>
         </div>
 
@@ -197,8 +286,8 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
           {/* Alinhamento ao primeiro dia da semana */}
           <div className="w-7 flex-shrink-0" />
           
-          <div className="flex-1 grid gap-1 md:gap-1.5" style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))' }}>
-            {Array.from({ length: 24 }).map((_, col) => {
+          <div className="flex-1 grid gap-1 md:gap-1.5" style={{ gridTemplateColumns: `repeat(${weeksCount}, minmax(0, 1fr))` }}>
+            {Array.from({ length: weeksCount }).map((_, col) => {
               const label = monthLabels.find(l => l.col === col);
               return (
                 <div key={col} className="text-center">
@@ -229,10 +318,19 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
           </div>
 
           {/* Grelha de Colunas (Semanas) */}
-          <div className="flex-1 grid gap-1 md:gap-1.5" style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))' }}>
-            {Array.from({ length: 24 }).map((_, col) => {
+          <div className="flex-1 grid gap-1 md:gap-1.5" style={{ gridTemplateColumns: `repeat(${weeksCount}, minmax(0, 1fr))` }}>
+            {Array.from({ length: weeksCount }).map((_, col) => {
+              const isCurrentWeek = col === weeksCount - 1;
               return (
-                <div key={col} className="flex flex-col gap-1 md:gap-1.5">
+                <div 
+                  key={col} 
+                  title={isCurrentWeek ? "Semana Atual" : undefined}
+                  className={`flex flex-col gap-1 md:gap-1.5 transition-all duration-300 relative ${
+                    isCurrentWeek 
+                      ? 'bg-amber-500/[0.04] p-0.5 -mx-0.5 -my-1 rounded border border-amber-500/20 shadow-[0_0_10px_rgba(226,176,84,0.12)] z-10' 
+                      : ''
+                  }`}
+                >
                   {Array.from({ length: 7 }).map((_, row) => {
                     const cellIndex = col * 7 + row;
                     const cell = cells[cellIndex];
@@ -276,6 +374,13 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
                       </div>
                     );
                   })}
+                  
+                  {/* Etiqueta elegante INDICANDO A SEMANA ATUAL */}
+                  {isCurrentWeek && (
+                    <div className="absolute left-1/2 -bottom-4.5 -translate-x-1/2 pointer-events-none select-none text-[6.5px] font-mono font-extrabold tracking-widest text-[#E2B054] uppercase bg-stone-950 border border-amber-500/30 px-1 py-0.5 rounded whitespace-nowrap animate-pulse">
+                      ATUAL
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -283,7 +388,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
         </div>
 
         {/* Legenda de minutos */}
-        <div className="flex flex-col sm:flex-row justify-between items-center pt-2 gap-2 border-t border-amber-500/[0.05] select-none">
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-3 gap-2 border-t border-amber-500/[0.05] select-none">
           <span className="text-[9px] text-[#A2A2A2] font-mono">
             Passe o mouse ou toque nos blocos para ver os detalhes diários de estudo.
           </span>
