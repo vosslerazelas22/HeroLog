@@ -2677,7 +2677,7 @@ export default function App() {
               {/* TARGET VIEWPORT TABS */}
               
               {activeTab === 'focus' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 w-full md:items-start">
                   
                   {/* LEFT SUB-COLUMN: THE TEMPLE CHAMBER & POMODORO TIMER CORE */}
                   <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] md:col-span-7 flex flex-col justify-between relative">
@@ -3155,71 +3155,120 @@ export default function App() {
                     </div>
 
                     <div className="p-5 flex-1 space-y-5">
-                      {/* HERO AVATAR METADATA ROW */}
-                      <div className="flex items-start gap-4">
-                        <div className="text-4xl w-14 h-14 bg-stone-950 rounded-lg border-2 border-amber-500/30 flex items-center justify-center shadow-lg flex-shrink-0 select-none">
-                          {gameState.charClass === 'Mage' ? '🧙' : gameState.charClass === 'Warrior' ? '⚔️' : '🏹'}
-                        </div>
-                        <div className="space-y-0.5">
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center flex-wrap gap-2">
-                              <h3 className="font-serif font-bold text-sm text-amber-200 tracking-wide uppercase leading-tight">
-                                {gameState.charName}
-                              </h3>
-                              {gameState.equippedTitle && (() => {
-                                const found = TITLE_CATALOG.find(t => t.id === gameState.equippedTitle);
-                                if (!found) return null;
-                                return (
-                                  <span className="bg-amber-500/10 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider select-none animate-pulse">
-                                    {found.emoji} {found.name}
-                                  </span>
-                                );
-                              })()}
+                      {/* REDESIGNED TWO-COLUMN RPG LAYOUT */}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-stretch">
+                        
+                        {/* LEFT COLUMN: AVATAR & PERSONAL STATS */}
+                        <div className="sm:col-span-5 flex flex-col justify-between bg-stone-950/20 border border-amber-500/10 p-3.5 rounded-lg">
+                          <div className="flex flex-col items-center">
+                            <div className="text-5xl md:text-6xl w-24 h-24 bg-stone-950 rounded-xl border-2 border-amber-500/40 flex items-center justify-center shadow-[0_4px_25px_rgba(226,176,84,0.18)] select-none relative overflow-hidden group self-center">
+                              <div className="absolute inset-0 bg-gradient-to-t from-purple-950/40 via-transparent to-transparent pointer-events-none" />
+                              <span className="relative z-10 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] transform group-hover:scale-110 transition-transform duration-300">
+                                {gameState.charClass === 'Mage' ? '🧙' : gameState.charClass === 'Warrior' ? '⚔️' : '🏹'}
+                              </span>
                             </div>
                           </div>
-                          <p className="text-[10px] font-bold text-purple-400 tracking-widest uppercase font-serif">
-                            {gameState.charClass === 'Mage' ? '🧙 Mago d\'Arraia' : gameState.charClass === 'Warrior' ? '🛡️ Guerreiro de Aço' : '🏹 Patrulheiro Silvestre'}
-                          </p>
-                          <div className="text-[10px] text-amber-100/50 flex flex-col gap-y-1 font-bold font-mono">
-                            <div className="flex flex-wrap gap-x-2">
-                              <span>Sequência atual: <strong className="text-amber-400 font-bold">{gameState.streak} dias</strong> (recorde: {gameState.bestStreak})</span>
+
+                          {/* Personal Non-Combat Stats */}
+                          <div className="space-y-2 mt-4">
+                            <div className="bg-stone-950/40 border border-amber-500/10 p-2.5 rounded text-center transition-all hover:bg-stone-950/60 shadow-sm">
+                              <div className="text-[9px] text-amber-100/40 uppercase tracking-[0.12em] font-serif flex items-center justify-center gap-1 select-none">
+                                <span>🔥</span> Sequência Atual
+                              </div>
+                              <div className="text-xs font-mono font-black text-amber-400 mt-1">{gameState.streak} {gameState.streak === 1 ? 'dia' : 'dias'}</div>
+                              <div className="text-[8.5px] text-stone-500 font-normal font-sans tracking-wide mt-0.5 select-none">(Recorde: {gameState.bestStreak}d)</div>
                             </div>
-                            <div>
-                              <span>Tempo Total de Foco: <strong className="text-amber-400 font-bold">{Math.floor(gameState.totalMinutes / 60)}h{String(gameState.totalMinutes % 60).padStart(2, '0')}min</strong></span>
+                            
+                            <div className="bg-stone-950/40 border border-amber-500/10 p-2.5 rounded text-center transition-all hover:bg-stone-950/60 shadow-sm">
+                              <div className="text-[9px] text-amber-100/40 uppercase tracking-[0.12em] font-serif flex items-center justify-center gap-1 select-none">
+                                <span>⏱️</span> Foco Total
+                              </div>
+                              <div className="text-xs font-mono font-black text-amber-400 mt-1">
+                                {Math.floor(gameState.totalMinutes / 60)}h{String(gameState.totalMinutes % 60).padStart(2, '0')}m
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* HEALTH BAR (HP) */}
-                      <div className="bg-stone-950/20 border border-amber-500/10 p-3 rounded-lg space-y-1">
-                        <div className="flex justify-between items-baseline text-[10px] font-sans font-bold">
-                          <span className="text-rose-400 uppercase tracking-widest font-serif flex items-center gap-1"><Heart className="w-3 h-3 text-red-500 fill-red-500" /> HP (PONTOS DE VIDA)</span>
-                          <span className="text-rose-400 font-mono">
-                            {gameState.hp} / {gameState.maxHp}
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-stone-900 border border-amber-500/5 rounded overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-red-600 to-rose-400 transition-all duration-300 fill-rose-500"
-                            style={{ width: `${(gameState.hp / gameState.maxHp) * 100}%` }}
-                          />
-                        </div>
-                      </div>
+                        {/* RIGHT COLUMN: IDENTITY & PROGRESSION BARS */}
+                        <div className="sm:col-span-7 flex flex-col justify-between space-y-4">
+                          
+                          {/* Identity Card */}
+                          <div className="bg-stone-950/20 border border-amber-500/10 p-3.5 rounded-lg flex flex-col justify-center gap-1">
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <div className="flex items-center flex-wrap gap-2">
+                                <h3 className="font-serif font-black text-base md:text-lg text-amber-200 tracking-wide uppercase leading-tight truncate">
+                                  {gameState.charName}
+                                </h3>
+                                {gameState.equippedTitle && (() => {
+                                  const found = TITLE_CATALOG.find(t => t.id === gameState.equippedTitle);
+                                  if (!found) return null;
+                                  return (
+                                    <span className="bg-amber-500/10 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider select-none animate-pulse shrink-0">
+                                      {found.emoji} {found.name}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              <p className="text-[10px] md:text-[11px] font-bold text-purple-400 tracking-widest uppercase font-serif">
+                                {gameState.charClass === 'Mage' ? '🧙 Mago d\'Arraia' : gameState.charClass === 'Warrior' ? '🛡️ Guerreiro de Aço' : '🏹 Patrulheiro Silvestre'}
+                              </p>
+                            </div>
+                          </div>
 
-                      {/* COMBAT EXPERIENCE BAR PROGRESS */}
-                      <div className="bg-stone-950/20 border border-amber-500/10 p-3 rounded-lg space-y-1">
-                        <div className="flex justify-between items-baseline text-[10px] font-sans font-bold">
-                          <span className="text-amber-100/40 uppercase tracking-widest font-serif">XP (Experiência de Combate)</span>
-                          <span className="text-emerald-400 font-mono">
-                            {gameState.combatXP} / {gameState.combatLevel * 100}
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-stone-900 border border-amber-500/5 rounded overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300"
-                            style={{ width: `${(gameState.combatXP / (gameState.combatLevel * 100)) * 100}%` }}
-                          />
+                          {/* Progression Box - Combat Level & Combat XP */}
+                          <div className="bg-stone-950/25 border border-amber-500/10 p-3.5 rounded-lg shadow-inner space-y-3.5">
+                            {/* RPG Plaque-style Combat Level Display */}
+                            <div className="relative bg-gradient-to-r from-stone-950 via-purple-950/30 to-stone-950 border border-amber-500/25 p-2.5 rounded-md flex items-center justify-between shadow-inner select-none font-serif h-[38px] overflow-hidden group">
+                              <span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-amber-500/35"></span>
+                              <span className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-amber-500/35"></span>
+                              <span className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-amber-500/35"></span>
+                              <span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-amber-500/35"></span>
+                              <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-amber-200/90 font-black tracking-widest">
+                                <span>⚔️</span>
+                                <span>NÍVEL DE COMBATE</span>
+                              </div>
+                              <div className="flex-1 border-b border-dotted border-amber-500/20 mx-2 self-center h-1"></div>
+                              <div className="text-[11px] font-mono font-black text-[#E2B054] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 group-hover:scale-105 transition-transform">
+                                {gameState.combatLevel}
+                              </div>
+                            </div>
+
+                            {/* Combat Experience Progress (XP) */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-baseline text-[8.5px] font-sans font-bold">
+                                <span className="text-amber-100/40 uppercase tracking-widest font-serif flex items-center gap-1">✨ XP (Experiência de Combate)</span>
+                                <span className="text-emerald-400 font-mono text-[8.5px]">
+                                  {gameState.combatXP} / {gameState.combatLevel * 100}
+                                </span>
+                              </div>
+                              <div className="h-2 w-full bg-stone-900 border border-amber-500/5 rounded overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300"
+                                  style={{ width: `${(gameState.combatXP / (gameState.combatLevel * 100)) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Survival HP Status */}
+                          <div className="bg-stone-950/20 border border-amber-500/10 p-3.5 rounded-lg space-y-1">
+                            <div className="flex justify-between items-baseline text-[8.5px] font-sans font-bold">
+                              <span className="text-rose-400 uppercase tracking-widest font-serif flex items-center gap-1">
+                                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" /> HP (PONTOS DE VIDA)
+                              </span>
+                              <span className="text-rose-400 font-mono text-[8.5px]">
+                                {gameState.hp} / {gameState.maxHp}
+                              </span>
+                            </div>
+                            <div className="h-2 w-full bg-stone-900 border border-amber-500/5 rounded overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-red-600 to-rose-400 transition-all duration-300 fill-rose-500"
+                                style={{ width: `${(gameState.hp / gameState.maxHp) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+
                         </div>
                       </div>
 
