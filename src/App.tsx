@@ -311,6 +311,7 @@ export default function App() {
 
   const [completionNotes, setCompletionNotes] = useState<string>('');
   const [completionTag, setCompletionTag] = useState<string>('');
+  const [rewardsStep, setRewardsStep] = useState<number>(1);
 
   // Refs for background loops
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -425,7 +426,8 @@ export default function App() {
           hasClaimedLogin: false,
           hp: finalHp,
           dailies: updatedDailies,
-          inventory: updatedInv
+          inventory: updatedInv,
+          achievements: (prev.achievements || []).filter(tag => !tag.startsWith('claimed_daily_'))
         };
       });
     }
@@ -1068,6 +1070,7 @@ export default function App() {
     // Set interactive modal elements defaults
     setCompletionNotes(sessionNotes);
     setCompletionTag('');
+    setRewardsStep(1);
 
     // Prepare rewards modal popup
     setRewardsModalData({
@@ -3715,162 +3718,257 @@ export default function App() {
 
       {/* COMPLETED QUEST REWARDS POPUP WITH COHESIVE RPG TEMPLATE AS IN THE SCREENSHOT */}
       <AnimatePresence>
-        {rewardsModalData?.visible && (
-          <div className="fixed inset-0 bg-black/85 z-50 flex items-start justify-center p-4 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-quest-panel border-2 border-[#C29544] max-w-lg w-full rounded shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar my-auto py-4 px-1"
-            >
-              {/* Header Title alignment matching screenshot */}
-              <div className="pt-4 pb-2 text-center select-none">
-                <h2 className="text-[#E2B054] font-serif font-bold text-lg md:text-xl tracking-[0.25em] uppercase flex items-center justify-center gap-2">
-                  📋 RESUMO DA SESSÃO
-                </h2>
-                <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-3 mb-5"></div>
-              </div>
+        {rewardsModalData?.visible && (() => {
+          const hasLoot = !!(rewardsModalData.lootName || rewardsModalData.droppedTitleName);
 
-              {/* Grid of session stats with perfect space-between spacing */}
-              <div className="w-[85%] mx-auto space-y-4 font-serif text-xs md:text-sm text-[#A2A7A6] tracking-wide mb-6">
-                <div className="flex justify-between items-center py-0.5 border-b border-amber-500/5 pb-2">
-                  <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F]">DURAÇÃO</span>
-                  <span className="text-[#E2B054] font-bold font-serif text-right">{rewardsModalData.durationMins} MIN</span>
-                </div>
+          return (
+            <div className="fixed inset-0 bg-black/85 z-50 flex items-start justify-center p-4 backdrop-blur-sm overflow-y-auto">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-quest-panel border-2 border-[#C29544] max-w-lg w-full rounded shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar my-auto py-4 px-1 animate-fadeIn"
+              >
+                {rewardsStep === 1 && (
+                  <div>
+                    {/* Header Title alignment matching screenshot */}
+                    <div className="pt-4 pb-2 text-center select-none">
+                      <h2 className="text-[#E2B054] font-serif font-black text-xl md:text-2xl tracking-[0.15em] uppercase flex items-center justify-center gap-2">
+                        ⚔️ MISSÃO CONCLUÍDA ⚔️
+                      </h2>
+                      <div className="mt-3 flex flex-col items-center justify-center gap-1">
+                        <span className="text-amber-400 font-extrabold text-sm md:text-base tracking-widest font-serif drop-shadow-[0_2px_8px_rgba(226,176,84,0.35)]">
+                          ★ CLASSIFICAÇÃO {(() => {
+                            if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) return "S+";
+                            if (rewardsModalData.pauseCount === 0) return "S";
+                            if (rewardsModalData.pauseCount === 1) return "A";
+                            if (rewardsModalData.pauseCount <= 2) return "B";
+                            if (rewardsModalData.pauseCount <= 4) return "C";
+                            return "F";
+                          })()} ★
+                        </span>
+                        <span className="text-[10px] text-amber-100/40 font-mono tracking-widest uppercase">
+                          {(() => {
+                            if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) return "Sobrevivente Cognitivo — Lenda";
+                            if (rewardsModalData.pauseCount === 0) return "Sem Pausas — Lendário";
+                            if (rewardsModalData.pauseCount === 1) return "Pausa Única — Heróico";
+                            if (rewardsModalData.pauseCount <= 2) return "Foco Estável — Exquisito";
+                            if (rewardsModalData.pauseCount <= 4) return "Distração Parcial — Comum";
+                            return "Pausas Constantes — Instável";
+                          })()}
+                        </span>
+                      </div>
+                      <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-4 mb-4"></div>
+                    </div>
 
-                <div className="flex justify-between items-center py-0.5 border-b border-amber-500/5 pb-2">
-                  <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F]">AFINIDADE DE FOCO</span>
-                  <span className="text-[#E2B054] font-bold font-serif text-right uppercase tracking-wider text-xs md:text-sm">
-                    {(() => {
-                      if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) {
-                        return "S+ — SOBREVIVENTE COGNITIVO — LENDA";
-                      }
-                      if (rewardsModalData.pauseCount === 0) {
-                        return "S — SEM PAUSAS — LENDÁRIO";
-                      }
-                      if (rewardsModalData.pauseCount === 1) {
-                        return "A — PAUSA ÚNICA — HERÓICO";
-                      }
-                      if (rewardsModalData.pauseCount <= 2) {
-                        return "B — FOCO ESTÁVEL — EXQUISITO";
-                      }
-                      if (rewardsModalData.pauseCount <= 4) {
-                        return "C — DISTRAÇÃO PARCIAL — COMUM";
-                      }
-                      return "F — PAUSAS CONSTANTES — INSTÁVEL";
-                    })()}
-                  </span>
-                </div>
+                    {/* Grid of session stats with perfect space-between spacing */}
+                    <div className="w-[85%] mx-auto space-y-4 font-serif text-xs md:text-sm text-[#A2A7A6] tracking-wide mb-6">
+                      <div className="flex justify-between items-center py-2 border-b border-amber-500/5">
+                        <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F] text-[10px]">DURAÇÃO DE MEDITAÇÃO</span>
+                        <span className="text-[#E2B054] font-bold font-serif text-right">{rewardsModalData.durationMins} MIN</span>
+                      </div>
 
-                <div className="flex justify-between items-center py-0.5 border-b border-amber-500/5 pb-2">
-                  <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F]">SEQUÊNCIA DIÁRIA</span>
-                  <span className="text-[#F14D2A] font-bold text-right flex items-center justify-end gap-1 font-serif">
-                     🔥 {gameState.streak || 1} {gameState.streak === 1 ? 'DIA' : 'DIAS'}
-                  </span>
-                </div>
+                      <div className="flex justify-between items-center py-2 border-b border-amber-500/5">
+                        <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F] text-[10px]">SEQUÊNCIA DE CHAMA</span>
+                        <span className="text-[#F14D2A] font-bold text-right flex items-center justify-end gap-1 font-serif">
+                           🔥 {gameState.streak || 1} {gameState.streak === 1 ? 'DIA' : 'DIAS'}
+                        </span>
+                      </div>
 
-                {rewardsModalData.comboBonusPercent > 0 && (
-                  <div className="flex justify-between items-center py-0.5 border-b border-amber-500/5 pb-2 text-[#F14D2A]">
-                    <span className="uppercase text-left font-serif font-black tracking-widest">🔥 BÔNUS DE COMBO</span>
-                    <span className="font-bold text-right">+{rewardsModalData.comboBonusPercent}%</span>
+                      {rewardsModalData.comboBonusPercent > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b border-amber-500/5 text-[#F14D2A]">
+                          <span className="uppercase text-left font-serif font-black tracking-widest text-[10px]">🔥 BÔNUS DE MULTIPLICADOR COMBO</span>
+                          <span className="font-bold text-right">+{rewardsModalData.comboBonusPercent}%</span>
+                        </div>
+                      )}
+
+                      {/* XP and GP Gains Box */}
+                      <div className="mt-6 bg-stone-900/40 border border-amber-500/10 rounded-lg p-4 grid grid-cols-2 gap-4 divide-x divide-amber-500/10 text-center">
+                        <div className="space-y-1">
+                          <div className="text-[10px] text-amber-100/40 uppercase tracking-widest text-center">EXPERIÊNCIA ADQUIRIDA</div>
+                          <div className="text-emerald-400 font-extrabold font-mono text-base md:text-lg drop-shadow-[0_2px_6px_rgba(52,211,153,0.25)]">
+                            ⚡ +{rewardsModalData.xpEarned} XP
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-[10px] text-amber-100/40 uppercase tracking-widest text-center">OURO ARRECADADO</div>
+                          <div className="text-[#E2B054] font-extrabold font-mono text-base md:text-lg drop-shadow-[0_2px_6px_rgba(226,176,84,0.25)]">
+                            💎 +{rewardsModalData.goldEarned} GP
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-[85%] mx-auto pt-4 pb-4">
+                      <button
+                        onClick={() => {
+                          if (hasLoot) {
+                            setRewardsStep(2);
+                          } else {
+                            setRewardsStep(3);
+                          }
+                        }}
+                        className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
+                      >
+                        REIVINDICAR RECOMPENSAS →
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex justify-between items-center py-0.5 border-b border-amber-500/5 pb-2">
-                  <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F]">RECOMPENSA DE EXP</span>
-                  <span className="text-emerald-400 font-bold font-mono text-right">⚡ +{rewardsModalData.xpEarned} XP</span>
-                </div>
+                {rewardsStep === 2 && (
+                  <div>
+                    {/* Exquisite drop screen */}
+                    <div className="pt-4 pb-2 text-center select-none animate-fadeIn">
+                      <span className="text-3xl animate-bounce inline-block filter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">🎁</span>
+                      <h2 className="text-purple-400 font-serif font-black text-lg md:text-xl tracking-[0.2em] uppercase mt-2">
+                        TESOURO CONQUISTADO
+                      </h2>
+                      <p className="text-[9px] text-amber-100/40 font-serif italic mt-1 uppercase tracking-widest">O destino agraciou sua persistência</p>
+                      <div className="w-[85%] mx-auto border-b border-purple-500/20 mt-4 mb-4"></div>
+                    </div>
 
-                <div className="flex justify-between items-center py-0.5 border-b border-amber-500/5 pb-2">
-                  <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F]">OURO ADQUIRIDO</span>
-                  <span className="text-[#E2B054] font-bold font-mono text-right">💎 +{rewardsModalData.goldEarned} GP</span>
-                </div>
-              </div>
-
-              {/* Loots details */}
-              {rewardsModalData.lootName && (
-                <div className="w-[85%] mx-auto bg-purple-950/20 border border-purple-500/20 p-3 rounded text-xs text-purple-300 font-serif flex items-center justify-center gap-2 mb-4">
-                  <span>{rewardsModalData.lootEmoji}</span>
-                  <span>Encontraste: <strong>{rewardsModalData.lootName}</strong> na colheita!</span>
-                </div>
-              )}
-
-              {/* Title drops */}
-              {rewardsModalData.droppedTitleName && (
-                <div className="w-[85%] mx-auto bg-yellow-950/30 border border-yellow-500/40 p-2.5 rounded text-xs text-yellow-300 font-serif flex flex-col items-center justify-center gap-1 shadow-[0_0_15px_rgba(234,179,8,0.2)] mb-4 animate-pulse">
-                  <span className="text-[10px] text-amber-400 font-black tracking-widest uppercase flex items-center gap-1 font-serif">🌟 TÍTULO RARO ENCONTRADO! 🌟</span>
-                  <span className="flex items-center gap-1.5 font-bold uppercase tracking-widest text-[#E2B054]">
-                    {rewardsModalData.droppedTitleEmoji} {rewardsModalData.droppedTitleName}
-                  </span>
-                  <span className="text-[9px] text-yellow-105/50 font-sans tracking-tight">Vá à aba Títulos para equipá-lo!</span>
-                </div>
-              )}
-
-                {/* Interactive Study Notes Ledger block & Subskill tagging */}
-                <div className="text-left border-t border-amber-500/15 pt-4 space-y-4">
-                  <div className="space-y-1.5 text-left">
-                    <h4 className="text-[11px] font-bold text-[#E2B054] uppercase tracking-wider font-serif flex items-center gap-1.5">
-                      📝 Notas de Estudo / Conclusões da Missão
-                    </h4>
-                    <textarea
-                      value={completionNotes}
-                      onChange={(e) => setCompletionNotes(e.target.value)}
-                      placeholder="Espaço livre para reflexões, avanços ou lembretes sobre este ciclo de foco..."
-                      className="w-full bg-stone-950/85 border border-amber-500/15 rounded p-2.5 text-xs text-amber-250 placeholder-amber-100/15 focus:border-[#E2B054]/40 focus:outline-none custom-scrollbar resize-none font-serif h-20 shadow-inner"
-                    />
-                  </div>
-
-                  {/* Subskill Tag Selection row */}
-                  <div className="space-y-2 text-left">
-                    <h4 className="text-[11px] font-bold text-[#E2B054] uppercase tracking-wider font-serif flex items-center gap-1.5">
-                      🏷️ Vincular Subskill (Tag)
-                    </h4>
-                    {(() => {
-                      const currentSkillTags = gameState.skills[rewardsModalData.skillIdx]?.tags || [];
-                      if (currentSkillTags.length === 0) {
-                        return (
-                          <div className="text-[9px] text-[#A2A7A6]/60 italic p-3 bg-black/30 border border-amber-500/10 rounded font-serif py-1.5 leading-relaxed">
-                            Nenhuma subskill cadastrada para "{rewardsModalData.skillName}". Para cadastrar, feche esta tela e clique em Habilidades no topo para Gerenciar Subskills.
+                    <div className="w-[85%] mx-auto space-y-4 mb-6">
+                      {rewardsModalData.lootName && (
+                        <div className="bg-gradient-to-b from-purple-950/40 via-stone-950 to-stone-950 border border-purple-500/30 p-5 rounded-lg text-center relative overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.15)] select-none">
+                          <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-purple-500/40"></span>
+                          <span className="absolute top-0 right-0 w-2 h-2 border-t border-r border-purple-500/40"></span>
+                          <span className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-purple-500/40"></span>
+                          <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-purple-500/40"></span>
+                          
+                          <div className="text-5xl my-2 select-none filter drop-shadow-[0_0_12px_rgba(168,85,247,0.4)] transform hover:scale-110 transition-transform cursor-default inline-block">
+                            {rewardsModalData.lootEmoji || '🎒'}
                           </div>
-                        );
-                      }
-                      return (
-                        <div className="flex flex-wrap gap-1.5 p-1 bg-black/30 border border-amber-500/5 rounded">
-                          {currentSkillTags.map((tag) => {
-                            const isSelected = completionTag === tag;
-                            return (
-                              <button
-                                key={tag}
-                                type="button"
-                                onClick={() => setCompletionTag(isSelected ? '' : tag)}
-                                className={`px-2.5 py-1 text-xs rounded transition-all cursor-pointer font-serif border ${
-                                  isSelected
-                                    ? 'bg-[#E2B054]/25 border-[#E2B054] text-[#E2B054] font-bold scale-[1.03] shadow-[0_0_10px_rgba(245,158,11,0.20)]'
-                                    : 'bg-stone-900/60 border-amber-500/10 text-amber-100/40 hover:border-amber-500/25 hover:text-amber-100/80'
-                                }`}
-                              >
-                                {tag} {isSelected && '✓'}
-                              </button>
-                            );
-                          })}
+                          
+                          <h3 className="text-purple-300 font-bold text-base md:text-lg tracking-wider uppercase font-serif mt-1">
+                            {rewardsModalData.lootName}
+                          </h3>
+                          
+                          <span className="inline-block px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-purple-400 text-[9px] font-mono font-bold uppercase tracking-widest mt-1 my-2">
+                             RARIDADE: EXQUISITO
+                          </span>
+                          
+                          <p className="text-[10px] md:text-xs text-amber-100/60 leading-relaxed font-serif max-w-xs mx-auto italic mt-1">
+                            "Um fragmento estelar condensado, guardado nos arquivos da alma como lembrança de sua pura determinação mística."
+                          </p>
                         </div>
-                      );
-                    })()}
-                  </div>
-                </div>
+                      )}
 
-                {/* Exact physical Gold Button as shown in screenshot */}
-                <div className="w-[85%] mx-auto pt-6 pb-4">
-                  <button
-                    onClick={() => handleConfirmClaimRewards(completionNotes, completionTag)}
-                    className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center"
-                  >
-                    PROSSEGUIR →
-                  </button>
-                </div>
-            </motion.div>
-          </div>
-        )}
+                      {rewardsModalData.droppedTitleName && (
+                        <div className="bg-gradient-to-b from-yellow-950/40 via-stone-950 to-stone-950 border border-yellow-500/40 p-5 rounded-lg text-center relative overflow-hidden shadow-[0_0_25px_rgba(234,179,8,0.25)] select-none">
+                          <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-yellow-500/40"></span>
+                          <span className="absolute top-0 right-0 w-2 h-2 border-t border-r border-yellow-500/40"></span>
+                          <span className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-yellow-500/40"></span>
+                          <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-yellow-500/40"></span>
+                          
+                          <div className="text-4xl my-2 select-none filter drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform hover:scale-110 transition-transform cursor-default inline-block animate-pulse">
+                            {rewardsModalData.droppedTitleEmoji || '👑'}
+                          </div>
+                          
+                          <h3 className="text-yellow-400 font-black text-sm md:text-base tracking-widest uppercase font-serif mt-1">
+                            {rewardsModalData.droppedTitleName}
+                          </h3>
+                          
+                          <span className="inline-block px-2.5 py-0.5 bg-yellow-500/15 border border-yellow-500/30 rounded-full text-[#E2B054] text-[9px] font-mono font-bold uppercase tracking-widest mt-1 my-2">
+                            👑 TÍTULO RARO OBTIDO!
+                          </span>
+                          
+                          <p className="text-[10px] md:text-xs text-amber-100/50 leading-relaxed font-serif max-w-xs mx-auto italic mt-1">
+                            "Este epíteto imortal atesta perante os deuses teu foco inabalável. Pode ser equipado na tela de Títulos."
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="w-[85%] mx-auto pt-4 pb-4">
+                      <button
+                        onClick={() => setRewardsStep(3)}
+                        className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
+                      >
+                        CONFIRMAR TESOURO & CONTINUAR →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {rewardsStep === 3 && (
+                  <div>
+                    {/* Chronicle of exploration */}
+                    <div className="pt-4 pb-2 text-center select-none animate-fadeIn">
+                      <h2 className="text-[#E2B054] font-serif font-black text-lg md:text-xl tracking-[0.2em] uppercase">
+                        📜 CRÔNICA DA MISSÃO
+                      </h2>
+                      <p className="text-[9px] text-amber-100/40 font-serif italic mt-1 uppercase tracking-widest">
+                        Registre suas memórias nas tábuas do conhecimento
+                      </p>
+                      <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-4 mb-4"></div>
+                    </div>
+
+                    <div className="w-[85%] mx-auto space-y-6 text-left">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054]/75 flex items-center gap-1.5 leading-none">
+                          📋 NOTAS DO SÁBIO / REFLEXÕES FINAIS
+                        </label>
+                        <textarea
+                          value={completionNotes}
+                          onChange={(e) => setCompletionNotes(e.target.value)}
+                          placeholder="O herói recorda as revelações adquiridas sob este foco..."
+                          className="w-full bg-stone-950/85 border border-[#C29544]/25 rounded-lg p-3 text-xs text-amber-200 placeholder-amber-100/25 focus:border-[#E2B054] focus:outline-none custom-scrollbar resize-none font-serif h-24 shadow-inner"
+                        />
+                      </div>
+
+                      <div className="space-y-2 pt-2 border-t border-amber-500/5">
+                        <label className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054]/75 flex items-center gap-1.5 leading-none">
+                          🏷️ ESPECIALIZAÇÃO TREINADA (VINCULAR SUBSKILL)
+                        </label>
+                        {(() => {
+                          const currentSkillTags = gameState.skills[rewardsModalData.skillIdx]?.tags || [];
+                          if (currentSkillTags.length === 0) {
+                            return (
+                              <div className="text-[10px] text-[#A2A7A6]/60 italic p-3 bg-black/30 border border-amber-500/10 rounded font-serif py-2 leading-relaxed">
+                                Nenhuma subskill cadastrada para a habilidade ativa "{rewardsModalData.skillName}". Para cadastrar, feche esta tela e clique em Habilidades no topo para Gerenciar Subskills.
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="flex flex-wrap gap-1.5 p-2 bg-stone-950/50 border border-amber-500/10 rounded-lg max-h-28 overflow-y-auto custom-scrollbar">
+                              {currentSkillTags.map((tag) => {
+                                const isSelected = completionTag === tag;
+                                return (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => setCompletionTag(isSelected ? '' : tag)}
+                                    className={`px-3 py-1 text-xs rounded transition-all cursor-pointer font-serif border ${
+                                      isSelected
+                                        ? 'bg-[#E2B054]/25 border-[#E2B054] text-[#E2B054] font-bold scale-[1.03] shadow-[0_0_10px_rgba(245,158,11,0.20)]'
+                                        : 'bg-stone-900/60 border border-amber-500/5 text-amber-100/40 hover:border-amber-500/25 hover:text-amber-100/80'
+                                    }`}
+                                  >
+                                    {tag} {isSelected && '✓'}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="w-[85%] mx-auto pt-6 pb-4">
+                      <button
+                        onClick={() => handleConfirmClaimRewards(completionNotes, completionTag)}
+                        className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
+                      >
+                        ⚙️ SELAR RITUAL & CONCLUIR MISSÃO →
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* FLOATING DETAILED MENU FOR A SKILL (CLICK ICON OR CARD EDGE) */}
@@ -3886,34 +3984,38 @@ export default function App() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-quest-panel border-2 border-[#C29544] max-w-md w-full rounded shadow-2xl p-6 relative space-y-5 text-amber-100 font-serif"
+                className="bg-gradient-to-b from-[#1c1812] to-[#0c0a08] border-2 border-[#C29544] max-w-md w-full rounded shadow-[0_0_35px_rgba(194,149,68,0.25)] p-6 relative space-y-5 text-amber-105 font-serif"
               >
                 {/* Close Button top-right */}
                 <button
                   onClick={() => setInspectingSkillIdx(null)}
-                  className="absolute top-4 right-4 text-amber-100/40 hover:text-amber-200 cursor-pointer text-xl font-bold font-mono transition-transform hover:scale-110"
+                  className="absolute top-4 right-4 text-amber-400/50 hover:text-amber-100 cursor-pointer text-2xl font-bold font-mono transition-transform hover:scale-110"
                   title="Fechar"
                 >
                   ×
                 </button>
 
                 {/* Skill Header Info */}
-                <div className="flex flex-col items-center text-center space-y-2 select-none">
-                  <div className="text-4xl p-3 bg-stone-900 border border-[#C29544]/20 rounded-full w-16 h-16 flex items-center justify-center shadow-lg">
+                <div className="flex flex-col items-center text-center space-y-2.5 select-none pt-2">
+                  <div className="text-4xl p-3 bg-stone-950 border-2 border-[#C29544] rounded-full w-20 h-20 flex items-center justify-center shadow-[0_0_20px_rgba(194,149,68,0.30)] animate-pulse">
                     {sk.emoji || '🎯'}
                   </div>
                   <div>
-                    <h3 className="text-[#E2B054] font-bold text-lg tracking-wider uppercase font-serif">
-                      Portal da Habilidade
+                    <h3 className="text-[#E2B054] font-black text-xl tracking-[0.1em] uppercase font-serif">
+                      ⚜ PORTAL DA HABILIDADE ⚜
                     </h3>
-                    <p className="text-[10px] text-amber-100/40 italic font-serif">Aura Mental & Sintonias Místicas</p>
+                    <p className="text-[10px] text-amber-100/40 uppercase tracking-widest font-mono">Aura Mental & Especialização Mística</p>
                   </div>
+                  <div className="w-[60%] border-b border-amber-500/10"></div>
                 </div>
 
                 {/* EDIT SKILL NAME SECTION */}
-                <div className="space-y-2 text-left bg-stone-900/40 border border-amber-500/10 p-3.5 rounded">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-amber-100/50 block font-serif">
-                    🛡️ Renomear Habilidade
+                <div className="space-y-2 text-left bg-stone-950/40 border border-amber-500/10 p-3.5 rounded-lg relative overflow-hidden">
+                  <span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-amber-500/30"></span>
+                  <span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-amber-500/30"></span>
+                  
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-amber-100/60 block font-serif leading-none">
+                    🧭 Renomear Habilidade
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -3927,7 +4029,7 @@ export default function App() {
                       onClick={() => {
                         handleRenameSkill(inspectingSkillIdx, editSkillName);
                       }}
-                      className="px-3 py-1.5 bg-[#C29544] hover:bg-[#d1a654] text-stone-950 font-bold uppercase tracking-wider text-[10px] rounded cursor-pointer transition-all active:scale-[0.98] active:translate-y-[0.5px]"
+                      className="px-4 py-1.5 bg-[#C29544]/20 hover:bg-[#C29544]/45 border border-[#C29544]/40 text-amber-300 font-bold uppercase tracking-wider text-[10px] rounded cursor-pointer transition-all active:scale-[0.98]"
                     >
                       Salvar
                     </button>
@@ -3935,23 +4037,26 @@ export default function App() {
                 </div>
 
                 {/* SKILL XP PROGRESS & LEVEL */}
-                <div className="space-y-2.5 bg-stone-900/40 border border-amber-500/10 p-3.5 rounded">
+                <div className="space-y-3 bg-stone-950/40 border border-amber-500/10 p-3.5 rounded-lg relative overflow-hidden">
+                  <span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-amber-500/30"></span>
+                  <span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-amber-500/30"></span>
+
                   <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-[#9F9F9F]">
-                    <span>🎯 Nível Atual</span>
+                    <span>🎯 Sintonização Mental</span>
                     <span className="text-[#E2B054] font-bold font-mono text-xs">Lv {sk.level} {sk.prestige && sk.prestige > 0 ? '👑'.repeat(sk.prestige) : ''}</span>
                   </div>
 
                   {/* Large visual progress bar */}
-                  <div className="space-y-1">
-                    <div className="h-2.5 w-full bg-stone-950 rounded-full overflow-hidden border border-amber-500/20">
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-full bg-stone-950 rounded-full overflow-hidden border border-amber-500/20 shadow-inner">
                       <div
-                        className="h-full bg-gradient-to-r from-amber-600 via-[#C29544] to-yellow-400 transition-all duration-300"
+                        className="h-full bg-gradient-to-r from-amber-600 via-[#C29544] to-yellow-400 transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                         style={{ width: `${percent}%` }}
                       />
                     </div>
-                    <div className="flex justify-between items-center text-[9px] font-mono text-amber-100/30">
+                    <div className="flex justify-between items-center text-[9px] font-mono text-amber-100/35">
                       <span>{sk.xp} / {reqXP} XP</span>
-                      <span>{percent.toFixed(0)}% para o Próximo Nível</span>
+                      <span>{percent.toFixed(0)}% para evolução</span>
                     </div>
                   </div>
 
@@ -3969,9 +4074,12 @@ export default function App() {
                 </div>
 
                 {/* SUBSKILLS / FOCUS TAGS SECTION */}
-                <div className="space-y-2.5 bg-stone-900/40 border border-amber-500/10 p-3.5 rounded">
-                  <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-amber-100/50">
-                    <span>🏷️ Subskills Vinculadas (Tags)</span>
+                <div className="space-y-3 bg-stone-950/40 border border-amber-500/10 p-3.5 rounded-lg relative overflow-hidden">
+                  <span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-amber-500/30"></span>
+                  <span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-amber-500/30"></span>
+
+                  <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-amber-100/60 leading-none">
+                    <span>🏷️ Especialidades Vinculadas (Subskills)</span>
                     <span className="font-mono text-[9px] opacity-60">({(sk.tags || []).length} ativas)</span>
                   </div>
 
@@ -3981,12 +4089,12 @@ export default function App() {
                   ) : (
                     <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1 select-none custom-scrollbar pb-1">
                       {sk.tags.map((tag, tagIx) => (
-                        <span key={tagIx} className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-200 text-[10px] rounded flex items-center gap-1 font-sans">
-                          {tag}
+                        <span key={tagIx} className="px-2.5 py-1 bg-amber-500/5 border border-amber-500/15 hover:border-amber-500/30 text-amber-200 text-[10px] rounded flex items-center gap-1 font-sans transition-all">
+                          ✨ {tag}
                           <button
                             type="button"
                             onClick={() => handleRemoveTagFromSkill(inspectingSkillIdx, tagIx)}
-                            className="text-amber-100/40 hover:text-red-400 font-extrabold ml-1 cursor-pointer"
+                            className="text-amber-100/40 hover:text-red-400 font-extrabold ml-1 cursor-pointer transition-colors"
                             title={`Remover subskill ${tag}`}
                           >
                             ×
@@ -4023,7 +4131,7 @@ export default function App() {
                           input.value = '';
                         }
                       }}
-                      className="px-3 bg-[#C29544]/20 hover:bg-[#C29544]/40 border border-[#C29544]/30 text-amber-300 text-xs font-bold rounded cursor-pointer transition-all"
+                      className="px-3 bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/20 text-amber-300 text-xs font-bold rounded cursor-pointer transition-all"
                     >
                       +
                     </button>
@@ -4034,9 +4142,9 @@ export default function App() {
                 <div className="pt-2">
                   <button
                     onClick={() => setInspectingSkillIdx(null)}
-                    className="w-full py-2 bg-stone-900 border border-amber-500/30 hover:border-amber-500/55 hover:bg-stone-850 text-amber-100 font-bold uppercase tracking-wider text-xs rounded cursor-pointer select-none transition-all"
+                    className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.20)] transition-all active:scale-[0.98] text-center text-xs"
                   >
-                    Confirmar & Fechar
+                    CONFIRMAR & FECHAR PORTAL
                   </button>
                 </div>
 
