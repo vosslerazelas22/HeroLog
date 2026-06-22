@@ -1618,7 +1618,7 @@ export default function App() {
 
         const updatedHabits = prev.habits.map(h => {
           if (h.id === habitId) {
-            return { ...h, upCount: h.upCount + 1, streak: h.streak + 1 };
+            return { ...h, upCount: h.upCount + 1, streak: h.streak + 1, lastTriggeredDate: new Date().toDateString() };
           }
           return h;
         });
@@ -1654,7 +1654,7 @@ export default function App() {
 
         const updatedHabits = prev.habits.map(h => {
           if (h.id === habitId) {
-            return { ...h, downCount: h.downCount + 1, streak: Math.max(0, h.streak - 1) };
+            return { ...h, downCount: h.downCount + 1, streak: Math.max(0, h.streak - 1), lastTriggeredDate: new Date().toDateString() };
           }
           return h;
         });
