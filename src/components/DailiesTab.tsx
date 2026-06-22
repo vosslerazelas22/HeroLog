@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Daily } from '../types';
-import { Plus, Trash2, Edit2, CheckSquare, Square, Check, Filter, Settings, PlusCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Edit2, CheckSquare, Square, Check, Filter, Settings, PlusCircle, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react';
 
 interface DailiesTabProps {
   dailies: Daily[];
@@ -21,6 +21,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingDaily, setEditingDaily] = useState<Daily | null>(null);
+  const [activeMenuDailyId, setActiveMenuDailyId] = useState<string | null>(null);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -294,18 +295,19 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
             return (
               <div
                 key={d.id}
-                className={`flex flex-col bg-stone-950/50 border rounded-lg overflow-hidden transition-all ${
+                className={`flex flex-col bg-stone-950/50 border rounded-lg relative overflow-visible transition-all ${
                   d.completed
                     ? 'border-sky-500/30 bg-sky-950/[0.04]'
                     : 'border-amber-500/10 hover:border-amber-500/25'
                 }`}
               >
                 {/* Top Section / Primary Row */}
-                <div className="flex items-center gap-3 p-2.5 md:p-3">
+                <div className="flex items-start md:items-center gap-3 p-2.5 md:p-3">
                   {/* Left Completion Toggle Button */}
                   <button
+                    type="button"
                     onClick={() => onToggleDaily(d.id)}
-                    className={`w-8 h-8 rounded border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg ${
+                    className={`w-9 h-9 rounded border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mt-0.5 md:mt-0 ${
                       d.completed
                         ? 'bg-sky-500/20 border-sky-400 text-sky-300 hover:bg-sky-500/30'
                         : 'bg-stone-900 border-amber-500/20 text-stone-600 hover:border-amber-500/40'
@@ -313,21 +315,22 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
                     title={d.completed ? 'Marcar incompleta' : 'Marcar concluída'}
                   >
                     {d.completed ? (
-                      <Check className="w-5 h-5 font-bold" />
+                      <Check className="w-5.5 h-5.5 font-bold" />
                     ) : (
                       <div className="w-1.5 h-1.5 bg-amber-500/40 rounded-sm" />
                     )}
                   </button>
 
                   {/* Daily details description */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <h4 className={`font-serif font-bold text-xs md:text-sm truncate transition-colors ${
+                  <div className="flex-1 min-w-0 text-left space-y-1.5">
+                    {/* Nome do Daily & Estado (Difficulty badge) */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className={`font-serif font-bold text-sm md:text-[15px] truncate transition-colors ${
                         d.completed ? 'text-sky-300/80 line-through' : 'text-amber-100'
                       }`}>
                         {d.title}
                       </h4>
-                      <span className={`text-[8px] font-bold px-1.5 py-0.1 border rounded uppercase ${
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded leading-none uppercase ${
                         d.difficulty === 'Trivial' ? 'bg-amber-500/10 text-amber-400/80 border-amber-500/10' :
                         d.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400/80 border-emerald-500/10' :
                         d.difficulty === 'Medium' ? 'bg-purple-500/10 text-purple-400/80 border-purple-500/10' :
@@ -338,48 +341,102 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
                     </div>
 
                     {d.notes && (
-                      <p className="text-[10px] text-amber-100/50 font-sans mt-0.5 line-clamp-1">
+                      <p className="text-xs text-amber-100/65 font-sans leading-relaxed mt-0.5">
                         {d.notes}
                       </p>
                     )}
 
-                    {/* Sub-strip tags & counters */}
-                    <div className="flex items-center gap-2 mt-1 text-[9px] text-amber-100/25 font-mono">
-                      <span className="text-sky-400">⏩ Série: <strong>{d.streak} dias</strong></span>
-                      <span>• Repete: {d.repeats} a cada {d.every}x</span>
+                    {/* Sequência atual + Checklist Progress + Repetition */}
+                    <div className="flex flex-wrap items-center gap-2.5 mt-1 text-xs font-mono">
+                      {/* Sequência atual (com medalha) */}
+                      <span className="flex items-center gap-1 font-semibold text-amber-300 bg-stone-900/60 px-2 py-0.5 rounded border border-amber-500/10" title="Série de Dias">
+                        🏅 {d.streak}
+                      </span>
+
+                      {/* Repetição info */}
+                      <span className="text-[10px] text-amber-100/40 bg-stone-900/20 px-1.5 py-0.5 rounded border border-amber-500/5">
+                        Repete: {d.repeats === 'Daily' ? 'Diário' : d.repeats === 'Weekly' ? 'Semanal' : 'Mensal'} (a cada {d.every}x)
+                      </span>
+
+                      {/* Checklist progress */}
                       {hasChecklist && (
-                        <span className="text-purple-400">
-                          [{completedCount}/{d.checklist.length}]
+                        <span className="text-purple-400 font-bold bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10 text-[11px]">
+                          📋 {completedCount} de {d.checklist.length}
                         </span>
                       )}
                     </div>
+
+                    {/* Tags */}
+                    {d.tags && d.tags.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        {d.tags.map((tag) => (
+                          <span key={tag} className="bg-stone-950/45 border border-amber-500/10 px-1.5 py-0.5 rounded text-[10px] text-amber-400/55 font-mono">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Options Menu Column */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5 relative self-start md:self-center mt-0.5 md:mt-0">
                     {hasChecklist && (
                       <button
                         onClick={() => toggleExpand(d.id)}
-                        className="p-1 text-amber-100/30 hover:text-amber-100 cursor-pointer"
+                        className="p-1 px-1.5 text-amber-100/30 hover:text-amber-100 cursor-pointer bg-stone-900/20 border border-amber-500/5 hover:border-amber-500/20 rounded transition-all"
                         title="Ver Checklist"
                       >
                         {expandedDailyId === d.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                     )}
 
-                    <div className="flex gap-0.5 opacity-40 hover:opacity-100 transition-opacity">
+                    <div className="relative">
                       <button
-                        onClick={() => startEdit(d)}
-                        className="p-1 text-amber-100/40 hover:text-amber-300 cursor-pointer"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuDailyId(activeMenuDailyId === d.id ? null : d.id);
+                        }}
+                        className="p-1 text-amber-100/60 hover:text-amber-300 cursor-pointer bg-stone-900/40 rounded border border-amber-500/10 hover:border-amber-500/35 transition-all flex items-center justify-center"
+                        title="Opções"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <MoreVertical className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => onDeleteDaily(d.id)}
-                        className="p-1 text-amber-100/40 hover:text-rose-400 cursor-pointer"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {activeMenuDailyId === d.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuDailyId(null);
+                            }} 
+                          />
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 mr-1.5 w-28 bg-stone-950 border border-amber-500/35 rounded-md shadow-2xl z-20 overflow-hidden font-serif py-0.5 text-left animate-fadeIn">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEdit(d);
+                                setActiveMenuDailyId(null);
+                              }}
+                              className="w-full px-3 py-1.5 text-xs text-amber-250 hover:bg-amber-500/10 hover:text-amber-100 transition-colors flex items-center gap-1.5 cursor-pointer text-left font-serif"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" /> Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteDaily(d.id);
+                                setActiveMenuDailyId(null);
+                              }}
+                              className="w-full px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/20 hover:text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer text-left border-t border-amber-400/5 font-serif"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Excluir
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

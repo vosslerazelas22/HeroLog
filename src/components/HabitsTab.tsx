@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Habit } from '../types';
-import { Plus, Minus, Trash2, Edit2, RotateCcw, AlertTriangle, Sparkles, Filter, PlusCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, Edit2, RotateCcw, AlertTriangle, Sparkles, Filter, PlusCircle, MoreVertical } from 'lucide-react';
 
 interface HabitsTabProps {
   habits: Habit[];
@@ -19,6 +19,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [activeMenuHabitId, setActiveMenuHabitId] = useState<string | null>(null);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -215,31 +216,33 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
         ) : (
           habits.map((h) => {
             const score = h.upCount - h.downCount;
+            const isRecordedToday = h.lastTriggeredDate === new Date().toDateString();
             return (
               <div
                 key={h.id}
-                className={`flex items-center gap-3 bg-gradient-to-r ${getHabitScoreColor(h)} border rounded-lg p-2 md:p-3 transition-all relative overflow-hidden group`}
+                className={`flex items-start md:items-center gap-3 bg-gradient-to-r ${getHabitScoreColor(h)} border rounded-lg p-3 md:p-4 transition-all relative overflow-visible group`}
               >
                 {/* Trigger Up Button */}
                 {h.up ? (
                   <button
                     onClick={() => onTriggerHabit(h.id, true)}
-                    className="w-8 h-8 rounded bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/30 hover:border-emerald-400 text-emerald-400 hover:text-emerald-200 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg"
+                    className="w-9 h-9 rounded bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/30 hover:border-emerald-400 text-emerald-400 hover:text-emerald-200 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mt-0.5 md:mt-0"
                     title="Registrar ação positiva"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-5.5 h-5.5" />
                   </button>
                 ) : (
-                  <div className="w-8 h-8 flex-shrink-0" />
+                  <div className="w-9 h-9 flex-shrink-0" />
                 )}
 
                 {/* Habit Body */}
-                <div className="flex-1 min-w-0 pr-2">
-                  <div className="flex items-baseline gap-2">
-                    <h4 className="font-serif font-bold text-xs md:text-sm text-amber-100 truncate">
+                <div className="flex-1 min-w-0 pr-1 space-y-1.5 text-left">
+                  {/* Nome do hábito & Estado do hábito */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-serif font-bold text-sm md:text-[15px] text-amber-100 tracking-wide leading-tight">
                       {h.title}
                     </h4>
-                    <span className={`text-[8px] font-bold px-1 py-0.5 rounded leading-none uppercase select-none ${
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded leading-none uppercase select-none ${
                       h.difficulty === 'Trivial' ? 'bg-amber-500/10 text-amber-400/80 border border-amber-500/10' :
                       h.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/10' :
                       h.difficulty === 'Medium' ? 'bg-purple-500/10 text-purple-400/80 border border-purple-500/10' :
@@ -250,53 +253,107 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
                   </div>
 
                   {h.notes && (
-                    <p className="text-[10px] text-amber-100/55 font-sans mt-0.5 max-w-[95%]">
+                    <p className="text-xs text-amber-100/65 font-sans leading-relaxed mt-0.5 max-w-[95%]">
                       {h.notes}
                     </p>
                   )}
 
-                  {/* Sub-tags and counts */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[9px] text-amber-100/30 font-mono">
-                    <span>Série de Hábitos: <strong className="text-amber-400 font-bold">{score > 0 ? `+${score}` : score}</strong></span>
-                    <span>• (+{h.upCount} | -{h.downCount})</span>
-                    {h.tags.map((tag) => (
-                      <span key={tag} className="bg-stone-900 border border-amber-500/5 px-1 py-0.2 rounded-sm text-amber-400/50">
-                        #{tag}
+                  {/* Sequência atual, Registrado hoje, Estatísticas */}
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs font-mono">
+                    {/* Sequência atual */}
+                    <span className="flex items-center gap-1 font-semibold text-amber-300 bg-stone-900/60 px-2 py-0.5 rounded border border-amber-500/10" title="Série de Hábitos">
+                      🏅 {score > 0 ? `+${score}` : score}
+                    </span>
+
+                    {/* Registrado hoje */}
+                    {isRecordedToday ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border border-amber-500 bg-amber-400/10 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.15)]">
+                        ✓ Hoje
                       </span>
-                    ))}
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border border-amber-500/10 bg-stone-950/20 text-amber-100/25 opacity-60">
+                        ○ Hoje
+                      </span>
+                    )}
+
+                    {/* Estatísticas detalhadas */}
+                    <span className="text-[10px] text-amber-100/40 bg-stone-900/20 px-1.5 py-0.5 rounded border border-amber-500/5">
+                      (+{h.upCount} | -{h.downCount})
+                    </span>
                   </div>
+
+                  {/* Tags */}
+                  {h.tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {h.tags.map((tag) => (
+                        <span key={tag} className="bg-stone-950/45 border border-amber-500/10 px-1.5 py-0.5 rounded text-[10px] text-amber-400/55 font-mono">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Trigger Down Button & Options */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5 self-start md:self-center mt-0.5 md:mt-0">
                   {h.down && (
                     <button
                       onClick={() => onTriggerHabit(h.id, false)}
-                      className="w-8 h-8 rounded bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/35 hover:border-rose-400 text-rose-400 hover:text-white transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mr-1"
+                      className="w-9 h-9 rounded bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/25 hover:border-rose-400 text-rose-400 hover:text-white transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mr-1"
                       title="Registrar desvio negativo"
                     >
-                      <Minus className="w-5 h-5" />
+                      <Minus className="w-5.5 h-5.5" />
                     </button>
                   )}
 
-                  {/* Edit/Delete Controls */}
-                  <div className="flex flex-row gap-1.5 self-center opacity-75 hover:opacity-100 transition-opacity">
+                  {/* Edit/Delete Controls via Context Menu */}
+                  <div className="relative self-center">
                     <button
                       type="button"
-                      onClick={() => startEdit(h)}
-                      className="p-1.5 text-amber-100/60 hover:text-amber-300 cursor-pointer bg-stone-900/40 rounded border border-amber-500/10 hover:border-amber-500/40 transition-all flex items-center justify-center"
-                      title="Editar Hábito"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuHabitId(activeMenuHabitId === h.id ? null : h.id);
+                      }}
+                      className="p-1.5 text-amber-100/60 hover:text-amber-300 cursor-pointer bg-stone-900/40 rounded border border-amber-500/10 hover:border-amber-500/35 transition-all flex items-center justify-center"
+                      title="Opções"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <MoreVertical className="w-4 h-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteHabit(h.id)}
-                      className="p-1.5 text-amber-100/60 hover:text-rose-400 cursor-pointer bg-stone-900/40 rounded border border-amber-500/10 hover:border-rose-500/40 transition-all flex items-center justify-center"
-                      title="Apagar Hábito"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {activeMenuHabitId === h.id && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuHabitId(null);
+                          }} 
+                        />
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-1.5 w-28 bg-stone-950 border border-amber-500/35 rounded-md shadow-2xl z-20 overflow-hidden font-serif py-0.5 text-left animate-fadeIn">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEdit(h);
+                              setActiveMenuHabitId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs text-amber-250 hover:bg-amber-500/10 hover:text-amber-100 transition-colors flex items-center gap-1.5 cursor-pointer text-left"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" /> Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteHabit(h.id);
+                              setActiveMenuHabitId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/20 hover:text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer text-left border-t border-amber-400/5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Excluir
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
