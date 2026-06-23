@@ -29,6 +29,17 @@ interface SkillLevelUpType {
 
 type LevelUpModalType = CombatLevelUpType | SkillLevelUpType;
 
+export interface ActiveSession {
+  isActive: boolean;
+  skillIdx: number;
+  duration: number;    // duração total em ms
+  endTime: number;     // Date.now() + duration
+  startTime: number;
+  isDungeon: boolean;
+  dungeonStep: number;
+  isWilderness?: boolean;
+}
+
 // Tabs
 import { HabitsTab } from './components/HabitsTab';
 import { DailiesTab } from './components/DailiesTab';
@@ -253,9 +264,42 @@ export default function App() {
   const isImportingRef = useRef<boolean>(false);
 
   // Sub-system Timers state
-  const [timerDuration, setTimerDuration] = useState<number>(25 * 60); // Default to 25m Pomodoro
-  const [timeLeft, setTimeLeft] = useState<number>(25 * 60);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [timerDuration, setTimerDuration] = useState<number>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive && session.endTime > Date.now()) {
+          return Math.round(session.duration / 1000);
+        }
+      }
+    } catch (e) {}
+    return 25 * 60;
+  });
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive && session.endTime > Date.now()) {
+          return Math.max(0, Math.round((session.endTime - Date.now()) / 1000));
+        }
+      }
+    } catch (e) {}
+    return 25 * 60;
+  });
+  const [isRunning, setIsRunning] = useState<boolean>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive && session.endTime > Date.now()) {
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  });
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [pauseCount, setPauseCount] = useState<number>(0);
   const [isCustomTime, setIsCustomTime] = useState<boolean>(false);
@@ -266,10 +310,54 @@ export default function App() {
   const [selectedBreakMins, setSelectedBreakMins] = useState<number>(5);
 
   // Setup options
-  const [selectedSkillIdx, setSelectedSkillIdx] = useState<number>(0);
-  const [isWildernessChecked, setIsWildernessChecked] = useState<boolean>(false);
-  const [isDungeonMode, setIsDungeonMode] = useState<boolean>(false);
-  const [dungeonSessions, setDungeonSessions] = useState<number>(0);
+  const [selectedSkillIdx, setSelectedSkillIdx] = useState<number>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive) {
+          return session.skillIdx;
+        }
+      }
+    } catch (e) {}
+    return 0;
+  });
+  const [isWildernessChecked, setIsWildernessChecked] = useState<boolean>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive) {
+          return !!session.isWilderness;
+        }
+      }
+    } catch (e) {}
+    return false;
+  });
+  const [isDungeonMode, setIsDungeonMode] = useState<boolean>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive) {
+          return !!session.isDungeon;
+        }
+      }
+    } catch (e) {}
+    return false;
+  });
+  const [dungeonSessions, setDungeonSessions] = useState<number>(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive) {
+          return session.dungeonStep || 0;
+        }
+      }
+    } catch (e) {}
+    return 0;
+  });
   const [lastDungeonClearedTime, setLastDungeonClearedTime] = useState<number>(0);
   const [showActionWindowTooltip, setShowActionWindowTooltip] = useState<boolean>(false);
   const [showDungeonTooltip, setShowDungeonTooltip] = useState<boolean>(false);
@@ -469,6 +557,542 @@ export default function App() {
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
   useEffect(() => { timerDurationRef.current = timerDuration; }, [timerDuration]);
   useEffect(() => { isBreakActiveRef.current = isBreakActive; }, [isBreakActive]);
+
+  const completeSessionOnReload = (session: ActiveSession) => {
+    localStorage.removeItem('herolog_active_session');
+
+    setGameState(prev => {
+      const studiedMinutes = Math.floor(session.duration / (60 * 1000));
+      const activeSkillName = prev.skills[session.skillIdx]?.name || 'Código Sagrado';
+
+      // Calculate core rewards
+      const baseXP = studiedMinutes * 2;
+      const baseGold = studiedMinutes * 3;
+
+      // Apply multipliers setup
+      let xpMultiplier = 1.0;
+      let goldMultiplier = 1.0;
+
+      // Titles perk multipliers
+      const eqTitleId = prev.equippedTitle;
+      let titleXpAdd = 0;
+      let titleGoldAdd = 0;
+
+      if (eqTitleId === 'LEGEND_GP') titleXpAdd += 0.05;
+      if (eqTitleId === 'INFERNO') titleXpAdd += 0.08;
+      if (eqTitleId === 'STARBOUND') { titleXpAdd += 0.10; titleGoldAdd += 0.08; }
+      if (eqTitleId === 'DRAGONBORN') titleXpAdd += 0.15;
+      if (eqTitleId === 'VOIDWALKER') titleXpAdd += 0.20;
+      if (eqTitleId === 'THE_WATCHER') { titleXpAdd += 0.25; titleGoldAdd += 0.15; }
+      if (eqTitleId === 'TRANSCENDENT') { titleXpAdd += 0.30; titleGoldAdd += 0.20; }
+      if (eqTitleId === 'THE_ETERNAL_SCHOLAR') { titleXpAdd += 0.50; titleGoldAdd += 0.30; }
+
+      // Achievements
+      if (eqTitleId === 'IRON_WILL') titleXpAdd += 0.05;
+      if (eqTitleId === 'DIAMOND_MIND') { titleXpAdd += 0.08; titleGoldAdd += 0.05; }
+      if (eqTitleId === 'THE_CENTURY') { titleXpAdd += 0.12; titleGoldAdd += 0.08; }
+      if (eqTitleId === 'A_FULL_YEAR') { titleXpAdd += 0.25; titleGoldAdd += 0.15; }
+      if (eqTitleId === 'CENTURION') titleXpAdd += 0.05;
+      if (eqTitleId === 'THE_OBSESSED') { titleXpAdd += 0.15; titleGoldAdd += 0.10; }
+      if (eqTitleId === 'IMMORTAL_SCHOLAR') { titleXpAdd += 0.25; titleGoldAdd += 0.20; }
+      if (eqTitleId === 'DEATH-PROOF') {
+        if (session.isWilderness) titleXpAdd += 0.25;
+      }
+      if (eqTitleId === 'DUNGEON_LORD') {
+        if (session.isDungeon) titleXpAdd += 0.15;
+      }
+      if (eqTitleId === 'RAID_VETERAN') {
+        if (session.isDungeon) { titleXpAdd += 0.25; titleGoldAdd += 0.20; }
+      }
+      if (eqTitleId === 'LEGEND_ACH') titleXpAdd += 0.10;
+      if (eqTitleId === 'PANTHEON') titleXpAdd += 0.20;
+      if (eqTitleId === 'MANIAC') titleXpAdd += 0.10;
+      if (eqTitleId === 'IN_THE_ZONE') titleXpAdd += 0.05;
+      if (eqTitleId === 'MARATHONER') {
+        if (studiedMinutes >= 60) titleXpAdd += 0.15;
+      }
+      if (eqTitleId === 'XP_GOD') { titleXpAdd += 0.20; titleGoldAdd += 0.10; }
+      if (eqTitleId === 'NOCTURNAL') titleXpAdd += 0.15;
+      if (eqTitleId === 'ASCENDED') titleXpAdd += 0.10;
+
+      // Drops
+      if (eqTitleId === 'BLESSED') { titleXpAdd += 0.08; titleGoldAdd += 0.10; }
+      if (eqTitleId === 'SHADOW') titleXpAdd += 0.10;
+      if (eqTitleId === 'THE_FORSAKEN') {
+        if (session.isWilderness) titleXpAdd += 0.15;
+      }
+      if (eqTitleId === 'CELESTIAL') { titleXpAdd += 0.20; titleGoldAdd += 0.15; }
+      if (eqTitleId === 'THUNDERSTRUCK') {
+        if (session.isWilderness) titleXpAdd += 0.25;
+        titleGoldAdd += 0.10;
+      }
+      if (eqTitleId === 'HAUNTED') { titleXpAdd += 0.10; titleGoldAdd += 0.20; }
+      if (eqTitleId === 'BLOOD_FORGED') {
+        if (session.isDungeon) { titleXpAdd += 0.20; titleGoldAdd += 0.20; }
+      }
+
+      xpMultiplier += titleXpAdd;
+      goldMultiplier += titleGoldAdd;
+
+      // Class perks
+      if (prev.charClass === 'Mage') xpMultiplier += 0.20;
+      if (prev.charClass === 'Warrior') goldMultiplier += 0.20;
+
+      // Combo system boosts
+      const comboBoost = Math.min(prev.combo * 0.05, 0.50);
+      xpMultiplier += comboBoost;
+
+      // Wilderness survival bonuses (+25% extras)
+      if (session.isWilderness) {
+        xpMultiplier += 0.25;
+        goldMultiplier += 0.25;
+      }
+
+      // Dungeon Run rewards (+50% XP per minute every session)
+      if (session.isDungeon) {
+        xpMultiplier += 0.50;
+      }
+
+      // Active single use consumables bought from goblin shop check
+      const doubleLootIdx = prev.inventory.findIndex(item => item.buff === 'DoubleLoot');
+      let hasUsedDoubleLoot = false;
+      if (doubleLootIdx >= 0) {
+        goldMultiplier *= 2.0;
+        hasUsedDoubleLoot = true;
+      }
+
+      const focusElixirIdx = prev.inventory.findIndex(item => item.buff === 'FocusElixir');
+      let hasUsedFocusElixir = false;
+      if (focusElixirIdx >= 0) {
+        xpMultiplier += 0.20;
+        hasUsedFocusElixir = true;
+      }
+
+      const runeFortuneIdx = prev.inventory.findIndex(item => item.buff === 'RuneFortune');
+      let hasUsedRuneFortune = false;
+      if (runeFortuneIdx >= 0) {
+        goldMultiplier *= 2.0;
+        hasUsedRuneFortune = true;
+      }
+
+      const crystalClarityIdx = prev.inventory.findIndex(item => item.buff === 'CrystalClarity');
+      let hasUsedCrystalClarity = false;
+      if (crystalClarityIdx >= 0) {
+        xpMultiplier *= 2.00;
+        hasUsedCrystalClarity = true;
+      }
+
+      // --- EQUIPMENT SLOTS ACTIVE BOOSTS ---
+      const equipped = prev.equippedEquipment || [null, null, null];
+      let usedEquipmentIndicesAndCharges: { index: number; charges: number }[] = [];
+
+      equipped.forEach((item, index) => {
+        if (item) {
+          let activated = false;
+          if (item.buff === 'PixelOwl') {
+            xpMultiplier += 0.05;
+            activated = true;
+          } else if (item.buff === 'DragonQuill') {
+            if (studiedMinutes >= 45) {
+              xpMultiplier += 0.08;
+              activated = true;
+            }
+          } else if (item.buff === 'CrystalBall') {
+            xpMultiplier += 0.10;
+            activated = true;
+          } else if (item.buff === 'AncientTome') {
+            if (studiedMinutes >= 60) {
+              xpMultiplier += 0.15;
+              activated = true;
+            }
+          }
+
+          if (activated) {
+            const currentCharges = item.charges ?? 8;
+            usedEquipmentIndicesAndCharges.push({ index, charges: currentCharges - 1 });
+          }
+        }
+      });
+
+      const finalXP = Math.floor(baseXP * xpMultiplier);
+      const finalGold = Math.floor(baseGold * goldMultiplier);
+
+      // Loot rates custom multiplier based on title
+      let lootRateMultiplier = 1.0;
+      if (eqTitleId === 'VOIDWALKER') lootRateMultiplier += 0.50;
+      if (eqTitleId === 'TRANSCENDENT' || eqTitleId === 'CELESTIAL') lootRateMultiplier += 1.00;
+      if (eqTitleId === 'IMMORTAL_SCHOLAR') lootRateMultiplier += 0.50;
+      if (eqTitleId === 'NOCTURNAL') lootRateMultiplier += 0.30;
+      if (eqTitleId === 'SHADOW') lootRateMultiplier += 0.75;
+
+      // Random Loot drops
+      const landedLoots: { name: string; emoji: string }[] = [];
+      const rollCount = session.isDungeon ? 4 : 1;
+
+      for (let r = 0; r < rollCount; r++) {
+        let thresholdChance = session.isDungeon ? 0.40 : (studiedMinutes >= 90 ? 0.70 : studiedMinutes >= 50 ? 0.45 : 0.25);
+        thresholdChance = Math.min(0.95, thresholdChance * lootRateMultiplier);
+        if (Math.random() < thresholdChance) {
+          const lootCatalog = session.isDungeon 
+            ? [
+                { name: 'Grimório Lendário do Caos 🔮', emoji: '🔮' },
+                { name: 'Espada do Foco Inabalável 🗡️', emoji: '🗡️' },
+                { name: 'Cálice Sagrado da Sabedoria 🏆', emoji: '🏆' },
+                { name: 'Relíquia Secreta Arcana 🔱', emoji: '🔱' },
+                { name: 'Pedra Filosofal Rúnica 💎', emoji: '💎' }
+              ]
+            : [
+                { name: 'Grimório de Prata', emoji: '📚' },
+                { name: 'Pergaminho Antigo', emoji: '📜' },
+                { name: 'Poção Celestina', emoji: '🧪' },
+                { name: 'Fécula de Estrelas', emoji: '✨' },
+                { name: 'Broche de Ouro', emoji: '🏅' }
+              ];
+          const lootItem = lootCatalog[Math.floor(Math.random() * lootCatalog.length)];
+          landedLoots.push(lootItem);
+        }
+      }
+
+      let lootedItem: { name: string; emoji: string } | undefined = undefined;
+      if (landedLoots.length > 0) {
+        lootedItem = {
+          name: landedLoots.map(l => l.name).join(', '),
+          emoji: landedLoots[0].emoji
+        };
+      }
+
+      // --- TITLE DROP CHECK ---
+      let baseTitleChance = session.isDungeon ? 0.05 : (studiedMinutes >= 50 ? 0.03 : 0.01);
+      let titleDropMultiplier = 1.0;
+      if (eqTitleId === 'VOIDWALKER') titleDropMultiplier += 0.50;
+      if (eqTitleId === 'NOCTURNAL') titleDropMultiplier += 0.30;
+      if (eqTitleId === 'SHADOW') titleDropMultiplier += 0.75;
+
+      let finalTitleDropChance = baseTitleChance * titleDropMultiplier;
+      let droppedTitle: { id: string; name: string; emoji: string } | undefined = undefined;
+
+      if (Math.random() < finalTitleDropChance) {
+        const dropTitlesPool = [
+          { id: 'BLESSED', name: 'BLESSED', emoji: '🌸' },
+          { id: 'SHADOW', name: 'SHADOW', emoji: '🌑' },
+          { id: 'THE_FORSAKEN', name: 'THE FORSAKEN', emoji: '🔮' },
+          { id: 'CELESTIAL', name: 'CELESTIAL', emoji: '✨' },
+          { id: 'THUNDERSTRUCK', name: 'THUNDERSTRUCK', emoji: '⚡' },
+          { id: 'HAUNTED', name: 'HAUNTED', emoji: '👻' },
+          { id: 'BLOOD_FORGED', name: 'BLOOD-FORGED', emoji: '🩸' }
+        ];
+
+        const currentOwned = prev.ownedTitles || [];
+        const filteredPool = dropTitlesPool.filter(t => {
+          if (currentOwned.includes(t.id)) return false;
+          if (t.id === 'THUNDERSTRUCK' || t.id === 'HAUNTED' || t.id === 'THE_FORSAKEN') {
+            return session.isWilderness;
+          }
+          if (t.id === 'BLOOD_FORGED') {
+            return session.isDungeon;
+          }
+          return true;
+        });
+
+        if (filteredPool.length > 0) {
+          droppedTitle = filteredPool[Math.floor(Math.random() * filteredPool.length)];
+          setTimeout(() => {
+            addSystemLog(`✨ SORTUDO UNMISSABLE: O reino abençoou sua constância e você dropou o TÍTULO RARO [${droppedTitle?.name}]!`, true);
+          }, 180);
+        }
+      }
+
+      // Dungeon Run milestone progression calculation
+      let dungeonClearGoldBonus = 0;
+      if (session.isDungeon) {
+        const nextSessions = session.dungeonStep + 1;
+        if (nextSessions >= 4) {
+          setDungeonSessions(0);
+          setIsDungeonMode(false);
+          setLastDungeonClearedTime(Date.now());
+          setSelectedBreakMins(prev.longBreakMinutes || 15);
+          dungeonClearGoldBonus = 2500;
+          setTimeout(() => {
+            addSystemLog('🏆 EXPLORAÇÃO MASMORRA SUCESSO: Concluiu as 4 sessões heróicas consecutivas! Um bônus monumental místico de +2.500 GP foi adicionado aos teus espólios!', true);
+          }, 120);
+        } else {
+          setDungeonSessions(nextSessions);
+          setSelectedBreakMins(5);
+          setTimeout(() => {
+            addSystemLog(`⚔️ Masmorra Progresso: (${nextSessions}/4) focos consecutivos selados. Só mais ${4 - nextSessions} sessões para a glória eterna!`, true);
+          }, 120);
+        }
+      }
+
+      // Update skills leveling up mechanics
+      const updatedSkills = prev.skills.map((sk, idx) => {
+        if (idx === session.skillIdx) {
+          let prestigeGrowth = 0.25;
+          if (eqTitleId === 'DRAGONBORN') prestigeGrowth = 0.25 * 1.25;
+          else if (eqTitleId === 'PANTHEON') prestigeGrowth = 0.25 * 1.30;
+          else if (eqTitleId === 'THE_ETERNAL_SCHOLAR' || eqTitleId === 'ASCENDED') prestigeGrowth = 0.25 * 1.50;
+
+          const prestigeBonus = 1 + (sk.prestige || 0) * prestigeGrowth;
+          const finalXPApplied = Math.round(finalXP * prestigeBonus);
+          let updatedXP = sk.xp + finalXPApplied;
+          let currentLevel = sk.level;
+          let xpRequired = currentLevel * 80;
+          
+          while (updatedXP >= xpRequired) {
+            updatedXP -= xpRequired;
+            currentLevel += 1;
+            xpRequired = currentLevel * 80;
+            setTimeout(() => {
+              addSystemLog(`🆙 SUBIU DE NÍVEL: Sua habilidade "${sk.emoji || '🎯'} ${sk.name}" atingiu o Nível ${currentLevel}!`, true);
+              if (!muteSfx) sound.playLevelUp();
+            }, 100);
+          }
+          return { ...sk, level: currentLevel, xp: updatedXP };
+        }
+        return sk;
+      });
+
+      // Consume items spent
+      const updatedInv = [...prev.inventory];
+      if (hasUsedDoubleLoot) {
+        const itemIdx = updatedInv.findIndex(i => i.buff === 'DoubleLoot');
+        if (itemIdx >= 0) updatedInv.splice(itemIdx, 1);
+      }
+      if (hasUsedFocusElixir) {
+        const itemIdx = updatedInv.findIndex(i => i.buff === 'FocusElixir');
+        if (itemIdx >= 0) updatedInv.splice(itemIdx, 1);
+      }
+      if (hasUsedRuneFortune) {
+        const itemIdx = updatedInv.findIndex(i => i.buff === 'RuneFortune');
+        if (itemIdx >= 0) updatedInv.splice(itemIdx, 1);
+      }
+      if (hasUsedCrystalClarity) {
+        const itemIdx = updatedInv.findIndex(i => i.buff === 'CrystalClarity');
+        if (itemIdx >= 0) updatedInv.splice(itemIdx, 1);
+      }
+
+      // Decrement charges of worn equipment
+      const updatedEquip = prev.equippedEquipment ? [...prev.equippedEquipment] : [null, null, null];
+      usedEquipmentIndicesAndCharges.forEach(({ index, charges }) => {
+        if (charges <= 0) {
+          const item = updatedEquip[index];
+          if (item) {
+            setTimeout(() => {
+              addSystemLog(`⚠️ O equipamento "${item.emoji} ${item.name}" gastou todas as suas cargas e quebrou!`, true);
+            }, 250);
+          }
+          updatedEquip[index] = null;
+        } else {
+          const item = updatedEquip[index];
+          if (item) {
+            updatedEquip[index] = {
+              ...item,
+              charges: charges
+            };
+          }
+        }
+      });
+
+      // Add looted item directly
+      if (lootedItem) {
+        const randVal = Math.random();
+        if (randVal < 0.40) {
+          const equipments = [
+            {
+              name: 'Coruja Pixelada',
+              emoji: '🦉',
+              desc: 'Equipável: +5% de XP em todas as sessões. (8 Cargas)',
+              price: 250,
+              buff: 'PixelOwl' as BuffType,
+              isEquipment: true,
+              charges: 8,
+              maxCharges: 8
+            },
+            {
+              name: 'Pena de Dragão',
+              emoji: '🪶',
+              desc: 'Equipável: +8% de XP em sessões de 45 min+. (8 Cargas)',
+              price: 300,
+              buff: 'DragonQuill' as BuffType,
+              isEquipment: true,
+              charges: 8,
+              maxCharges: 8
+            },
+            {
+              name: 'Bola de Cristal',
+              emoji: '🔮',
+              desc: 'Equipável: +10% de XP em todas as sessões. (10 Cargas)',
+              price: 400,
+              buff: 'CrystalBall' as BuffType,
+              isEquipment: true,
+              charges: 10,
+              maxCharges: 10
+            },
+            {
+              name: 'Tomo Antigo',
+              emoji: '📖',
+              desc: 'Equipável: +15% de XP em sessões de 60 min+. (8 Cargas)',
+              price: 500,
+              buff: 'AncientTome' as BuffType,
+              isEquipment: true,
+              charges: 8,
+              maxCharges: 8
+            }
+          ];
+
+          const eqDrop = equipments[Math.floor(Math.random() * equipments.length)];
+          updatedInv.push({
+            id: `eq_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            ...eqDrop
+          });
+          
+          setTimeout(() => {
+            addSystemLog(`✨ ESPÓLIO LENDÁRIO ENCONTRADO: Você localizou o equipamento "${eqDrop.emoji} ${eqDrop.name}"! Vá à Ficha para equipá-lo.`, true);
+          }, 200);
+        } else {
+          updatedInv.push({
+            id: `loot_${Date.now()}`,
+            name: lootedItem.name,
+            emoji: lootedItem.emoji,
+            buff: 'DoubleLoot',
+            price: 50,
+            desc: 'Espólio colecionável de foco heróico.'
+          });
+        }
+      }
+
+      // Combat level progression
+      let combatXPApplied = prev.combatXP + Math.floor(finalXP * 0.4);
+      let currentCombatLevel = prev.combatLevel;
+      let combatXPRequirement = currentCombatLevel * 100;
+
+      while (combatXPApplied >= combatXPRequirement) {
+        combatXPApplied -= combatXPRequirement;
+        currentCombatLevel += 1;
+        combatXPRequirement = currentCombatLevel * 100;
+        setTimeout(() => {
+          addSystemLog(`🏆 SUBIDA DE NÍVEL COMBATE: Seus atributos se transbordaram misticamente! Nível de Combate ${currentCombatLevel}!`, true);
+          if (!muteSfx) sound.playLevelUp();
+        }, 150);
+      }
+
+      // Series (Streaks) & Combos sync
+      const todayString = new Date().toDateString();
+      let newStreak = prev.streak;
+      if (prev.lastStudyDate !== todayString) {
+        newStreak = prev.streak + 1;
+      }
+      const newBestStreak = Math.max(newStreak, prev.bestStreak);
+
+      const historyObj = {
+        id: `session_${Date.now()}_${Math.random()}`,
+        skillName: activeSkillName,
+        date: new Date().toLocaleString('pt-BR'),
+        duration: studiedMinutes,
+        xp: finalXP,
+        gold: finalGold + dungeonClearGoldBonus,
+        notes: "Sessão concluída em segundo plano e recuperada com sucesso.",
+        wilderness: !!session.isWilderness,
+      };
+
+      // Achievements validation
+      const unlockedAchievements = [...prev.achievements];
+      const testAchievements = [
+        { id: 'first_quest', targetValue: 1, current: prev.totalSessions + 1 },
+        { id: 'streak_3', targetValue: 3, current: newBestStreak },
+        { id: 'streak_7', targetValue: 7, current: newBestStreak },
+        { id: 'xp_1000', targetValue: 1000, current: prev.totalXP + finalXP }
+      ];
+
+      testAchievements.forEach(ach => {
+        if (!unlockedAchievements.includes(ach.id) && ach.current >= ach.targetValue) {
+          unlockedAchievements.push(ach.id);
+          setTimeout(() => {
+            addSystemLog(`🏆 CONQUISTA HERÓICA: Desbloqueada rúnica especial [${ach.id.toUpperCase()}]!`, true);
+          }, 350);
+        }
+      });
+
+      if (session.isWilderness && !unlockedAchievements.includes('survive_wilderness')) {
+        unlockedAchievements.push('survive_wilderness');
+        setTimeout(() => {
+          addSystemLog(`🏆 CONQUISTA HERÓICA: Desbloqueaste o selo [Sobrevivente da Wilderness]!`, true);
+        }, 360);
+      }
+
+      const nextOwnedTitles = [...(prev.ownedTitles || [])];
+      if (droppedTitle && !nextOwnedTitles.includes(droppedTitle.id)) {
+        nextOwnedTitles.push(droppedTitle.id);
+      }
+
+      setTimeout(() => {
+        addSystemLog(`✅ Missão divina completa (Auto-Recuperada): ${activeSkillName} | +${finalXP} XP | +${finalGold + dungeonClearGoldBonus} GP ganho.`, true);
+        if (!muteSfx) sound.playCoins();
+      }, 500);
+
+      return {
+        ...prev,
+        gold: prev.gold + finalGold + dungeonClearGoldBonus,
+        totalGoldEarned: prev.totalGoldEarned + finalGold + dungeonClearGoldBonus,
+        totalSessions: prev.totalSessions + 1,
+        totalMinutes: prev.totalMinutes + studiedMinutes,
+        combatLevel: currentCombatLevel,
+        combatXP: combatXPApplied,
+        skills: updatedSkills,
+        inventory: updatedInv,
+        equippedEquipment: updatedEquip,
+        history: [historyObj, ...prev.history],
+        streak: newStreak,
+        bestStreak: newBestStreak,
+        lastStudyDate: todayString,
+        wildernessWins: prev.wildernessWins + (session.isWilderness ? 1 : 0),
+        combo: prev.combo + 1,
+        todayMinutes: prev.todayMinutes + studiedMinutes,
+        todayXP: prev.todayXP + finalXP,
+        achievements: unlockedAchievements,
+        ownedTitles: nextOwnedTitles,
+      };
+    });
+
+    setIsRunning(false);
+    setIsPaused(false);
+    setIsGraceActive(false);
+    setActiveScreenEvent(null);
+    setIsBreakPrep(true);
+  };
+
+  useEffect(() => {
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data) as ActiveSession;
+        if (session && session.isActive) {
+          if (session.endTime > Date.now()) {
+            const endTime = session.endTime;
+            focusEndTimeRef.current = endTime;
+            addSystemLog(`⚔️ Recuperando portal rúnico! Jornada ativa restaurada com sucesso para a habilidade selecionada.`, true);
+            
+            triggerRandomAmbientEncounterScheduler();
+
+            timerIntervalRef.current = setInterval(() => {
+              setTimeLeft(prev => {
+                if (prev <= 1) {
+                  clearInterval(timerIntervalRef.current!);
+                  completeFocusQuest();
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          } else {
+            completeSessionOnReload(session);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error recovering active session:', e);
+    }
+  }, []);
 
   // Initial welcome and daily updates checking
   useEffect(() => {
@@ -702,6 +1326,19 @@ export default function App() {
 
     const endTime = Date.now() + timeLeft * 1000;
     focusEndTimeRef.current = endTime;
+
+    const activeSession: ActiveSession = {
+      isActive: true,
+      skillIdx: selectedSkillIdx,
+      duration: timerDuration * 1000,
+      endTime: endTime,
+      startTime: Date.now() - (timerDuration - timeLeft) * 1000,
+      isDungeon: isDungeonMode,
+      dungeonStep: dungeonSessions,
+      isWilderness: isWildernessChecked,
+    };
+    localStorage.setItem('herolog_active_session', JSON.stringify(activeSession));
+
     timerIntervalRef.current = setInterval(() => {
       const now = Date.now();
       const remaining = Math.max(0, Math.round((endTime - now) / 1000));
@@ -727,6 +1364,19 @@ export default function App() {
       
       const endTime = Date.now() + timeLeft * 1000;
       focusEndTimeRef.current = endTime;
+
+      const activeSession: ActiveSession = {
+        isActive: true,
+        skillIdx: selectedSkillIdx,
+        duration: timerDuration * 1000,
+        endTime: endTime,
+        startTime: Date.now() - (timerDuration - timeLeft) * 1000,
+        isDungeon: isDungeonMode,
+        dungeonStep: dungeonSessions,
+        isWilderness: isWildernessChecked,
+      };
+      localStorage.setItem('herolog_active_session', JSON.stringify(activeSession));
+
       timerIntervalRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -741,6 +1391,7 @@ export default function App() {
       setIsPaused(true);
       setPauseCount(prev => prev + 1);
       clearInterval(timerIntervalRef.current!);
+      localStorage.removeItem('herolog_active_session');
       addSystemLog(`⏸️ Jornada de Foco congelada nas chagas da meditação.`);
     }
   };
@@ -764,6 +1415,7 @@ export default function App() {
     setIsGraceActive(false);
     setIsConfirmingAbandon(false);
     setActiveScreenEvent(null);
+    localStorage.removeItem('herolog_active_session');
     addSystemLog('⚠️ Missão abandonada trágicamente pelo aventureiro.');
 
     if (isDungeonMode) {
@@ -887,6 +1539,7 @@ export default function App() {
     setActiveScreenEvent(null);
     setTimeLeft(timerDuration);
     setSessionNotes('');
+    localStorage.removeItem('herolog_active_session');
 
     if (!muteSfx) sound.playDeath();
     addSystemLog('💀 MORTE COGNITIVA: Você falhou no voto de silêncio e foi expulso da Terra Selvagem. Todas recompensas perdidas!', true);
@@ -949,6 +1602,7 @@ export default function App() {
     setIsGraceActive(false);
     setActiveScreenEvent(null);
     setTimeLeft(timerDuration);
+    localStorage.removeItem('herolog_active_session');
 
     const studiedMinutes = Math.floor(timerDuration / 60);
     const activeSkillName = gameState.skills[selectedSkillIdx]?.name || 'Código Sagrado';
