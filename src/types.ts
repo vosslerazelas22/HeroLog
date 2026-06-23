@@ -18,6 +18,7 @@ export interface Skill {
   xp: number;
   emoji?: string;
   prestige?: number;
+  tags?: string[];
 }
 
 export interface HistoryEntry {
@@ -30,6 +31,7 @@ export interface HistoryEntry {
   notes: string;
   wilderness: boolean;
   aiChronicle?: string;
+  subskillTag?: string;
 }
 
 export interface Quest {
@@ -54,6 +56,7 @@ export interface Habit {
   downCount: number;
   streak: number;
   tags: string[];
+  lastTriggeredDate?: string;
 }
 
 export interface Daily {
@@ -111,6 +114,7 @@ export interface CharacterState {
   equippedTitle?: string | null;
   ownedTitles?: string[];
   equippedEquipment?: (InventoryItem | null)[];
+  longBreakMinutes: number;
 }
 
 export interface Achievement {

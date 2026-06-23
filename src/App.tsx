@@ -3118,27 +3118,174 @@ export default function App() {
 
                     </div>
 
-                    {/* SESSIONS DIRECT ANOTATE COMPOSER */}
-                    <div className="p-5 bg-stone-950/20 border-t border-amber-500/10">
-                      <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
-                        Notas Teológicas de Estudo (Salvas no Histórico):
-                      </label>
-                      <textarea
-                        disabled={isRunning && isPaused}
-                        value={sessionNotes}
-                        onChange={(e) => {
-                          if (e.target.value.length <= 200) {
-                            setSessionNotes(e.target.value);
-                          }
-                        }}
-                        placeholder="Escreva em suas palavras o que realizou nesta sessão... (Máx 200 caracteres)"
-                        className="w-full bg-stone-950/75 border border-amber-500/15 p-2 rounded text-xs text-amber-200 focus:outline-none focus:border-amber-400 transition-all font-serif placeholder-amber-100/20 h-16 resize-none disabled:opacity-40"
-                      />
-                      <div className="flex justify-between items-center text-[9px] text-amber-100/35 font-mono mt-0.5">
-                        <span>*Estas observações serão compiladas no seu Diário de Jornada.*</span>
-                        <span>{sessionNotes.length} / 200</span>
-                      </div>
-                    </div>
+                    {/* ACTIVE CONTRATS / QUESTS OVERVIEW */}
+                    {(() => {
+                      const state = gameState;
+                      const dailies = [
+                        {
+                          id: 'daily_1',
+                          name: 'Devotamento Diário',
+                          summary: 'Sessão de estudo hoje',
+                          desc: 'Complete pelo menos uma sessão de estudo hoje.',
+                          progress: state.todayMinutes > 0 ? 1 : 0,
+                          target: 1,
+                        },
+                        {
+                          id: 'daily_2',
+                          name: 'Diligência Extrema',
+                          summary: '50 min de foco total',
+                          desc: 'Acumule 50 minutos de estudo concentrado hoje.',
+                          progress: Math.min(state.todayMinutes, 50),
+                          target: 50,
+                        },
+                        {
+                          id: 'daily_3',
+                          name: 'Ouro do Conhecimento',
+                          summary: 'Sessão em Wilderness',
+                          desc: 'Estude na perigosa floresta de Wilderness hoje.',
+                          progress: state.history.some(h => {
+                            const todayStr = new Date().toLocaleDateString('pt-BR');
+                            return h.date.includes(todayStr) && h.wilderness;
+                          }) ? 1 : 0,
+                          target: 1,
+                        }
+                      ];
+
+                      const guilds = [
+                        {
+                          id: 'guild_1',
+                          name: 'Iniciado da Guilda',
+                          desc: 'Atinja Combat Level 5 ou superior.',
+                          progress: Math.min(state.combatLevel, 5),
+                          target: 5,
+                        },
+                        {
+                          id: 'guild_2',
+                          name: 'Maratona Mágica',
+                          desc: 'Conclua um total de 12 sessões acumuladas.',
+                          progress: Math.min(state.totalSessions, 12),
+                          target: 12,
+                        },
+                        {
+                          id: 'guild_3',
+                          name: 'Campeão da Constância',
+                          desc: 'Atinja ou supere uma série recorde de 3 dias de estudo.',
+                          progress: Math.min(state.bestStreak, 3),
+                          target: 3,
+                        }
+                      ];
+
+                      const unclaimedGuilds = guilds.filter(g => !state.achievements.includes(`claimed_${g.id}`));
+                      let closestGuildQuest = null;
+                      if (unclaimedGuilds.length > 0) {
+                        closestGuildQuest = unclaimedGuilds.reduce((prev, current) => {
+                          const prevPct = prev.progress / prev.target;
+                          const currPct = current.progress / current.target;
+                          return currPct > prevPct ? current : prev;
+                        });
+                      }
+
+                      return (
+                        <div className="p-4 bg-stone-950/20 border-t border-amber-500/10 space-y-3">
+                          <div className="flex justify-between items-center bg-stone-950/30 px-2.5 py-1.5 rounded border border-amber-500/5">
+                            <span className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054] flex items-center gap-1.5 leading-none">
+                              📜 MURAL DE CONTRATOS ATIVOS
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTab('quests');
+                                setIsMobileSidebarOpen(false);
+                              }}
+                              className="text-[9px] font-serif font-bold uppercase tracking-wider text-amber-500 hover:text-amber-300 transition-colors flex items-center gap-1 hover:underline cursor-pointer"
+                            >
+                              Painel de Contratos →
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5">
+                            {/* Column 1: Daily Quests Summary */}
+                            <div className="space-y-2 bg-stone-950/40 p-2.5 rounded-lg border border-amber-500/10">
+                              <span className="text-[9px] uppercase font-serif tracking-widest text-[#E2B054]/60 font-semibold block mb-1">
+                                🎯 Proclamações do Dia
+                              </span>
+                              <div className="space-y-1.5 text-xs">
+                                {dailies.map((q) => {
+                                  const isCompleted = q.progress >= q.target;
+                                  const isClaimed = state.achievements.includes(`claimed_${q.id}`);
+                                  return (
+                                    <div key={q.id} className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0" title={q.desc}>
+                                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                          isClaimed 
+                                            ? 'bg-stone-600' 
+                                            : isCompleted 
+                                              ? 'bg-amber-400 animate-pulse' 
+                                              : 'bg-amber-500/30'
+                                        }`} />
+                                        <span className={`truncate font-serif font-medium text-[11px] ${
+                                          isClaimed 
+                                            ? 'text-amber-100/30 line-through' 
+                                            : isCompleted 
+                                              ? 'text-[#E2B054]' 
+                                              : 'text-amber-100/60'
+                                        }`}>
+                                          {q.summary}
+                                        </span>
+                                      </div>
+                                      <span className={`font-mono text-[10px] flex-shrink-0 ${
+                                        isCompleted ? 'text-amber-400 font-bold' : 'text-amber-100/30'
+                                      }`}>
+                                        {q.progress}/{q.target}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Column 2: Closest Guild Quest */}
+                            <div className="bg-stone-950/40 p-2.5 rounded-lg border border-amber-500/10 flex flex-col justify-between">
+                              <div>
+                                <span className="text-[9px] uppercase font-serif tracking-widest text-[#E2B054]/60 font-semibold block mb-1">
+                                  🛡️ Tese de Campanha de Guilda
+                                </span>
+                                {closestGuildQuest ? (
+                                  <div className="space-y-1.5 text-xs">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <h5 className="font-serif font-bold text-[#E2B054] text-[11px] truncate select-none" title={closestGuildQuest.desc}>
+                                          {closestGuildQuest.name}
+                                        </h5>
+                                        <p className="text-[10px] text-amber-100/65 font-sans leading-tight mt-0.5 select-none whitespace-normal">
+                                          {closestGuildQuest.desc}
+                                        </p>
+                                      </div>
+                                      <span className="font-mono text-[10px] text-amber-400 font-bold flex-shrink-0">
+                                        {closestGuildQuest.progress}/{closestGuildQuest.target}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 pt-1.5">
+                                      <div className="h-1.5 w-full bg-stone-900 border border-amber-500/5 rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-500"
+                                          style={{ width: `${(closestGuildQuest.progress / closestGuildQuest.target) * 100}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-2 text-center flex flex-col justify-center items-center h-full">
+                                    <span className="text-[10px] text-emerald-400 font-serif font-semibold">🏆 Todas as teses conquistadas!</span>
+                                    <span className="text-[8px] text-amber-100/30 font-serif mt-0.5">Glória eterna para a sua dinastia!</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   </section>
 
