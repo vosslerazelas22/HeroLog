@@ -11,6 +11,24 @@ import {
 } from './types';
 import { sound } from './utils/audio';
 
+interface CombatLevelUpType {
+  type: 'combat';
+  oldLevel: number;
+  newLevel: number;
+  charName: string;
+  charClass: string;
+}
+
+interface SkillLevelUpType {
+  type: 'skill';
+  skillName: string;
+  emoji: string;
+  oldLevel: number;
+  newLevel: number;
+}
+
+type LevelUpModalType = CombatLevelUpType | SkillLevelUpType;
+
 // Tabs
 import { HabitsTab } from './components/HabitsTab';
 import { DailiesTab } from './components/DailiesTab';
@@ -228,6 +246,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('focus');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
+  // Epic Level Up Modal Queue and references
+  const [levelUpQueue, setLevelUpQueue] = useState<LevelUpModalType[]>([]);
+  const lastKnownCombatLevelRef = useRef<number>(gameState.combatLevel);
+  const lastKnownSkillLevelsRef = useRef<Record<string, number>>({});
+  const isImportingRef = useRef<boolean>(false);
+
   // Sub-system Timers state
   const [timerDuration, setTimerDuration] = useState<number>(25 * 60); // Default to 25m Pomodoro
   const [timeLeft, setTimeLeft] = useState<number>(25 * 60);
@@ -328,6 +352,118 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('quest-of-mind-campaign', JSON.stringify(gameState));
   }, [gameState]);
+
+  // Track Combat and Skill Level Up
+  useEffect(() => {
+    if (gameState.skills) {
+      gameState.skills.forEach(sk => {
+        if (lastKnownSkillLevelsRef.current[sk.name] === undefined) {
+          lastKnownSkillLevelsRef.current[sk.name] = sk.level;
+        }
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const prevCombat = lastKnownCombatLevelRef.current;
+    const currentCombat = gameState.combatLevel;
+
+    if (isImportingRef.current) {
+      lastKnownCombatLevelRef.current = currentCombat;
+      if (gameState.skills) {
+        gameState.skills.forEach(sk => {
+          lastKnownSkillLevelsRef.current[sk.name] = sk.level;
+        });
+      }
+      isImportingRef.current = false;
+      return;
+    }
+
+    // Detect Combat Level Up
+    if (currentCombat > prevCombat && prevCombat > 0) {
+      setLevelUpQueue(prevQueue => [
+        ...prevQueue,
+        {
+          type: 'combat',
+          oldLevel: prevCombat,
+          newLevel: currentCombat,
+          charName: gameState.charName || 'Aventureiro',
+          charClass: gameState.charClass || 'Guerreiro'
+        }
+      ]);
+    }
+    lastKnownCombatLevelRef.current = currentCombat;
+
+    // Detect Skills Level Up
+    if (gameState.skills) {
+      gameState.skills.forEach(sk => {
+        const prevSkillLvl = lastKnownSkillLevelsRef.current[sk.name];
+        if (prevSkillLvl !== undefined && sk.level > prevSkillLvl && prevSkillLvl > 0) {
+          setLevelUpQueue(prevQueue => [
+            ...prevQueue,
+            {
+              type: 'skill',
+              skillName: sk.name,
+              emoji: sk.emoji || '🎯',
+              oldLevel: prevSkillLvl,
+              newLevel: sk.level
+            }
+          ]);
+        }
+        lastKnownSkillLevelsRef.current[sk.name] = sk.level;
+      });
+    }
+  }, [gameState.combatLevel, gameState.skills, gameState.charName, gameState.charClass]);
+
+  // Play sound when active level up changes
+  useEffect(() => {
+    if (levelUpQueue.length > 0 && !muteSfx) {
+      sound.playLevelUp();
+    }
+  }, [levelUpQueue.length, muteSfx]);
+
+  // Expose test/debug helpers to window for manual testing in DevTools
+  useEffect(() => {
+    (window as any).triggerSkillLevelUp = (skillIndex: number = 0) => {
+      setGameState(prev => {
+        const updatedSkills = prev.skills.map((sk, idx) => {
+          if (idx === skillIndex) {
+            return { ...sk, level: sk.level + 1 };
+          }
+          return sk;
+        });
+        return { ...prev, skills: updatedSkills };
+      });
+      console.log(`[Quest of Mind] Subiu o nível da habilidade no índice ${skillIndex}!`);
+    };
+
+    (window as any).triggerCombatLevelUp = () => {
+      setGameState(prev => ({
+        ...prev,
+        combatLevel: prev.combatLevel + 1
+      }));
+      console.log("[Quest of Mind] Subiu o nível de combate!");
+    };
+
+    (window as any).setSkillLevel = (skillIndex: number, level: number) => {
+      setGameState(prev => {
+        const updatedSkills = prev.skills.map((sk, idx) => {
+          if (idx === skillIndex) {
+            return { ...sk, level };
+          }
+          return sk;
+        });
+        return { ...prev, skills: updatedSkills };
+      });
+      console.log(`[Quest of Mind] Nível da habilidade ${skillIndex} definido para ${level}`);
+    };
+
+    return () => {
+      delete (window as any).triggerSkillLevelUp;
+      delete (window as any).triggerCombatLevelUp;
+      delete (window as any).setSkillLevel;
+    };
+  }, []);
 
   useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
@@ -1515,6 +1651,10 @@ export default function App() {
     addSystemLog(`🎒 DESCARTADO: Você descartou o item "${item.emoji} ${item.name}".`, false);
   };
 
+  const handleDismissLevelUp = () => {
+    setLevelUpQueue(prev => prev.slice(1));
+  };
+
   // --- HONORARY TITLES SYSTEMS TRIVIA HANDLERS ---
   const handleEquipTitle = (titleId: string | null) => {
     setGameState(prev => {
@@ -2247,6 +2387,7 @@ export default function App() {
           onConfirm: () => {
             setCustomDialog(null);
             localStorage.removeItem('quest-of-mind-campaign');
+            isImportingRef.current = true;
             setGameState(INITIAL_STATE);
             setSelectedSkillIdx(0);
             setIsWildernessChecked(false);
@@ -2297,6 +2438,7 @@ export default function App() {
           
           // Validate restoredState has correct essential fields
           if (typeof restoredState.charClass === 'string' && typeof restoredState.gold === 'number') {
+            isImportingRef.current = true;
             setGameState(restoredState);
             setIsSettingsOpen(false);
             
@@ -2371,6 +2513,7 @@ export default function App() {
       if (parsed && typeof parsed === 'object') {
         const restoredState = { ...INITIAL_STATE, ...parsed };
         if (typeof restoredState.charClass === 'string' && typeof restoredState.gold === 'number') {
+          isImportingRef.current = true;
           setGameState(restoredState);
           setIsSettingsOpen(false);
           
@@ -4941,6 +5084,178 @@ export default function App() {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
+      {/* EPIC LEVEL UP & SKILL EVOLUTION POPUP SYSTEM */}
+      <AnimatePresence>
+        {levelUpQueue.length > 0 && (() => {
+          const activeLevelUp = levelUpQueue[0];
+          if (activeLevelUp.type === 'combat') {
+            return (
+              <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
+                <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 via-transparent to-transparent pointer-events-none" />
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0, y: 30 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.85, opacity: 0, y: -30 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 120 }}
+                  className="bg-stone-950 border-2 border-amber-500 animate-level-up-glow max-w-sm sm:max-w-md w-full rounded-2xl shadow-[0_0_50px_rgba(226,176,84,0.3)] overflow-hidden font-sans relative"
+                  id="levelup-combat-modal"
+                >
+                  {/* Sparkles / Particles panel */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+                    <div className="absolute inset-0 bg-gradient-radial from-amber-500/10 via-transparent to-transparent opacity-40 animate-aura-pulsing" />
+                    {[...Array(16)].map((_, i) => {
+                      const shiftX = Math.floor(Math.random() * 240) - 120;
+                      const rotate = Math.floor(Math.random() * 360);
+                      const duration = 1.5 + Math.random() * 2;
+                      const delay = Math.random() * 1.5;
+                      const size = 6 + Math.floor(Math.random() * 8);
+                      const left = 15 + Math.floor(Math.random() * 70);
+                      return (
+                        <div
+                          key={i}
+                          className="absolute bottom-[-20px] text-amber-400 select-none pointer-events-none opacity-0 rising-spark flex items-center justify-center"
+                          style={{
+                            left: `${left}%`,
+                            '--shift-x': shiftX,
+                            '--rotate': rotate,
+                            '--duration': `${duration}s`,
+                            animationDelay: `${delay}s`,
+                            fontSize: `${size}px`
+                          } as React.CSSProperties}
+                        >
+                          ✦
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Content wrapper */}
+                  <div className="relative z-10 p-6 sm:p-8 text-center space-y-6">
+                    <div className="flex justify-center">
+                      <div className="w-20 h-20 bg-stone-900 border-2 border-amber-500 rounded-full flex items-center justify-center shadow-lg relative bg-gradient-to-b from-stone-800 to-stone-950">
+                        <span className="text-4xl animate-bounce">⚔️</span>
+                        <div className="absolute inset-0 rounded-full bg-amber-500/10 animate-ping" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="text-[10px] sm:text-xs uppercase font-serif tracking-widest text-[#E2B054] font-black">
+                        Você evoluiu!
+                      </h3>
+                      <h2 className="text-2xl sm:text-3xl font-serif font-black tracking-wider text-amber-300 drop-shadow-[0_2px_10px_rgba(226,176,84,0.4)]">
+                        LEVEL UP!
+                      </h2>
+                      <p className="text-sm sm:text-base font-serif font-semibold text-amber-100/90 tracking-wide leading-relaxed">
+                        {activeLevelUp.charName.toUpperCase()} ALCANÇOU O <span className="text-[#E2B054] text-lg sm:text-xl font-bold block sm:inline mt-1 sm:mt-0">NÍVEL {activeLevelUp.newLevel}</span>
+                      </p>
+                      <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mx-auto my-3" />
+                      <div className="space-y-2 mt-3">
+                        <p className="text-xs text-amber-100/60 font-serif italic max-w-xs mx-auto leading-relaxed">
+                          O conhecimento fortalece o guerreiro.
+                        </p>
+                        <p className="text-xs text-amber-100/65 font-serif italic max-w-xs mx-auto leading-relaxed">
+                          Continue avançando.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={handleDismissLevelUp}
+                        className="w-full px-8 py-3 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-300 text-stone-950 font-serif font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            );
+          } else {
+            return (
+              <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
+                <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0, y: 30 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.85, opacity: 0, y: -30 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 120 }}
+                  className="bg-stone-950 border-2 border-emerald-500 animate-skill-up-glow max-w-sm sm:max-w-md w-full rounded-2xl shadow-[0_0_50px_rgba(52,211,153,0.25)] overflow-hidden font-sans relative"
+                  id="levelup-skill-modal"
+                >
+                  {/* Sparkles / Particles panel */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+                    <div className="absolute inset-0 bg-gradient-radial from-emerald-500/10 via-transparent to-transparent opacity-40 animate-aura-pulsing" />
+                    {[...Array(16)].map((_, i) => {
+                      const shiftX = Math.floor(Math.random() * 240) - 120;
+                      const rotate = Math.floor(Math.random() * 360);
+                      const duration = 1.5 + Math.random() * 2;
+                      const delay = Math.random() * 1.5;
+                      const size = 6 + Math.floor(Math.random() * 8);
+                      const left = 15 + Math.floor(Math.random() * 70);
+                      return (
+                        <div
+                          key={i}
+                          className="absolute bottom-[-20px] text-emerald-400 select-none pointer-events-none opacity-0 rising-spark flex items-center justify-center"
+                          style={{
+                            left: `${left}%`,
+                            '--shift-x': shiftX,
+                            '--rotate': rotate,
+                            '--duration': `${duration}s`,
+                            animationDelay: `${delay}s`,
+                            fontSize: `${size}px`
+                          } as React.CSSProperties}
+                        >
+                          ✦
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Content wrapper */}
+                  <div className="relative z-10 p-6 sm:p-8 text-center space-y-6">
+                    <div className="flex justify-center">
+                      <div className="w-20 h-20 bg-stone-900 border-2 border-emerald-500 rounded-full flex items-center justify-center shadow-lg relative bg-gradient-to-b from-stone-800 to-stone-950">
+                        <span className="text-4xl animate-bounce">{activeLevelUp.emoji}</span>
+                        <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="text-[10px] sm:text-xs uppercase font-serif tracking-widest text-[#34D399] font-black">
+                        Mente Expandida!
+                      </h3>
+                      <h2 className="text-xl sm:text-2xl font-serif font-black tracking-wider text-emerald-400 drop-shadow-[0_2px_10px_rgba(52,211,153,0.35)]">
+                        MAESTRIA APRIMORADA
+                      </h2>
+                      <p className="text-xs sm:text-sm font-sans font-medium text-amber-100/90 leading-tight">
+                        A habilidade <span className="text-[#34D399] font-bold block mt-0.5">{activeLevelUp.skillName}</span>
+                      </p>
+                      <p className="text-sm sm:text-base font-serif font-semibold text-amber-200 mt-2">
+                        evoluiu para o <span className="text-emerald-400 text-lg sm:text-xl font-black block sm:inline mt-1 sm:mt-0">NÍVEL {activeLevelUp.newLevel}</span>
+                      </p>
+                      <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent mx-auto my-3" />
+                      <p className="text-[11px] text-amber-100/50 font-serif italic max-w-xs mx-auto leading-normal">
+                        Seus canais sinápticos e sabedoria prática alcançaram um novo patamar de refinamento cognitivo.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={handleDismissLevelUp}
+                        className="w-full px-8 py-3 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-500 hover:to-emerald-300 text-stone-950 font-serif font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            );
+          }
+        })()}
       </AnimatePresence>
 
     </div>
