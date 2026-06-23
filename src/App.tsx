@@ -11,6 +11,8 @@ import {
 } from './types';
 import { sound } from './utils/audio';
 import { useGameState } from './hooks/useGameState';
+import { useAuth } from './hooks/useAuth';
+import { AuthGate, SyncIndicator } from './components/AuthGate';
 
 interface CombatLevelUpType {
   type: 'combat';
@@ -116,9 +118,23 @@ const SKILL_SUGGESTIONS = [
 
 const SKILL_EMOJIS = ['📚', '💻', '🧠', '✍️', '🗣️', '🏋️', '🎨', '🍳', '🔬', '🧘', '🎵', '💰', '💼', '🧪', '🛡️', '🎯'];
 
-export default function App() {
-  // Master Game State
-  const { gameState, setGameState, resetGameState, importGameState } = useGameState();
+interface AppProps {
+  userId: string;
+  signOut: () => Promise<void>;
+}
+
+function App({ userId, signOut }: AppProps) {
+  // Ref para o onConflict — permite usar setCustomDialog antes de ele ser declarado
+  const onConflictRef = useRef<((r: any, l: any) => Promise<'remote' | 'local'>) | null>(null);
+
+  // Master Game State — sync com Supabase via userId
+  const { gameState, setGameState, resetGameState, importGameState, syncStatus } = useGameState({
+    user: { id: userId },
+    onConflict: (remoteState, localState) =>
+      onConflictRef.current
+        ? onConflictRef.current(remoteState, localState)
+        : Promise.resolve<'remote' | 'local'>('remote'),
+  });
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<string>('focus');
@@ -258,7 +274,23 @@ export default function App() {
     message: string;
     isConfirm: boolean;
     onConfirm: () => void;
+    onCancel?: () => void;
   } | null>(null);
+
+  // Injeta handler de conflito de sync agora que setCustomDialog está disponível
+  onConflictRef.current = (_remoteState: any, _localState: any) =>
+    new Promise<'remote' | 'local'>((resolve) => {
+      setCustomDialog({
+        isOpen: true,
+        title: '⚡ Save mais recente encontrado',
+        message:
+          'Encontramos um progresso mais recente salvo na nuvem. ' +
+          'Usar o save da nuvem ou manter o progresso local atual?',
+        isConfirm: true,
+        onConfirm: () => { setCustomDialog(null); resolve('remote'); },
+        onCancel: () => resolve('local'),
+      });
+    });
 
   const [rewardsModalData, setRewardsModalData] = useState<{
     visible: boolean;
@@ -5359,6 +5391,17 @@ export default function App() {
                   </button>
                 </div>
 
+                {/* Logout */}
+                <div className="border-t border-amber-500/10 pt-4 space-y-1.5">
+                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">Conta</span>
+                  <button
+                    onClick={signOut}
+                    className="w-full py-2 bg-stone-900 border border-stone-700 hover:border-red-500/40 text-stone-400 hover:text-red-400 text-xs font-serif uppercase tracking-widest rounded transition-all cursor-pointer"
+                  >
+                    Sair da conta (logout)
+                  </button>
+                </div>
+
                 <div className="flex gap-2.5">
                   <button
                     onClick={() => {
@@ -5418,7 +5461,11 @@ export default function App() {
                     </button>
                     <button
                       id="rpg-dialog-btn-cancel"
-                      onClick={() => setCustomDialog(null)}
+                      onClick={() => {
+                        const cancel = customDialog?.onCancel;
+                        setCustomDialog(null);
+                        cancel?.();
+                      }}
                       className="px-4 py-2 bg-stone-900 border border-amber-500/20 hover:border-amber-500/40 text-amber-100/60 text-xs font-serif uppercase tracking-widest rounded cursor-pointer transition-all min-w-[80px]"
                     >
                       Cancelar
@@ -5762,6 +5809,21 @@ export default function App() {
         })()}
       </AnimatePresence>
 
+      {/* Indicador de sincronização com Supabase */}
+      <SyncIndicator status={syncStatus} />
+
     </div>
+  );
+}
+
+export default function AppWithAuth() {
+  const { user, loading, sendMagicLink, signOut } = useAuth();
+
+  return (
+    <AuthGate user={user} loading={loading} sendMagicLink={sendMagicLink} signOut={signOut}>
+      {({ userId, signOut: so }) => (
+        <App userId={userId} signOut={so} />
+      )}
+    </AuthGate>
   );
 }
