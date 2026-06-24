@@ -35,7 +35,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-  VITE_ALLOW_PASSWORD_LOGIN: ${{ secrets.VITE_ALLOW_PASSWORD_LOGIN }}
+        VITE_ALLOW_PASSWORD_LOGIN: ${{ secrets.VITE_ALLOW_PASSWORD_LOGIN }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
