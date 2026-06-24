@@ -98,8 +98,6 @@ const STATIC_QUOTES = [
   ['"A única maneira de fazer um ótimo trabalho é amar o que você faz."', '— Steve Jobs'],
 ];
 
-const { user, loading } = useAuth();
-
 const SKILL_SUGGESTIONS = [
   { name: 'Estudos', emoji: '📚' },
   { name: 'Foco Profundo', emoji: '🧠' },
