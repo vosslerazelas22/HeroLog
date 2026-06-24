@@ -10,6 +10,7 @@ import {
   BuffType,
 } from './types';
 import { sound } from './utils/audio';
+import { useGameState } from './hooks/useGameState';
 
 interface CombatLevelUpType {
   type: 'combat';
@@ -115,143 +116,9 @@ const SKILL_SUGGESTIONS = [
 
 const SKILL_EMOJIS = ['📚', '💻', '🧠', '✍️', '🗣️', '🏋️', '🎨', '🍳', '🔬', '🧘', '🎵', '💰', '💼', '🧪', '🛡️', '🎯'];
 
-const INITIAL_STATE: CharacterState = {
-  gold: 200, // starts with some pocket coins
-  totalXP: 0,
-  totalGoldEarned: 200,
-  totalSessions: 0,
-  totalMinutes: 0,
-  combatLevel: 1,
-  combatXP: 0,
-  skills: [
-    { name: 'Código Sagrado (Programação)', level: 1, xp: 0, emoji: '💻', prestige: 0, tags: ['React Backend', 'Vite CSS', 'Solução de Bugs'] },
-    { name: 'Alquimia & Foco Geral', level: 1, xp: 0, emoji: '🧪', prestige: 0, tags: ['Exercício Físico', 'Planejamento Semanal', 'Meditação'] },
-    { name: 'Sábias Letras (Leitura)', level: 1, xp: 0, emoji: '📚', prestige: 0, tags: ['Direito Civil', 'História Geral', 'Filosofia Estoica'] },
-  ],
-  history: [],
-  inventory: [],
-  streak: 0,
-  bestStreak: 0,
-  lastStudyDate: null,
-  wildernessWins: 0,
-  combo: 0,
-  dungeonProgress: 0,
-  achievements: [],
-  charName: 'Aventureiro do Foco',
-  charClass: 'Mage',
-  equippedTitle: null,
-  ownedTitles: [],
-  todayXP: 0,
-  todayMinutes: 0,
-  todayDate: new Date().toDateString(),
-  hasClaimedLogin: false,
-  hp: 50,
-  maxHp: 50,
-  habits: [
-    {
-      id: 'h-1',
-      title: '30 min de leitura',
-      notes: 'Desenvolver sabedoria em livros sagrados',
-      up: true,
-      down: false,
-      difficulty: 'Easy',
-      upCount: 0,
-      downCount: 0,
-      streak: 0,
-      tags: ['study']
-    },
-    {
-      id: 'h-2',
-      title: 'Tomar creatina',
-      notes: 'Suplemento da força milenar',
-      up: true,
-      down: false,
-      difficulty: 'Trivial',
-      upCount: 0,
-      downCount: 0,
-      streak: 0,
-      tags: ['workout']
-    },
-    {
-      id: 'h-3',
-      title: 'Estudar / procrastinar',
-      notes: 'Estudar 1 hora ganha +, procrastinar ganha -',
-      up: true,
-      down: true,
-      difficulty: 'Medium',
-      upCount: 0,
-      downCount: 0,
-      streak: 0,
-      tags: ['study']
-    }
-  ],
-  dailies: [
-    {
-      id: 'd-1',
-      title: 'Duolingo',
-      notes: 'Lição diária de idiomas estrangeiros',
-      difficulty: 'Easy',
-      completed: false,
-      streak: 62,
-      repeats: 'Daily',
-      every: 1,
-      tags: ['study'],
-      checklist: []
-    },
-    {
-      id: 'd-2',
-      title: 'Remédio da Milk',
-      notes: 'Dar medicação da querida companheira',
-      difficulty: 'Trivial',
-      completed: false,
-      streak: 5,
-      repeats: 'Daily',
-      every: 1,
-      tags: [],
-      checklist: []
-    }
-  ],
-  todos: [
-    {
-      id: 't-1',
-      title: 'Ler WAY OF THE KINGS',
-      notes: 'Completar o capítulo pendente do épico de Brandon Sanderson',
-      difficulty: 'Medium',
-      completed: false,
-      tags: ['study'],
-      checklist: []
-    }
-  ],
-  equippedEquipment: [null, null, null],
-  longBreakMinutes: 15
-};
-
 export default function App() {
   // Master Game State
-  const [gameState, setGameState] = useState<CharacterState>(() => {
-    try {
-      const saved = localStorage.getItem('quest-of-mind-campaign');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Ensure standard structure is fully defined and fallback skills
-        const baseState = { ...INITIAL_STATE, ...parsed };
-        if (baseState.skills) {
-          baseState.skills = baseState.skills.map((sk: any, idx: number) => ({
-            ...sk,
-            emoji: sk.emoji || (idx === 0 ? '💻' : idx === 1 ? '🧪' : idx === 2 ? '📚' : '🎯'),
-            prestige: sk.prestige ?? 0
-          }));
-        }
-        if (!baseState.equippedEquipment || !Array.isArray(baseState.equippedEquipment) || baseState.equippedEquipment.length < 3) {
-          baseState.equippedEquipment = [null, null, null];
-        }
-        return baseState;
-      }
-    } catch {
-      // fallback
-    }
-    return INITIAL_STATE;
-  });
+  const { gameState, setGameState, resetGameState, importGameState } = useGameState();
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<string>('focus');
@@ -435,11 +302,6 @@ export default function App() {
   const isRunningRef = useRef(false);
   const isPausedRef = useRef(false);
   const timerDurationRef = useRef(25 * 60);
-
-  // Synchronization with LocalStorage
-  useEffect(() => {
-    localStorage.setItem('quest-of-mind-campaign', JSON.stringify(gameState));
-  }, [gameState]);
 
   // Track Combat and Skill Level Up
   useEffect(() => {
@@ -3040,9 +2902,8 @@ export default function App() {
           isConfirm: true,
           onConfirm: () => {
             setCustomDialog(null);
-            localStorage.removeItem('quest-of-mind-campaign');
             isImportingRef.current = true;
-            setGameState(INITIAL_STATE);
+            resetGameState();
             setSelectedSkillIdx(0);
             setIsWildernessChecked(false);
             setSessionNotes('');
@@ -3086,29 +2947,22 @@ export default function App() {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        if (parsed && typeof parsed === 'object') {
-          // Merge with initial state to guarantee defaults
-          const restoredState = { ...INITIAL_STATE, ...parsed };
+        if (parsed && typeof parsed === 'object' &&
+            typeof parsed.charClass === 'string' && typeof parsed.gold === 'number') {
+          isImportingRef.current = true;
+          const restoredState = importGameState(parsed);
+          setIsSettingsOpen(false);
           
-          // Validate restoredState has correct essential fields
-          if (typeof restoredState.charClass === 'string' && typeof restoredState.gold === 'number') {
-            isImportingRef.current = true;
-            setGameState(restoredState);
-            setIsSettingsOpen(false);
-            
-            setCustomDialog({
-              isOpen: true,
-              title: '📜 Gravação Restaurada!',
-              message: `Os pergaminhos lendários de ${restoredState.charName || 'Aventureiro'} foram aplicados às runas com sucesso!`,
-              isConfirm: false,
-              onConfirm: () => setCustomDialog(null)
-            });
-            addSystemLog(`🔮 Portal Cósmico: Conexão bem-sucedida! Registro do aventureiro ${restoredState.charName} foi importado com sucesso.`, true);
-          } else {
-            throw new Error('Conteúdo inválido');
-          }
+          setCustomDialog({
+            isOpen: true,
+            title: '📜 Gravação Restaurada!',
+            message: `Os pergaminhos lendários de ${restoredState.charName || 'Aventureiro'} foram aplicados às runas com sucesso!`,
+            isConfirm: false,
+            onConfirm: () => setCustomDialog(null)
+          });
+          addSystemLog(`🔮 Portal Cósmico: Conexão bem-sucedida! Registro do aventureiro ${restoredState.charName} foi importado com sucesso.`, true);
         } else {
-          throw new Error('Formato inválido');
+          throw new Error('Conteúdo inválido');
         }
       } catch (err) {
         setCustomDialog({
@@ -3164,26 +3018,22 @@ export default function App() {
     if (!saveText || !saveText.trim()) return;
     try {
       const parsed = JSON.parse(saveText.trim());
-      if (parsed && typeof parsed === 'object') {
-        const restoredState = { ...INITIAL_STATE, ...parsed };
-        if (typeof restoredState.charClass === 'string' && typeof restoredState.gold === 'number') {
-          isImportingRef.current = true;
-          setGameState(restoredState);
-          setIsSettingsOpen(false);
-          
-          setCustomDialog({
-            isOpen: true,
-            title: '📜 Gravação Restaurada!',
-            message: `Os pergaminhos lendários de ${restoredState.charName || 'Aventureiro'} foram aplicados às runas com sucesso!`,
-            isConfirm: false,
-            onConfirm: () => setCustomDialog(null)
-          });
-          addSystemLog(`🔮 Código Rúnico: Registro do aventureiro ${restoredState.charName} foi importado com sucesso.`, true);
-        } else {
-          throw new Error('Conteúdo inválido');
-        }
+      if (parsed && typeof parsed === 'object' &&
+          typeof parsed.charClass === 'string' && typeof parsed.gold === 'number') {
+        isImportingRef.current = true;
+        const restoredState = importGameState(parsed);
+        setIsSettingsOpen(false);
+        
+        setCustomDialog({
+          isOpen: true,
+          title: '📜 Gravação Restaurada!',
+          message: `Os pergaminhos lendários de ${restoredState.charName || 'Aventureiro'} foram aplicados às runas com sucesso!`,
+          isConfirm: false,
+          onConfirm: () => setCustomDialog(null)
+        });
+        addSystemLog(`🔮 Código Rúnico: Registro do aventureiro ${restoredState.charName} foi importado com sucesso.`, true);
       } else {
-        throw new Error('Formato inválido');
+        throw new Error('Conteúdo inválido');
       }
     } catch (err) {
       setCustomDialog({
