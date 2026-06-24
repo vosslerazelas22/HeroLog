@@ -5829,7 +5829,7 @@ export default function AppWithAuth() {
     signOut={signOut}
   >
     {({ userId, signOut }) => (
-      <YourGameComponent userId={userId} signOut={signOut} />
+      <App userId={userId} signOut={signOut} />
     )}
   </AuthGate>
 );
