@@ -34,6 +34,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+    VITE_ALLOW_PASSWORD_LOGIN: 'true'
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
