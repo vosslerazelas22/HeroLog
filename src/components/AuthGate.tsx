@@ -28,7 +28,7 @@ function LoginScreen({
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const isDev = import.meta.env.DEV;
+  const isDev = import.meta.env.VITE_ALLOW_PASSWORD_LOGIN === 'true';
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
