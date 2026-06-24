@@ -1,3 +1,4 @@
+import { sendMagicLink, signInWithPassword, signOut } from './lib/auth';
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -96,6 +97,8 @@ const STATIC_QUOTES = [
   ['"O obstáculo é o caminho."', '— Ryan Holiday'],
   ['"A única maneira de fazer um ótimo trabalho é amar o que você faz."', '— Steve Jobs'],
 ];
+
+const { user, loading } = useAuth();
 
 const SKILL_SUGGESTIONS = [
   { name: 'Estudos', emoji: '📚' },
@@ -5820,10 +5823,15 @@ export default function AppWithAuth() {
   const { user, loading, sendMagicLink, signOut } = useAuth();
 
   return (
-    <AuthGate user={user} loading={loading} sendMagicLink={sendMagicLink} signOut={signOut}>
-      {({ userId, signOut: so }) => (
-        <App userId={userId} signOut={so} />
-      )}
-    </AuthGate>
-  );
-}
+  <AuthGate
+    user={user}
+    loading={loading}
+    sendMagicLink={sendMagicLink}
+    signInWithPassword={signInWithPassword}
+    signOut={signOut}
+  >
+    {({ userId, signOut }) => (
+      <YourGameComponent userId={userId} signOut={signOut} />
+    )}
+  </AuthGate>
+);
