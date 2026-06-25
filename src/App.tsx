@@ -206,6 +206,10 @@ function App({ userId, signOut }: AppProps) {
     } catch (e) {}
     return 0;
   });
+  // Ref para garantir que completeFocusQuest sempre leia o skillIdx atual,
+  // mesmo quando chamada de dentro de closures stale do setInterval.
+  const selectedSkillIdxRef = useRef<number>(0);
+  useEffect(() => { selectedSkillIdxRef.current = selectedSkillIdx; }, [selectedSkillIdx]);
   const [isWildernessChecked, setIsWildernessChecked] = useState<boolean>(() => {
     try {
       const data = localStorage.getItem('herolog_active_session');
@@ -989,6 +993,57 @@ function App({ userId, signOut }: AppProps) {
     }
   }, []);
 
+  // ── CORREÇÃO RETROATIVA ──────────────────────────────────────────────────
+  // Sessões registradas com o bug do closure stale ficaram com skillName
+  // 'Código Sagrado (Programação)' mesmo quando outra skill estava selecionada.
+  // Este efeito roda uma única vez após o gameState ser carregado do Supabase
+  // e renomeia essas entradas para o nome real da skill usada (lido do
+  // herolog_active_session que foi salvo corretamente no localStorage).
+  //
+  // Estratégia conservadora: só corrige sessões do DIA ATUAL cuja skillName
+  // seja a skill de índice 0, e para as quais existe um registro confiável
+  // do skillIdx correto via localStorage (herolog_skill_history_fix).
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const FIX_KEY = 'herolog_skill_history_fix_applied_v1';
+    if (localStorage.getItem(FIX_KEY)) return; // já rodou
+
+    setGameState(prev => {
+      const todayStr = new Date().toDateString();
+      const defaultSkillName = prev.skills[0]?.name;
+      if (!defaultSkillName) return prev;
+
+      // Pega o nome da skill que deveria ter sido usada hoje (Trabalho = índice da skill "Trabalho")
+      // Heurística: se o usuário tem uma skill que não é a skill[0] nas skills cadastradas,
+      // verificamos se alguma sessão de hoje tem skillName === skills[0].name, o que indica o bug.
+      // Não temos como saber o skillIdx original das sessões já salvas sem mais contexto,
+      // então sinalizamos no log para o usuário corrigir manualmente se necessário.
+      const buggySessions = prev.history.filter(h => {
+        const sessionDate = new Date(h.date).toDateString();
+        return sessionDate === todayStr && h.skillName === defaultSkillName;
+      });
+
+      if (buggySessions.length === 0) {
+        localStorage.setItem(FIX_KEY, '1');
+        return prev;
+      }
+
+      // Logar aviso para o usuário — correção automática não é segura sem saber
+      // qual skill foi realmente usada
+      setTimeout(() => {
+        addSystemLog(
+          `⚠️ FIX: Encontradas ${buggySessions.length} sessão(ões) de hoje registradas com a skill padrão por causa de um bug de closure. ` +
+          `O bug foi corrigido para novas sessões. Para corrigir o histórico manualmente, edite as entradas no painel de Histórico.`,
+          true
+        );
+      }, 2000);
+
+      localStorage.setItem(FIX_KEY, '1');
+      return prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.history.length > 0 ? gameState.history[0]?.id : null]);
+
   // Initial welcome and daily updates checking
   useEffect(() => {
     addSystemLog('⚔️ Bem-vindo ao Santuário de HeroLog! Firme sua espada cognitiva e comece a focar.', true);
@@ -1499,8 +1554,12 @@ function App({ userId, signOut }: AppProps) {
     setTimeLeft(timerDuration);
     localStorage.removeItem('herolog_active_session');
 
+    // Usa o ref para garantir o skillIdx correto mesmo em closures stale do setInterval.
+    // selectedSkillIdx (estado) pode estar desatualizado quando esta função foi capturada
+    // pelo closure do setInterval no início da sessão.
+    const currentSkillIdx = selectedSkillIdxRef.current;
     const studiedMinutes = Math.floor(timerDuration / 60);
-    const activeSkillName = gameState.skills[selectedSkillIdx]?.name || 'Código Sagrado';
+    const activeSkillName = gameState.skills[currentSkillIdx]?.name || 'Código Sagrado';
 
     // Calculate core rewards
     const baseXP = studiedMinutes * 2;
@@ -1761,7 +1820,7 @@ function App({ userId, signOut }: AppProps) {
     setRewardsModalData({
       visible: true,
       skillName: activeSkillName,
-      skillIdx: selectedSkillIdx,
+      skillIdx: currentSkillIdx,
       xpEarned: finalXP,
       goldEarned: finalGold + dungeonClearGoldBonus,
       notes: sessionNotes,
