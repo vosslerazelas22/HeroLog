@@ -969,18 +969,39 @@ function App({ userId, signOut }: AppProps) {
           if (session.endTime > Date.now()) {
             const endTime = session.endTime;
             focusEndTimeRef.current = endTime;
+
+            // ── CORREÇÃO: Restaurar estado completo da sessão ──────────────
+            // Sem isso, selectedSkillIdx, timerDuration e modos voltam para
+            // os valores padrão, fazendo completeFocusQuest() registrar
+            // a skill errada com o tempo padrão.
+            setSelectedSkillIdx(session.skillIdx);
+            setTimerDuration(session.duration / 1000);
+            setIsDungeonMode(!!session.isDungeon);
+            setIsWildernessChecked(!!session.isWilderness);
+            setIsRunning(true);
+            setIsPaused(false);
+            setIsBreakActive(false);
+            setIsBreakPrep(false);
+
+            // Calcular tempo restante preciso em relação ao endTime absoluto
+            const initialRemaining = Math.max(0, Math.round((endTime - Date.now()) / 1000));
+            setTimeLeft(initialRemaining);
+            // ──────────────────────────────────────────────────────────────
+
             addSystemLog(`⚔️ Recuperando portal rúnico! Jornada ativa restaurada com sucesso para a habilidade selecionada.`, true);
             
             triggerRandomAmbientEncounterScheduler();
 
             timerIntervalRef.current = setInterval(() => {
-              setTimeLeft(prev => {
-                if (prev <= 1) {
+              const now = Date.now();
+              const remaining = Math.max(0, Math.round((endTime - now) / 1000));
+              setTimeLeft(() => {
+                if (remaining <= 0) {
                   clearInterval(timerIntervalRef.current!);
                   completeFocusQuest();
                   return 0;
                 }
-                return prev - 1;
+                return remaining;
               });
             }, 1000);
           } else {
@@ -1293,13 +1314,13 @@ function App({ userId, signOut }: AppProps) {
       const now = Date.now();
       const remaining = Math.max(0, Math.round((endTime - now) / 1000));
       
-      setTimeLeft(prev => {
-        if (prev <= 1) {
+      setTimeLeft(() => {
+        if (remaining <= 0) {
           clearInterval(timerIntervalRef.current!);
           completeFocusQuest();
           return 0;
         }
-        return prev - 1;
+        return remaining;
       });
     }, 1000);
   };
@@ -1328,13 +1349,15 @@ function App({ userId, signOut }: AppProps) {
       localStorage.setItem('herolog_active_session', JSON.stringify(activeSession));
 
       timerIntervalRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.round((endTime - now) / 1000));
+        setTimeLeft(() => {
+          if (remaining <= 0) {
             clearInterval(timerIntervalRef.current!);
             completeFocusQuest();
             return 0;
           }
-          return prev - 1;
+          return remaining;
         });
       }, 1000);
     } else {
@@ -4221,6 +4244,10 @@ function App({ userId, signOut }: AppProps) {
                               <div
                                 key={idx}
                                 onClick={() => {
+                                  if (isRunning || isBreakActive) {
+                                    addSystemLog(`⚠️ Não é possível trocar de habilidade durante uma jornada de foco ou descanso ativo.`);
+                                    return;
+                                  }
                                   setSelectedSkillIdx(idx);
                                 }}
                                 className={`relative bg-stone-950/40 border-2 rounded p-2.5 flex flex-col items-center justify-between text-center transition-all cursor-pointer h-[115px] select-none group min-w-0 ${
