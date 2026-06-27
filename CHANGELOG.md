@@ -7,6 +7,31 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.7] - 2026-06-26
+
+### Adicionado
+
+- **Acesso direto às configurações de tarefas** — clicar em qualquer área neutra do cartão de um Hábito, Diária ou Afazer abre automaticamente o painel flutuante de edição. Propagação de clique contida (`stopPropagation`) nos botões de ação específicos de cada cartão para evitar conflitos de eventos.
+
+### Alterado
+
+- **Tela de Missão Concluída** — refinamento estético completo da interface de celebração ao término de um ciclo Pomodoro, tornando a conquista mais imersiva e gratificante.
+- **Tela de Descanso** — ajustes semânticos e motivacionais nos diálogos e indicadores da interface de pausa entre ciclos, promovendo melhor transição mental.
+- **Modal de Level Up de Habilidade** — atualização de textos e registro nos logs do sistema:
+  - *Tagline*: `"Novo patamar alcançado."`
+  - *Título*: `"MAESTRIA APRIMORADA"` em tipografia serifada de alto impacto.
+  - *Corpo*: `"Nenhum nível é concedido por acaso. Este foi conquistado minuto após minuto."`
+  - *Log do Sistema*: padronizado com emoji de livros — `📚 {Nome da Habilidade} alcançou o Nível {Novo Nível}.`
+
+### Arquivos alterados
+
+- `/src/App.tsx` — tela de missão concluída, tela de descanso e modal de level up de habilidade.
+- `/src/components/HabitsTab.tsx` — acesso direto às configurações via clique no cartão.
+- `/src/components/DailiesTab.tsx` — acesso direto às configurações via clique no cartão.
+- `/src/components/TodosTab.tsx` — acesso direto às configurações via clique no cartão.
+
+---
+
 ## [1.0.6] - 2026-06-23
  
 ### Adicionado
