@@ -125,7 +125,8 @@ interface AppProps {
 }
 
 const MOBILE_SIDEBAR_WIDTH = 256;
-const MOBILE_SIDEBAR_OPEN_THRESHOLD = 80;
+const MOBILE_SIDEBAR_EDGE_HITBOX_WIDTH = 44;
+const MOBILE_SIDEBAR_OPEN_THRESHOLD = 72;
 const MOBILE_SIDEBAR_CLOSE_THRESHOLD = 176;
 
 function App({ userId, signOut }: AppProps) {
@@ -147,6 +148,7 @@ function App({ userId, signOut }: AppProps) {
   const [mobileSidebarDragX, setMobileSidebarDragX] = useState<number>(0);
   const [isMobileSidebarDragging, setIsMobileSidebarDragging] = useState<boolean>(false);
   const mobileSidebarDragRef = useRef({
+    active: false,
     startX: 0,
     startY: 0,
     startOpen: false,
@@ -3202,6 +3204,7 @@ function App({ userId, signOut }: AppProps) {
     const initialExposed = startOpen ? MOBILE_SIDEBAR_WIDTH : 0;
 
     mobileSidebarDragRef.current = {
+      active: true,
       startX: event.clientX,
       startY: event.clientY,
       startOpen,
@@ -3214,9 +3217,8 @@ function App({ userId, signOut }: AppProps) {
   };
 
   const updateMobileSidebarDrag = (event: React.PointerEvent<HTMLElement>) => {
-    if (!isMobileSidebarDragging) return;
-
     const drag = mobileSidebarDragRef.current;
+    if (!drag.active) return;
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
 
@@ -3239,17 +3241,18 @@ function App({ userId, signOut }: AppProps) {
   };
 
   const endMobileSidebarDrag = (event: React.PointerEvent<HTMLElement>) => {
-    if (!isMobileSidebarDragging) return;
+    const drag = mobileSidebarDragRef.current;
+    if (!drag.active) return;
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    const drag = mobileSidebarDragRef.current;
     const shouldOpen = drag.startOpen
       ? drag.lastExposed >= MOBILE_SIDEBAR_CLOSE_THRESHOLD
       : drag.lastExposed >= MOBILE_SIDEBAR_OPEN_THRESHOLD;
 
+    drag.active = false;
     setIsMobileSidebarOpen(shouldOpen);
     setMobileSidebarDragX(shouldOpen ? MOBILE_SIDEBAR_WIDTH : 0);
     setIsMobileSidebarDragging(false);
@@ -3547,8 +3550,8 @@ function App({ userId, signOut }: AppProps) {
             onPointerMove={updateMobileSidebarDrag}
             onPointerUp={endMobileSidebarDrag}
             onPointerCancel={endMobileSidebarDrag}
-            className="fixed left-0 top-0 h-dvh w-7 z-30 lg:hidden"
-            style={{ touchAction: 'pan-y' }}
+            className="fixed left-0 top-0 h-dvh z-30 lg:hidden"
+            style={{ width: MOBILE_SIDEBAR_EDGE_HITBOX_WIDTH, touchAction: 'pan-y' }}
             aria-hidden="true"
           />
         )}
