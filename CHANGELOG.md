@@ -7,6 +7,24 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.10] - 2026-06-27
+
+### Adicionado
+
+- **Reset diário de Daily Quests** — recompensas de Proclamações do Dia agora são registradas com a data do dia, permitindo que a mesma quest diária volte a ser reivindicável em dias seguintes.
+
+### Alterado
+
+- **Claims de quests** — Daily Quests passam a usar chaves datadas (`claimed_daily_*_<data>`), enquanto Guild Quests permanecem com reivindicação única por save.
+- **Mural de Contratos Ativos** — o resumo da aba de Foco usa a mesma regra de claim diário datado do painel completo de Quests.
+
+### Arquivos alterados
+
+- `/src/App.tsx` — atualizado o handler de resgate de quests e o resumo do Mural de Contratos Ativos.
+- `/src/components/QuestsTab.tsx` — adicionada leitura de claims diários por data, preservando compatibilidade com claims antigos do mesmo dia.
+
+---
+
 ## [1.0.9] - 2026-06-27
 
 ### Corrigido
