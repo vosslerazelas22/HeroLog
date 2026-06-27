@@ -9,6 +9,16 @@ interface QuestsTabProps {
 }
 
 export const QuestsTab: React.FC<QuestsTabProps> = ({ state, onClaimQuestReward }) => {
+  const todayClaimKey = new Date().toDateString();
+  const isQuestClaimed = (questId: string) => {
+    const claimHistory = state.achievements || [];
+    if (!questId.startsWith('daily_')) return claimHistory.includes(`claimed_${questId}`);
+
+    const datedClaim = `claimed_${questId}_${todayClaimKey}`;
+    const legacyClaimFromToday = state.todayDate === todayClaimKey && claimHistory.includes(`claimed_${questId}`);
+    return claimHistory.includes(datedClaim) || legacyClaimFromToday;
+  };
+
   // We establish standard quests built on current study metrics dynamically
   const dailyQuests = [
     {
@@ -82,7 +92,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({ state, onClaimQuestReward 
     const isCompleted = q.progress >= q.target;
     // Checked if this quest is already claimed (we can save claimed quests array if desired,
     // but a lightweight pattern checks if they successfully fulfill states or toggled state tracker)
-    const isClaimed = state.achievements.includes(`claimed_${q.id}`);
+    const isClaimed = isQuestClaimed(q.id);
 
     return (
       <div
