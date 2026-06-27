@@ -7,6 +7,18 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.9] - 2026-06-27
+
+### Corrigido
+
+- **Gesto de puxar a aba lateral** — estabilizado o rastreamento do arraste em mobile, evitando falhas intermitentes quando o primeiro movimento acontece antes da atualização visual do estado. A área sensível da borda também foi ampliada para melhorar a pegada do gesto.
+
+### Arquivos alterados
+
+- `/src/App.tsx` — ajustados o rastreamento interno do gesto, a largura da faixa lateral sensível ao toque e o threshold de abertura.
+
+---
+
 ## [1.0.8] - 2026-06-27
 
 ### Adicionado
