@@ -742,7 +742,7 @@ function App({ userId, signOut }: AppProps) {
             currentLevel += 1;
             xpRequired = currentLevel * 80;
             setTimeout(() => {
-              addSystemLog(`🆙 SUBIU DE NÍVEL: Sua habilidade "${sk.emoji || '🎯'} ${sk.name}" atingiu o Nível ${currentLevel}!`, true);
+              addSystemLog(`${sk.name} alcançou o Nível ${currentLevel}.`, true);
               if (!muteSfx) sound.playLevelUp();
             }, 100);
           }
@@ -1937,7 +1937,7 @@ function App({ userId, signOut }: AppProps) {
             currentLevel += 1;
             xpRequired = currentLevel * 80;
             setTimeout(() => {
-              addSystemLog(`🆙 SUBIU DE NÍVEL: Sua habilidade "${sk.emoji || '🎯'} ${sk.name}" atingiu o Nível ${currentLevel}!`, true);
+              addSystemLog(`${sk.name} alcançou o Nível ${currentLevel}.`, true);
               if (!muteSfx) sound.playLevelUp();
             }, 100);
           }
@@ -2147,7 +2147,13 @@ function App({ userId, signOut }: AppProps) {
       };
     });
 
-    addSystemLog(`✅ Missão divina completa! Habilidade: ${activeSkillName} | +${xpEarned} XP | +${goldEarned} GP ganho.`, true);
+    const logOptions = [
+      `✅ Missão concluída. ${activeSkillName} recebeu +${xpEarned} XP e +${goldEarned} GP.`,
+      `📜 Mais uma sessão registrada. +${xpEarned} XP | +${goldEarned} GP.`,
+      `⚔️ O foco foi mantido. ${activeSkillName} ganhou +${xpEarned} XP`,
+    ];
+    const chosenLog = logOptions[Math.floor(Math.random() * logOptions.length)];
+    addSystemLog(chosenLog, true);
 
     // Audio coins chime triggers
     if (!muteSfx) sound.playCoins();
@@ -3543,12 +3549,12 @@ function App({ userId, signOut }: AppProps) {
                           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
                           
                           <div className="relative z-10 space-y-2">
-                            <span className="text-emerald-500 text-[10px] tracking-[0.25em] uppercase font-serif font-black block">Foco Concluído com Glória!</span>
+                            <span className="text-emerald-500 text-[10px] tracking-[0.25em] uppercase font-serif font-black block">A jornada desta missão chegou ao fim.</span>
                             <h3 className="text-lg md:text-xl font-serif font-black text-stone-100 tracking-wide uppercase">
-                              MUITO BEM! HORA DE RECOBRAR SUAS FORÇAS
+                              DESCANSE. O PRÓXIMO DESAFIO ESPERA.
                             </h3>
                             <p className="text-xs text-stone-100/50 max-w-sm mx-auto leading-relaxed font-serif">
-                              Sua mente completou a jornada sagrada ({Math.round(timerDuration / 60)} min). Escolha seu tempo de recuperação:
+                              Todo guerreiro sabe a hora de avançar e a hora de recuperar as forças. Escolha quanto tempo deseja descansar.
                             </p>
                           </div>
 
@@ -3592,14 +3598,14 @@ function App({ userId, signOut }: AppProps) {
                               onClick={() => startBreakTimer(selectedBreakMins)}
                               className="w-full py-3.5 text-sm font-serif font-black uppercase text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border border-emerald-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(16,185,129,0.3)] transition-all shadow-lg text-center font-bold"
                             >
-                              ☕ Iniciar Descanso
+                              ☕ FAZER UMA PAUSA
                             </button>
                             
                             <button
                               onClick={skipBreak}
                               className="text-amber-500/80 hover:text-amber-400 text-[11px] font-serif uppercase tracking-widest transition-all cursor-pointer bg-transparent border-none py-1 hover:underline"
                             >
-                              ⏩ Pular descanso e focar
+                              ⏩ CONTINUAR SEM PAUSA
                             </button>
                           </div>
                         </div>
@@ -3641,7 +3647,7 @@ function App({ userId, signOut }: AppProps) {
                             <p className={`text-xs md:text-sm tracking-[0.12em] uppercase font-serif mt-3 flex items-center justify-center gap-2 font-black leading-tight ${isBreakActive ? 'text-emerald-400' : 'text-amber-300'}`}>
                               <Sparkle className={`w-3.5 h-3.5 ${isRunning || isBreakActive ? 'animate-spin' : ''}`} />
                               {isBreakActive 
-                                ? 'RECUPERANDO MANA' 
+                                ? '🌿 RECUPERANDO AS ENERGIAS' 
                                 : isPaused 
                                   ? 'REPOUSO DA MISSÃO' 
                                   : isRunning 
@@ -3734,7 +3740,7 @@ function App({ userId, signOut }: AppProps) {
                               onClick={skipBreak}
                               className="flex-1 py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300 hover:from-green-400 hover:to-emerald-200 border border-emerald-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(16,185,129,0.3)] transition-all shadow-lg text-center font-bold animate-pulse"
                             >
-                              ☕ Pular Descanso & Voltar ao Foco
+                              Encerrar Pausa
                             </button>
                           ) : !isRunning ? (
                             <button
@@ -5863,20 +5869,20 @@ function App({ userId, signOut }: AppProps) {
 
                     <div className="space-y-2">
                       <h3 className="text-[10px] sm:text-xs uppercase font-serif tracking-widest text-[#34D399] font-black">
-                        Mente Expandida!
+                        Novo patamar alcançado.
                       </h3>
                       <h2 className="text-xl sm:text-2xl font-serif font-black tracking-wider text-emerald-400 drop-shadow-[0_2px_10px_rgba(52,211,153,0.35)]">
                         MAESTRIA APRIMORADA
                       </h2>
-                      <p className="text-xs sm:text-sm font-sans font-medium text-amber-100/90 leading-tight">
-                        A habilidade <span className="text-[#34D399] font-bold block mt-0.5">{activeLevelUp.skillName}</span>
+                      <p className="text-base sm:text-lg font-serif font-black text-[#34D399] leading-tight mt-1">
+                        {activeLevelUp.skillName}
                       </p>
                       <p className="text-sm sm:text-base font-serif font-semibold text-amber-200 mt-2">
-                        evoluiu para o <span className="text-emerald-400 text-lg sm:text-xl font-black block sm:inline mt-1 sm:mt-0">NÍVEL {activeLevelUp.newLevel}</span>
+                        alcançou o <span className="text-emerald-400 text-lg sm:text-xl font-black block sm:inline mt-1 sm:mt-0">Nível {activeLevelUp.newLevel}</span>
                       </p>
                       <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent mx-auto my-3" />
                       <p className="text-[11px] text-amber-100/50 font-serif italic max-w-xs mx-auto leading-normal">
-                        Seus canais sinápticos e sabedoria prática alcançaram um novo patamar de refinamento cognitivo.
+                        Nenhum nível é concedido por acaso. Este foi conquistado minuto após minuto.
                       </p>
                     </div>
 
