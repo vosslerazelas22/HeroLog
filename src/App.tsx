@@ -124,6 +124,10 @@ interface AppProps {
   signOut: () => Promise<void>;
 }
 
+const MOBILE_SIDEBAR_WIDTH = 256;
+const MOBILE_SIDEBAR_OPEN_THRESHOLD = 80;
+const MOBILE_SIDEBAR_CLOSE_THRESHOLD = 176;
+
 function App({ userId, signOut }: AppProps) {
   // Ref para o onConflict — permite usar setCustomDialog antes de ele ser declarado
   const onConflictRef = useRef<((r: any, l: any) => Promise<'remote' | 'local'>) | null>(null);
@@ -140,6 +144,15 @@ function App({ userId, signOut }: AppProps) {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<string>('focus');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+  const [mobileSidebarDragX, setMobileSidebarDragX] = useState<number>(0);
+  const [isMobileSidebarDragging, setIsMobileSidebarDragging] = useState<boolean>(false);
+  const mobileSidebarDragRef = useRef({
+    startX: 0,
+    startY: 0,
+    startOpen: false,
+    lastExposed: 0,
+    isHorizontal: false,
+  });
 
   // Epic Level Up Modal Queue and references
   const [levelUpQueue, setLevelUpQueue] = useState<LevelUpModalType[]>([]);
@@ -3167,6 +3180,92 @@ function App({ userId, signOut }: AppProps) {
     }
   };
 
+  const clampMobileSidebarX = (value: number) => {
+    return Math.min(MOBILE_SIDEBAR_WIDTH, Math.max(0, value));
+  };
+
+  const isDesktopSidebarLayout = () => {
+    return window.matchMedia('(min-width: 1024px)').matches;
+  };
+
+  const beginMobileSidebarDrag = (event: React.PointerEvent<HTMLElement>, startOpen: boolean) => {
+    if (isDesktopSidebarLayout()) return;
+
+    const target = event.target as HTMLElement;
+    const startedOnInteractiveControl = !!target.closest('button, a, input, textarea, select');
+
+    if (startOpen && startedOnInteractiveControl && !target.closest('[data-sidebar-drag-handle="true"]')) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const initialExposed = startOpen ? MOBILE_SIDEBAR_WIDTH : 0;
+
+    mobileSidebarDragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startOpen,
+      lastExposed: initialExposed,
+      isHorizontal: false,
+    };
+
+    setIsMobileSidebarDragging(true);
+    setMobileSidebarDragX(initialExposed);
+  };
+
+  const updateMobileSidebarDrag = (event: React.PointerEvent<HTMLElement>) => {
+    if (!isMobileSidebarDragging) return;
+
+    const drag = mobileSidebarDragRef.current;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+
+    if (!drag.isHorizontal && Math.abs(deltaX) > 6) {
+      drag.isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+    }
+
+    if (!drag.isHorizontal && Math.abs(deltaY) > 8) {
+      return;
+    }
+
+    if (drag.isHorizontal) {
+      event.preventDefault();
+    }
+
+    const baseExposed = drag.startOpen ? MOBILE_SIDEBAR_WIDTH : 0;
+    const nextExposed = clampMobileSidebarX(baseExposed + deltaX);
+    drag.lastExposed = nextExposed;
+    setMobileSidebarDragX(nextExposed);
+  };
+
+  const endMobileSidebarDrag = (event: React.PointerEvent<HTMLElement>) => {
+    if (!isMobileSidebarDragging) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const drag = mobileSidebarDragRef.current;
+    const shouldOpen = drag.startOpen
+      ? drag.lastExposed >= MOBILE_SIDEBAR_CLOSE_THRESHOLD
+      : drag.lastExposed >= MOBILE_SIDEBAR_OPEN_THRESHOLD;
+
+    setIsMobileSidebarOpen(shouldOpen);
+    setMobileSidebarDragX(shouldOpen ? MOBILE_SIDEBAR_WIDTH : 0);
+    setIsMobileSidebarDragging(false);
+  };
+
+  const mobileSidebarExposed = isMobileSidebarDragging
+    ? mobileSidebarDragX
+    : isMobileSidebarOpen
+      ? MOBILE_SIDEBAR_WIDTH
+      : 0;
+  const mobileSidebarTranslateX = mobileSidebarExposed - MOBILE_SIDEBAR_WIDTH;
+  const mobileSidebarScrimOpacity = Math.min(0.6, (mobileSidebarExposed / MOBILE_SIDEBAR_WIDTH) * 0.6);
+  const mobileSidebarStyle = {
+    '--mobile-sidebar-translate': `${mobileSidebarTranslateX}px`,
+    touchAction: isMobileSidebarDragging ? 'none' : 'pan-y',
+  } as React.CSSProperties;
   return (
     <div className="min-h-screen bg-quest-deep text-amber-100 font-sans flex flex-col antialiased relative overflow-x-hidden select-none">
       
@@ -3232,12 +3331,20 @@ function App({ userId, signOut }: AppProps) {
         
         {/* LEFT SIDEBAR - NAVIGATION CABINET */}
         <aside
-          className={`bg-quest-panel/95 border border-amber-500/15 rounded-lg py-4 px-3 shadow-[0_12px_45px_rgba(0,0,0,0.65)] relative z-30 transition-all duration-200 lg:col-span-3 lg:translate-x-0 lg:static lg:w-auto lg:h-auto ${
-            isMobileSidebarOpen 
-              ? 'fixed inset-y-0 left-0 w-64 translate-x-0 z-50 bg-stone-950/98 border-r border-amber-500/30 flex flex-col justify-between' 
-              : 'hidden lg:flex lg:flex-col lg:justify-between'
+          onPointerDown={(event) => beginMobileSidebarDrag(event, true)}
+          onPointerMove={updateMobileSidebarDrag}
+          onPointerUp={endMobileSidebarDrag}
+          onPointerCancel={endMobileSidebarDrag}
+          style={mobileSidebarStyle}
+          className={`fixed inset-y-0 left-0 w-64 bg-stone-950/98 border border-amber-500/15 border-r-amber-500/30 rounded-r-lg py-4 px-3 shadow-[0_12px_45px_rgba(0,0,0,0.65)] z-50 flex flex-col justify-between transform-gpu translate-x-[var(--mobile-sidebar-translate)] lg:col-span-3 lg:relative lg:inset-auto lg:w-auto lg:h-auto lg:translate-x-0 lg:z-30 lg:bg-quest-panel/95 lg:rounded-lg lg:border-r-amber-500/15 ${
+            isMobileSidebarDragging ? 'transition-none' : 'transition-transform duration-200'
           }`}
         >
+          <div
+            data-sidebar-drag-handle="true"
+            className="absolute right-0 top-0 h-full w-4 cursor-grab active:cursor-grabbing lg:hidden"
+            aria-hidden="true"
+          />
           <div className="space-y-5">
             {/* Sidebar header (visible in mobile slide-out) */}
             <div className="flex items-center justify-between border-b border-amber-500/15 pb-2.5 lg:hidden px-1.5">
@@ -3426,10 +3533,23 @@ function App({ userId, signOut }: AppProps) {
         </aside>
 
         {/* Mobile sidebar overlay scrim */}
-        {isMobileSidebarOpen && (
+        {mobileSidebarExposed > 0 && (
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
+            className="fixed inset-0 bg-black backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200"
+            style={{ opacity: mobileSidebarScrimOpacity }}
+          />
+        )}
+
+        {!isMobileSidebarOpen && (
+          <div
+            onPointerDown={(event) => beginMobileSidebarDrag(event, false)}
+            onPointerMove={updateMobileSidebarDrag}
+            onPointerUp={endMobileSidebarDrag}
+            onPointerCancel={endMobileSidebarDrag}
+            className="fixed left-0 top-0 h-dvh w-7 z-30 lg:hidden"
+            style={{ touchAction: 'pan-y' }}
+            aria-hidden="true"
           />
         )}
 
