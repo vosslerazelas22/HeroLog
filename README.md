@@ -32,7 +32,7 @@ HeroLog é um app de produtividade gamificado baseado na técnica Pomodoro. A ca
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/herolog.git
+git clone https://github.com/vosslerazelas22/herolog.git
 cd herolog
 
 # Instale as dependências
