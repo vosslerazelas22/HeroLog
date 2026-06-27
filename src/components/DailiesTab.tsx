@@ -295,7 +295,8 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
             return (
               <div
                 key={d.id}
-                className={`flex flex-col bg-stone-950/50 border rounded-lg relative overflow-visible transition-all ${
+                onClick={() => startEdit(d)}
+                className={`flex flex-col bg-stone-950/50 border rounded-lg relative overflow-visible transition-all cursor-pointer hover:border-amber-500/35 ${
                   d.completed
                     ? 'border-sky-500/30 bg-sky-950/[0.04]'
                     : 'border-amber-500/10 hover:border-amber-500/25'
@@ -306,7 +307,10 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
                   {/* Left Completion Toggle Button */}
                   <button
                     type="button"
-                    onClick={() => onToggleDaily(d.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleDaily(d.id);
+                    }}
                     className={`w-9 h-9 rounded border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mt-0.5 md:mt-0 ${
                       d.completed
                         ? 'bg-sky-500/20 border-sky-400 text-sky-300 hover:bg-sky-500/30'
@@ -382,7 +386,10 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
                   <div className="flex items-center gap-1.5 relative self-start md:self-center mt-0.5 md:mt-0">
                     {hasChecklist && (
                       <button
-                        onClick={() => toggleExpand(d.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(d.id);
+                        }}
                         className="p-1 px-1.5 text-amber-100/30 hover:text-amber-100 cursor-pointer bg-stone-900/20 border border-amber-500/5 hover:border-amber-500/20 rounded transition-all"
                         title="Ver Checklist"
                       >
@@ -443,7 +450,10 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
 
                 {/* Expanded Checklist Sub-Items Panel */}
                 {hasChecklist && (expandedDailyId === d.id || d.completed) && (
-                  <div className="bg-stone-900/40 border-t border-amber-500/5 px-4 py-2 space-y-1.5">
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-stone-900/40 border-t border-amber-500/5 px-4 py-2 space-y-1.5"
+                  >
                     {d.checklist.map((item) => (
                       <div
                         key={item.id}

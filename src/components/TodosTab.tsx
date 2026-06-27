@@ -295,7 +295,8 @@ export const TodosTab: React.FC<TodosTabProps> = ({
             return (
               <div
                 key={todo.id}
-                className={`flex flex-col bg-stone-950/50 border rounded-lg relative overflow-visible transition-all ${
+                onClick={() => startEdit(todo)}
+                className={`flex flex-col bg-stone-950/50 border rounded-lg relative overflow-visible transition-all cursor-pointer hover:border-amber-500/35 ${
                   todo.completed
                     ? 'border-emerald-500/30 bg-emerald-950/[0.03]'
                     : 'border-amber-500/10 hover:border-amber-500/25'
@@ -305,7 +306,10 @@ export const TodosTab: React.FC<TodosTabProps> = ({
                 <div className="flex items-start md:items-center gap-3 p-2.5 md:p-3">
                   {/* Left Completion Tick */}
                   <button
-                    onClick={() => onToggleTodo(todo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleTodo(todo.id);
+                    }}
                     className={`w-9 h-9 mt-0.5 md:mt-0 rounded-full border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg ${
                       todo.completed
                         ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
@@ -373,7 +377,10 @@ export const TodosTab: React.FC<TodosTabProps> = ({
                   <div className="flex items-center gap-1.5 relative self-start md:self-center mt-0.5 md:mt-0">
                     {hasChecklist && (
                       <button
-                        onClick={() => toggleExpand(todo.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(todo.id);
+                        }}
                         className="p-1 px-1.5 text-amber-100/30 hover:text-amber-100 cursor-pointer bg-stone-900/20 border border-amber-500/5 hover:border-amber-500/20 rounded transition-all"
                         title="Ver critérios"
                       >
@@ -434,7 +441,10 @@ export const TodosTab: React.FC<TodosTabProps> = ({
 
                 {/* Checklist Panel */}
                 {hasChecklist && expandedTodoId === todo.id && (
-                  <div className="bg-stone-900/40 border-t border-amber-500/5 px-4 py-2 space-y-1.5">
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-stone-900/40 border-t border-amber-500/5 px-4 py-2 space-y-1.5"
+                  >
                     {todo.checklist.map((item) => (
                       <div
                         key={item.id}

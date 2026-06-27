@@ -220,12 +220,16 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
             return (
               <div
                 key={h.id}
-                className={`flex items-start md:items-center gap-3 bg-gradient-to-r ${getHabitScoreColor(h)} border rounded-lg p-3 md:p-4 transition-all relative overflow-visible group`}
+                onClick={() => startEdit(h)}
+                className={`flex items-start md:items-center gap-3 bg-gradient-to-r ${getHabitScoreColor(h)} border rounded-lg p-3 md:p-4 transition-all relative overflow-visible group cursor-pointer hover:border-amber-500/35`}
               >
                 {/* Trigger Up Button */}
                 {h.up ? (
                   <button
-                    onClick={() => onTriggerHabit(h.id, true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTriggerHabit(h.id, true);
+                    }}
                     className="w-9 h-9 rounded bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/30 hover:border-emerald-400 text-emerald-400 hover:text-emerald-200 transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mt-0.5 md:mt-0"
                     title="Registrar ação positiva"
                   >
@@ -298,7 +302,10 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
                 <div className="flex items-center gap-1.5 self-start md:self-center mt-0.5 md:mt-0">
                   {h.down && (
                     <button
-                      onClick={() => onTriggerHabit(h.id, false)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTriggerHabit(h.id, false);
+                      }}
                       className="w-9 h-9 rounded bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/25 hover:border-rose-400 text-rose-400 hover:text-white transition-all flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-lg mr-1"
                       title="Registrar desvio negativo"
                     >
