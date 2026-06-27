@@ -7,6 +7,50 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.6] - 2026-06-23
+ 
+### Adicionado
+ 
+- **Hook `useGameState.ts`** — extraída a lógica de persistência de estado do `App.tsx` para um hook isolado, encapsulando:
+  - A constante `INITIAL_STATE`.
+  - A função `normalizeGameState()` para normalização estrutural de saves antigos.
+  - A sincronização local automatizada com o `localStorage`.
+  - As funções utilitárias `resetGameState()` (purga total) e `importGameState(parsed)` (restauração de backup).
+- **Integração com Supabase** — arquitetura preparada e integração implementada para sincronização cross-device:
+  - Autenticação via Magic Link.
+  - Salvamento do estado do jogo em tabela `campaign_saves` com debounce, acionado em momentos-chave (ex.: conclusão de sessão de foco).
+  - Estratégia de resolução de conflitos por `updated_at`, impedindo que um dispositivo desatualizado sobrescreva o save mais recente.
+### Alterado
+ 
+- **`/src/App.tsx`** — substituídas ~150 linhas de estado e inicializadores de `localStorage` pelo hook `useGameState`. Funções `handleSanctizeCampaignData`, `handleImportCampaignJSON` e `handleImportSaveFromText` simplificadas com a nova API do hook, sem alteração nas regras de negócio.
+### Arquivos alterados
+ 
+- `/src/hooks/useGameState.ts` — novo arquivo.
+- `/src/App.tsx` — refatoração da camada de persistência.
+---
+ 
+## [1.0.5] - 2026-06-23
+ 
+### Adicionado
+ 
+- **Modal de Level Up (Nível de Combate)** — celebração visual e sonora ao subir de nível:
+  - Contêiner com borda dourada envolto por aura pulsante (`animate-level-up-glow`).
+  - 16 partículas medievais geradas proceduralmente (`rising-spark`) que sobem pela tela.
+  - Reprodução imediata de arpejo ascendente de RPG retrô (`sound.playLevelUp()`).
+  - Exibição do nome do personagem em tipografia de destaque e texto contextual de lore.
+- **Modal de Evolução de Habilidade (Maestria Aprimorada)** — celebração ao evoluir uma habilidade:
+  - Brilho radiante verde-esmeralda (`animate-skill-up-glow`) com partículas cósmicas flutuantes.
+  - Destaque da habilidade específica e seu emoji correspondente.
+  - Exibição de `"MAESTRIA APRIMORADA: [NOME] evoluiu para o NÍVEL X"`.
+- **Fila de notificações (`levelUpQueue`)** — arquitetura reativa que enfileira múltiplos eventos de level up ocorridos simultaneamente, exibindo-os sequencialmente.
+- **Referências de segurança (bypass refs)** — prevenção de disparo duplicado ou indevido dos modais durante login inicial, restauração de backups e reinicializações do sistema.
+### Arquivos alterados
+ 
+- `/src/index.css` — adicionados keyframes `riseFast`, `goldenRadiance`, `emeraldRadiance` e `pulsingAura`.
+- `/src/App.tsx` — declaradas estruturas `LevelUpModalType`; adicionados estados de fila, rastreadores e modais com `<AnimatePresence>`.
+
+---
+
 ## [1.0.4] - 2026-06-22
 
 ### Adicionado
