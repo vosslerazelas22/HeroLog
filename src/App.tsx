@@ -2181,6 +2181,12 @@ function App({ userId, signOut }: AppProps) {
   // Claim Daily/Weekly Quest items
   const handleClaimQuestRewards = (goldReward: number, xpReward: number, questId: string) => {
     setGameState(prev => {
+      const claimId = questId.startsWith('daily_')
+        ? `claimed_${questId}_${new Date().toDateString()}`
+        : `claimed_${questId}`;
+
+      if ((prev.achievements || []).includes(claimId)) return prev;
+
       // Apply Combat levels progression too
       let nextXP = prev.combatXP + Math.floor(xpReward * 0.4);
       let nextCombatLevel = prev.combatLevel;
@@ -2203,7 +2209,7 @@ function App({ userId, signOut }: AppProps) {
         totalXP: prev.totalXP + xpReward,
         combatLevel: nextCombatLevel,
         combatXP: nextXP,
-        achievements: [...prev.achievements, `claimed_${questId}`]
+        achievements: [...(prev.achievements || []), claimId]
       };
     });
 
@@ -4066,7 +4072,17 @@ function App({ userId, signOut }: AppProps) {
                         }
                       ];
 
-                      const unclaimedGuilds = guilds.filter(g => !state.achievements.includes(`claimed_${g.id}`));
+                      const todayQuestClaimKey = new Date().toDateString();
+                      const isQuestClaimed = (questId: string) => {
+                        const claimHistory = state.achievements || [];
+                        if (!questId.startsWith('daily_')) return claimHistory.includes(`claimed_${questId}`);
+
+                        const datedClaim = `claimed_${questId}_${todayQuestClaimKey}`;
+                        const legacyClaimFromToday = state.todayDate === todayQuestClaimKey && claimHistory.includes(`claimed_${questId}`);
+                        return claimHistory.includes(datedClaim) || legacyClaimFromToday;
+                      };
+
+                      const unclaimedGuilds = guilds.filter(g => !isQuestClaimed(g.id));
                       let closestGuildQuest = null;
                       if (unclaimedGuilds.length > 0) {
                         closestGuildQuest = unclaimedGuilds.reduce((prev, current) => {
@@ -4103,7 +4119,7 @@ function App({ userId, signOut }: AppProps) {
                               <div className="space-y-1.5 text-xs">
                                 {dailies.map((q) => {
                                   const isCompleted = q.progress >= q.target;
-                                  const isClaimed = state.achievements.includes(`claimed_${q.id}`);
+                                  const isClaimed = isQuestClaimed(q.id);
                                   return (
                                     <div key={q.id} className="flex items-center justify-between gap-2">
                                       <div className="flex items-center gap-2 min-w-0" title={q.desc}>
