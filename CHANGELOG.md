@@ -7,6 +7,22 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.8] - 2026-06-27
+
+### Adicionado
+
+- **Aba lateral arrastável em mobile** — o painel de navegação esquerdo agora pode ser puxado a partir da borda esquerda da tela, com abertura progressiva, overlay sincronizado e fechamento por arraste de volta para a esquerda.
+
+### Alterado
+
+- **Menu mobile** — preservado o botão superior esquerdo existente, agora convivendo com o gesto de slide sem afetar o layout desktop.
+
+### Arquivos alterados
+
+- `/src/App.tsx` — adicionados controles de gesto, faixa lateral sensível ao toque, thresholds de abertura/fechamento e animação por `translateX`.
+
+---
+
 ## [1.0.7] - 2026-06-26
 
 ### Adicionado
