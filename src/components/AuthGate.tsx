@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { User } from '@supabase/supabase-js';
-import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -11,7 +10,6 @@ interface AuthGateProps {
   sendMagicLink: (email: string) => Promise<{ error: string | null }>;
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  bypassAuth?: () => void;
   children: (props: {
     userId: string;
     signOut: () => Promise<void>;
@@ -24,11 +22,9 @@ interface AuthGateProps {
 function LoginScreen({
   onSend,
   onPasswordLogin,
-  onBypass,
 }: {
   onSend: (email: string) => Promise<{ error: string | null }>;
   onPasswordLogin: (email: string, password: string) => Promise<{ error: string | null }>;
-  onBypass?: () => void;
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -152,43 +148,6 @@ function LoginScreen({
             {status === 'sending' ? 'Enviando...' : 'Enviar link mágico ✨'}
           </button>
 
-          {(!isSupabaseConfigured) && (
-            <div style={{
-              background: '#2b1a1a',
-              border: '1px solid #7a3a3a',
-              borderRadius: 8,
-              padding: '0.75rem',
-              fontSize: '0.8rem',
-              color: '#fca5a5',
-              textAlign: 'center',
-              marginTop: '0.5rem',
-            }}>
-              ⚠️ Supabase não configurado. O app funcionará localmente (dados salvos no seu navegador).
-            </div>
-          )}
-
-          {(import.meta.env.DEV || !isSupabaseConfigured) && onBypass && (
-            <button
-              onClick={onBypass}
-              style={{
-                padding: '0.75rem',
-                borderRadius: 8,
-                border: '1px solid #4a3a7a',
-                background: 'transparent',
-                color: '#c4a8ff',
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                fontWeight: 600,
-                marginTop: '0.25rem',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a2e'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              {!isSupabaseConfigured ? 'Entrar em Modo Local 🛠️ (Bypass)' : 'Entrar como Desenvolvedor 🛠️ (Bypass)'}
-            </button>
-          )}
-
           {status === 'error' && (
             <p style={{ margin: 0, color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>
               {errorMsg}
@@ -213,7 +172,7 @@ export function SyncIndicator({
 }: {
   status: 'idle' | 'syncing' | 'error' | 'conflict';
 }) {
-  // Sucesso (Silencioso): O aplicativo salva em segundo plano sem nenhum indicador visual na tela.
+  // idle e syncing: 100% silenciosos, sem nenhum indicador visual
   if (status === 'idle' || status === 'syncing') return null;
 
   const config = {
@@ -262,7 +221,7 @@ export function SyncIndicator({
 // ---------------------------------------------------------------------------
 // AuthGate principal — só cuida de auth, não de sync
 // ---------------------------------------------------------------------------
-export function AuthGate({ user, loading, sendMagicLink, signInWithPassword, signOut, bypassAuth, children }: AuthGateProps) {
+export function AuthGate({ user, loading, sendMagicLink, signInWithPassword, signOut, children }: AuthGateProps) {
   if (loading) {
     return (
       <div style={{
@@ -284,7 +243,6 @@ export function AuthGate({ user, loading, sendMagicLink, signInWithPassword, sig
       <LoginScreen
         onSend={sendMagicLink}
         onPasswordLogin={signInWithPassword}
-        onBypass={bypassAuth}
       />
     );
   }
