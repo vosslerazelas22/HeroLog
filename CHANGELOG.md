@@ -7,11 +7,40 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
-## [1.0.12] - Planejado
+## [1.0.xx] - Planejado
 
 ### Planejado
 
 - **Catálogo ampliado de Guild Quests** — expandir as Teses de Campanha com novos objetivos permanentes, mantendo reivindicação única por save e integração com o Mural de Contratos Ativos.
+
+---
+
+## [1.0.12] - 2026-06-28
+
+### Adicionado
+
+- **Relatório Diário (Daily Report)** — modal exibido no início de um novo dia de foco, com identidade visual consistente ao restante do jogo (paleta escura, bordas douradas, aura pulsante, tipografia RPG). Exibe:
+  - Bônus de ouro diário.
+  - Situação da sequência de dias (streak), com alertas de perda ou proteção por escudo.
+  - Sumário de tarefas diárias concluídas ou negligenciadas no dia anterior.
+
+### Alterado
+
+- **Indicador de sincronização (`SyncIndicator`)** — reformulado para ser silencioso por padrão:
+  - Estados `idle` e `syncing` agora são completamente invisíveis; o salvamento automático ocorre em segundo plano sem notificações visuais.
+  - Componente renderizado exclusivamente em dois estados críticos:
+    - *Erro de sincronização*: alerta discreto sinalizando instabilidade na conexão, informando que os dados estão protegidos localmente.
+    - *Conflito de save*: alerta solicitando escolha do jogador entre o progresso local e o da nuvem.
+  - Estilização migrada de inline para classes Tailwind: fundo `bg-stone-950/95`, `backdrop-blur-md`, tipografia serifada, bordas temáticas e ponto indicador pulsante (`ping glow`) proporcional à gravidade do alerta.
+- **Textos e vocabulário**:
+  - Loja: `"para gastar na Taverna do Goblin"` → `"para gastar na loja"`.
+  - Mensagem de streak zerado: removido o termo `"cognitiva"` da frase de resfriamento de sequência.
+  - Mensagem de tarefas concluídas: `"seladas"` substituído por `"concluídas"`; texto de sucesso diário atualizado.
+
+### Arquivos alterados
+
+- `/src/App.tsx` — Relatório Diário e ajustes de textos.
+- `/src/components/AuthGate.tsx` — reformulação do `SyncIndicator`.
 
 ---
 
