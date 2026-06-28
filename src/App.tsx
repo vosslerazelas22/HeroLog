@@ -50,7 +50,7 @@ import { DailiesTab } from './components/DailiesTab';
 import { TodosTab } from './components/TodosTab';
 import { HistoryTab } from './components/HistoryTab';
 import { HeatmapTab } from './components/HeatmapTab';
-import { QuestsTab } from './components/QuestsTab';
+import { QuestsTab, getRotatingDailyQuests, guildQuests, isQuestClaimed } from './components/QuestsTab';
 import { ShopTab } from './components/ShopTab';
 import { StatsTab } from './components/StatsTab';
 import { AchievementsTab } from './components/AchievementsTab';
@@ -4018,71 +4018,16 @@ function App({ userId, signOut }: AppProps) {
                     {/* ACTIVE CONTRATS / QUESTS OVERVIEW */}
                     {(() => {
                       const state = gameState;
-                      const dailies = [
-                        {
-                          id: 'daily_1',
-                          name: 'Devotamento Diário',
-                          summary: 'Sessão de estudo hoje',
-                          desc: 'Complete pelo menos uma sessão de estudo hoje.',
-                          progress: state.todayMinutes > 0 ? 1 : 0,
-                          target: 1,
-                        },
-                        {
-                          id: 'daily_2',
-                          name: 'Diligência Extrema',
-                          summary: '50 min de foco total',
-                          desc: 'Acumule 50 minutos de estudo concentrado hoje.',
-                          progress: Math.min(state.todayMinutes, 50),
-                          target: 50,
-                        },
-                        {
-                          id: 'daily_3',
-                          name: 'Ouro do Conhecimento',
-                          summary: 'Sessão em Wilderness',
-                          desc: 'Estude na perigosa floresta de Wilderness hoje.',
-                          progress: state.history.some(h => {
-                            const todayStr = new Date().toLocaleDateString('pt-BR');
-                            return h.date.includes(todayStr) && h.wilderness;
-                          }) ? 1 : 0,
-                          target: 1,
-                        }
-                      ];
+                      const dailies = getRotatingDailyQuests(3).map((quest) => ({
+                        ...quest,
+                        progress: quest.getProgress(state),
+                      }));
+                      const guilds = guildQuests.map((quest) => ({
+                        ...quest,
+                        progress: quest.getProgress(state),
+                      }));
 
-                      const guilds = [
-                        {
-                          id: 'guild_1',
-                          name: 'Iniciado da Guilda',
-                          desc: 'Atinja Combat Level 5 ou superior.',
-                          progress: Math.min(state.combatLevel, 5),
-                          target: 5,
-                        },
-                        {
-                          id: 'guild_2',
-                          name: 'Maratona Mágica',
-                          desc: 'Conclua um total de 12 sessões acumuladas.',
-                          progress: Math.min(state.totalSessions, 12),
-                          target: 12,
-                        },
-                        {
-                          id: 'guild_3',
-                          name: 'Campeão da Constância',
-                          desc: 'Atinja ou supere uma série recorde de 3 dias de estudo.',
-                          progress: Math.min(state.bestStreak, 3),
-                          target: 3,
-                        }
-                      ];
-
-                      const todayQuestClaimKey = new Date().toDateString();
-                      const isQuestClaimed = (questId: string) => {
-                        const claimHistory = state.achievements || [];
-                        if (!questId.startsWith('daily_')) return claimHistory.includes(`claimed_${questId}`);
-
-                        const datedClaim = `claimed_${questId}_${todayQuestClaimKey}`;
-                        const legacyClaimFromToday = state.todayDate === todayQuestClaimKey && claimHistory.includes(`claimed_${questId}`);
-                        return claimHistory.includes(datedClaim) || legacyClaimFromToday;
-                      };
-
-                      const unclaimedGuilds = guilds.filter(g => !isQuestClaimed(g.id));
+                      const unclaimedGuilds = guilds.filter(g => !isQuestClaimed(state, g.id));
                       let closestGuildQuest = null;
                       if (unclaimedGuilds.length > 0) {
                         closestGuildQuest = unclaimedGuilds.reduce((prev, current) => {
@@ -4119,7 +4064,7 @@ function App({ userId, signOut }: AppProps) {
                               <div className="space-y-1.5 text-xs">
                                 {dailies.map((q) => {
                                   const isCompleted = q.progress >= q.target;
-                                  const isClaimed = isQuestClaimed(q.id);
+                                  const isClaimed = isQuestClaimed(state, q.id);
                                   return (
                                     <div key={q.id} className="flex items-center justify-between gap-2">
                                       <div className="flex items-center gap-2 min-w-0" title={q.desc}>
@@ -4137,7 +4082,7 @@ function App({ userId, signOut }: AppProps) {
                                               ? 'text-[#E2B054]' 
                                               : 'text-amber-100/60'
                                         }`}>
-                                          {q.summary}
+                                          {q.summary || q.name}
                                         </span>
                                       </div>
                                       <span className={`font-mono text-[10px] flex-shrink-0 ${
