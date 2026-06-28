@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '@supabase/supabase-js';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -10,6 +11,7 @@ interface AuthGateProps {
   sendMagicLink: (email: string) => Promise<{ error: string | null }>;
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  bypassAuth?: () => void;
   children: (props: {
     userId: string;
     signOut: () => Promise<void>;
@@ -22,9 +24,11 @@ interface AuthGateProps {
 function LoginScreen({
   onSend,
   onPasswordLogin,
+  onBypass,
 }: {
   onSend: (email: string) => Promise<{ error: string | null }>;
   onPasswordLogin: (email: string, password: string) => Promise<{ error: string | null }>;
+  onBypass?: () => void;
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -147,6 +151,44 @@ function LoginScreen({
           >
             {status === 'sending' ? 'Enviando...' : 'Enviar link mágico ✨'}
           </button>
+
+          {(!isSupabaseConfigured) && (
+            <div style={{
+              background: '#2b1a1a',
+              border: '1px solid #7a3a3a',
+              borderRadius: 8,
+              padding: '0.75rem',
+              fontSize: '0.8rem',
+              color: '#fca5a5',
+              textAlign: 'center',
+              marginTop: '0.5rem',
+            }}>
+              ⚠️ Supabase não configurado. O app funcionará localmente (dados salvos no seu navegador).
+            </div>
+          )}
+
+          {(import.meta.env.DEV || !isSupabaseConfigured) && onBypass && (
+            <button
+              onClick={onBypass}
+              style={{
+                padding: '0.75rem',
+                borderRadius: 8,
+                border: '1px solid #4a3a7a',
+                background: 'transparent',
+                color: '#c4a8ff',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                marginTop: '0.25rem',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a2e'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              {!isSupabaseConfigured ? 'Entrar em Modo Local 🛠️ (Bypass)' : 'Entrar como Desenvolvedor 🛠️ (Bypass)'}
+            </button>
+          )}
+
           {status === 'error' && (
             <p style={{ margin: 0, color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>
               {errorMsg}
@@ -171,33 +213,48 @@ export function SyncIndicator({
 }: {
   status: 'idle' | 'syncing' | 'error' | 'conflict';
 }) {
-  if (status === 'idle') return null;
+  // Sucesso (Silencioso): O aplicativo salva em segundo plano sem nenhum indicador visual na tela.
+  if (status === 'idle' || status === 'syncing') return null;
 
   const config = {
-    syncing:  { icon: '☁️', label: 'Sincronizando...', color: '#9880c0' },
-    error:    { icon: '⚠️', label: 'Erro ao sincronizar', color: '#f87171' },
-    conflict: { icon: '⚡', label: 'Conflito detectado', color: '#fbbf24' },
+    error: {
+      icon: '⚠️',
+      label: 'Erro de Sincronização',
+      desc: 'Falha ao salvar progresso na nuvem. Seus dados estão seguros localmente.',
+      borderColor: 'border-red-500/50',
+      textColor: 'text-red-300',
+      bgColor: 'bg-stone-950/95',
+      dotColor: 'bg-red-500',
+    },
+    conflict: {
+      icon: '⚡',
+      label: 'Conflito de Save',
+      desc: 'Versão mais recente encontrada na nuvem. Ação necessária para sincronizar.',
+      borderColor: 'border-amber-500/50',
+      textColor: 'text-amber-300',
+      bgColor: 'bg-stone-950/95',
+      dotColor: 'bg-amber-500',
+    },
   }[status];
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: '1rem',
-      right: '1rem',
-      background: '#1a1a2e',
-      border: `1px solid ${config.color}`,
-      borderRadius: 8,
-      padding: '0.4rem 0.75rem',
-      fontSize: '0.75rem',
-      color: config.color,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.4rem',
-      zIndex: 9999,
-      pointerEvents: 'none',
-    }}>
-      <span>{config.icon}</span>
-      <span>{config.label}</span>
+    <div
+      id="sync-indicator"
+      className={`fixed bottom-4 right-4 z-[9999] flex flex-col max-w-xs p-3.5 rounded-xl border-2 ${config.borderColor} ${config.bgColor} backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.8)] animate-fade-in font-serif`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${config.dotColor} opacity-75`}></span>
+          <span className={`relative inline-flex rounded-full h-2 w-2 ${config.dotColor}`}></span>
+        </span>
+        <span className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-stone-100">
+          <span>{config.icon}</span>
+          <span>{config.label}</span>
+        </span>
+      </div>
+      <p className={`mt-1.5 text-[10px] leading-relaxed ${config.textColor}`}>
+        {config.desc}
+      </p>
     </div>
   );
 }
@@ -205,7 +262,7 @@ export function SyncIndicator({
 // ---------------------------------------------------------------------------
 // AuthGate principal — só cuida de auth, não de sync
 // ---------------------------------------------------------------------------
-export function AuthGate({ user, loading, sendMagicLink, signInWithPassword, signOut, children }: AuthGateProps) {
+export function AuthGate({ user, loading, sendMagicLink, signInWithPassword, signOut, bypassAuth, children }: AuthGateProps) {
   if (loading) {
     return (
       <div style={{
@@ -227,6 +284,7 @@ export function AuthGate({ user, loading, sendMagicLink, signInWithPassword, sig
       <LoginScreen
         onSend={sendMagicLink}
         onPasswordLogin={signInWithPassword}
+        onBypass={bypassAuth}
       />
     );
   }
