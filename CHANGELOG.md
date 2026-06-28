@@ -7,6 +7,40 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.12] - Planejado
+
+### Planejado
+
+- **Catálogo ampliado de Guild Quests** — expandir as Teses de Campanha com novos objetivos permanentes, mantendo reivindicação única por save e integração com o Mural de Contratos Ativos.
+
+---
+
+## [1.0.11] - 2026-06-27
+
+### Adicionado
+
+- **Catálogo ampliado de Daily Quests** — adicionadas 20 Proclamações do Dia seguras, baseadas em minutos de foco, sessões concluídas, Wilderness, variedade de skills, XP do dia e Dailies concluídas.
+- **Rotação diária de quests** — o usuário agora recebe 3 Daily Quests por dia, escolhidas por sorteio determinístico baseado na data, sem criar novos campos no save state.
+- **Definições reutilizáveis de quests** — Daily Quests e Guild Quests passam a seguir o mesmo modelo `QuestDef`, com `getProgress(state)` calculando o progresso a partir do estado atual.
+
+### Alterado
+
+- **Painel de Quests** — a seção de Proclamações do Dia passa a exibir apenas as 3 quests sorteadas para o dia atual.
+- **Mural de Contratos Ativos** — o resumo exibido na aba de Foco usa a mesma rotação diária e a mesma fonte de definições do painel completo de Quests.
+- **Claims de quests centralizados** — a leitura de recompensas já reivindicadas foi extraída para uma função compartilhada, reduzindo duplicação entre o Painel de Quests e o Mural de Contratos Ativos.
+- **Compatibilidade com claims diários datados** — preservado o prefixo `daily_*` para garantir que Daily Quests continuem podendo ser reivindicadas novamente em dias futuros quando retornarem na rotação.
+
+### Arquivos alterados
+
+- `/src/components/QuestsTab.tsx` — criado catálogo rotativo de Daily Quests com definições reutilizáveis (`QuestDef`), métricas derivadas do estado atual e helpers compartilhados de claim.
+- `/src/App.tsx` — atualizado o Mural de Contratos Ativos para refletir as mesmas 3 Daily Quests do dia e reutilizar a regra centralizada de claims.
+
+### Observação
+
+- **Guild Quests** — o aumento do rol de Guild Quests não faz parte da `1.0.11`; essa expansão fica planejada para a `1.0.12`.
+
+---
+
 ## [1.0.10] - 2026-06-27
 
 ### Adicionado
