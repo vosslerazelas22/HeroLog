@@ -340,6 +340,16 @@ function App({ userId, signOut }: AppProps) {
     comboBonusPercent: number;
   } | null>(null);
 
+  const [dailyReport, setDailyReport] = useState<{
+    rewardAmount: number;
+    currentStreak: number;
+    streakLost: boolean;
+    streakProtected: boolean;
+    missedDailiesCount: number;
+    damageTaken: number;
+    allDailiesCompleted: boolean;
+  } | null>(null);
+
   const [completionNotes, setCompletionNotes] = useState<string>('');
   const [completionTag, setCompletionTag] = useState<string>('');
   const [rewardsStep, setRewardsStep] = useState<number>(1);
@@ -1091,6 +1101,59 @@ function App({ userId, signOut }: AppProps) {
     // Reset daily counters if a new day commenced
     const todayStr = new Date().toDateString();
     if (gameState.todayDate !== todayStr) {
+      // 1. Calculate values for the Daily Report before updating state
+      const rewardAmount = gameState.charClass === 'Warrior' ? 120 : 100;
+      
+      let currentStreak = gameState.streak;
+      let streakLost = false;
+      let streakProtected = false;
+      
+      if (gameState.lastStudyDate) {
+        const lastDateObj = new Date(gameState.lastStudyDate);
+        const differenceInTime = new Date().getTime() - lastDateObj.getTime();
+        const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
+        
+        if (differenceInDays === 1) {
+          // Continua ativo
+        } else if (differenceInDays > 1) {
+          const shieldIndex = gameState.inventory.findIndex(item => item.buff === 'StreakShield');
+          if (shieldIndex >= 0) {
+            streakProtected = true;
+          } else {
+            currentStreak = 0;
+            streakLost = true;
+          }
+        }
+      } else {
+        // Se nunca estudou antes, a sequência inicia ou se mantém em 0, mas não há "perda"
+      }
+      
+      let dailyNeglectDamage = 0;
+      let missedCount = 0;
+      (gameState.dailies || []).forEach(d => {
+        if (!d.completed) {
+          const { damage } = getDifficultyRewards(d.difficulty);
+          dailyNeglectDamage += damage;
+          missedCount += 1;
+        }
+      });
+      
+      let finalDmg = dailyNeglectDamage;
+      if (gameState.charClass === 'Ranger') finalDmg = Math.max(1, Math.floor(dailyNeglectDamage * 0.7));
+      
+      const allDailiesCompleted = missedCount === 0 && (gameState.dailies || []).length > 0;
+
+      // Show the Daily Report Modal
+      setDailyReport({
+        rewardAmount,
+        currentStreak,
+        streakLost,
+        streakProtected,
+        missedDailiesCount: missedCount,
+        damageTaken: missedCount > 0 ? finalDmg : 0,
+        allDailiesCompleted,
+      });
+
       setGameState(prev => {
         let currentStreak = prev.streak;
         
@@ -1115,7 +1178,7 @@ function App({ userId, signOut }: AppProps) {
             } else {
               currentStreak = 0; // Series decays
               setTimeout(() => {
-                addSystemLog('⚠️ Sua chama de streak murchou... Dedique-se todos os dias para herdar a constância.', false);
+                addSystemLog('⚠️ Sua sequência de dias resfriou para 0 porque você não realizou focos ontem. Não desanime, empunhe sua espada e recomece hoje!', false);
               }, 100);
             }
           }
@@ -1158,7 +1221,7 @@ function App({ userId, signOut }: AppProps) {
             }
 
             setTimeout(() => {
-              addSystemLog(`💀 Dano Solar da Negligência: Deixaste ${missedCount} Diárias incompletas yesterday! Perdeste -${finalDmg} de vitalidade HP.`, false);
+              addSystemLog(`💀 Dano Solar da Negligência: Deixaste ${missedCount} Diárias incompletas ontem! Perdeste -${finalDmg} de vitalidade HP.`, false);
             }, 200);
           }
         }
@@ -5808,6 +5871,150 @@ function App({ userId, signOut }: AppProps) {
                 >
                   Voltar
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* RELATÓRIO DIÁRIO POPUP SYSTEM */}
+      <AnimatePresence>
+        {dailyReport && (
+          <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
+            <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 via-transparent to-transparent pointer-events-none" />
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.85, opacity: 0, y: -30 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 120 }}
+              className="bg-stone-950 border-2 border-amber-500 animate-level-up-glow max-w-sm sm:max-w-md w-full rounded-2xl shadow-[0_0_50px_rgba(226,176,84,0.35)] overflow-hidden font-sans relative"
+              id="daily-report-modal"
+            >
+              {/* Sparkles / Particles panel */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+                <div className="absolute inset-0 bg-gradient-radial from-amber-500/10 via-transparent to-transparent opacity-40 animate-aura-pulsing" />
+                {[...Array(16)].map((_, i) => {
+                  const shiftX = Math.floor(Math.random() * 240) - 120;
+                  const rotate = Math.floor(Math.random() * 360);
+                  const duration = 1.5 + Math.random() * 2;
+                  const delay = Math.random() * 1.5;
+                  const size = 6 + Math.floor(Math.random() * 8);
+                  const left = 15 + Math.floor(Math.random() * 70);
+                  return (
+                    <div
+                      key={i}
+                      className="absolute bottom-[-20px] text-amber-400 select-none pointer-events-none opacity-0 rising-spark flex items-center justify-center"
+                      style={{
+                        left: `${left}%`,
+                        '--shift-x': shiftX,
+                        '--rotate': rotate,
+                        '--duration': `${duration}s`,
+                        animationDelay: `${delay}s`,
+                        fontSize: `${size}px`
+                      } as React.CSSProperties}
+                    >
+                      ✦
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="relative z-10 p-6 sm:p-8 text-center space-y-6">
+                {/* Heroic Centralized Icon */}
+                <div className="flex justify-center pt-2">
+                  <div className="w-20 h-20 bg-stone-900 border-2 border-amber-500 rounded-full flex items-center justify-center shadow-lg relative bg-gradient-to-b from-stone-800 to-stone-950">
+                    <span className="text-4xl animate-bounce">☀️</span>
+                    <div className="absolute inset-0 rounded-full bg-amber-500/10 animate-ping" />
+                  </div>
+                </div>
+
+                {/* Header */}
+                <div className="space-y-1">
+                  <h3 className="text-[10px] sm:text-xs uppercase font-serif tracking-widest text-[#E2B054] font-black">
+                    Um novo dia começa.
+                  </h3>
+                  <h2 className="text-2xl sm:text-3xl font-serif font-black tracking-wider text-amber-300 drop-shadow-[0_2px_10px_rgba(226,176,84,0.4)]">
+                    RELATÓRIO DIÁRIO
+                  </h2>
+                </div>
+
+                {/* Daily Login Reward Card */}
+                <div className="bg-stone-900/60 border border-amber-500/20 rounded-xl p-4 space-y-2 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-amber-500/[0.02] to-transparent pointer-events-none" />
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold block">
+                    Tesouro Recebido
+                  </span>
+                  <div className="flex items-center justify-center gap-2 text-3xl font-serif font-black text-amber-300 drop-shadow-[0_2px_5px_rgba(226,176,84,0.3)]">
+                    💎 +{dailyReport.rewardAmount} GP
+                  </div>
+                  <p className="text-xs text-amber-100/60 font-serif">
+                    O Santuário recompensa quem retorna à jornada.
+                  </p>
+                </div>
+
+                {/* Report Sections */}
+                <div className="space-y-4 text-left font-serif">
+                  {/* Streak Summary */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400/50 font-bold block">
+                      Sequência de Dias (Streak)
+                    </span>
+                    {dailyReport.streakLost ? (
+                      <p className="text-xs text-red-300 leading-relaxed bg-red-950/20 border border-red-500/10 rounded-lg p-2.5">
+                        Sua chama se apagou por um dia. Hoje é uma nova oportunidade para reacendê-la.
+                      </p>
+                    ) : dailyReport.streakProtected ? (
+                      <p className="text-xs text-[#fff3c6] leading-relaxed bg-[#fff3c6]/5 border border-[#fff3c6]/20 rounded-lg p-2.5 flex items-center gap-2">
+                        <span>🛡️</span> O Escudo do Santuário protegeu sua sequência.
+                      </p>
+                    ) : (
+                      <div className="text-xs text-amber-100/90 leading-relaxed bg-amber-500/[0.02] border border-amber-500/10 rounded-lg p-2.5 flex items-center justify-center">
+                        <span className="font-mono font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+                          🔥 Sua chama permanece acesa há {dailyReport.currentStreak} {dailyReport.currentStreak === 1 ? 'dia' : 'dias'}.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tasks Summary */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400/50 font-bold block">
+                      Tarefas Diárias de Ontem
+                    </span>
+                    {dailyReport.allDailiesCompleted ? (
+                      <p className="text-xs text-[#fff3c6] leading-relaxed bg-[#fff3c6]/5 border border-[#fff3c6]/20 rounded-lg p-2.5">
+                        Incrível! Todas as suas tarefas de ontem foram concluídas.
+                      </p>
+                    ) : dailyReport.missedDailiesCount > 0 ? (
+                      <div className="text-xs text-amber-100/90 leading-relaxed bg-stone-900/40 border border-stone-800 rounded-lg p-2.5 space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                          <span className="text-[#E2B054]">Dailies Incompletas:</span>
+                          <span className="text-red-400">{dailyReport.missedDailiesCount}</span>
+                        </div>
+                        <p className="text-red-300 leading-relaxed text-[11px] border-t border-stone-800/60 pt-1.5">
+                          Algumas missões ficaram pelo caminho. Você sofreu <span className="text-red-400 font-bold font-mono">-{dailyReport.damageTaken} HP</span>.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-100/50 leading-relaxed italic bg-stone-900/30 border border-stone-800/40 rounded-lg p-2.5 text-center">
+                        Nenhuma tarefa diária pendente de ontem.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Continue button */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setDailyReport(null);
+                      if (!muteSfx) sound.playCoins();
+                    }}
+                    className="w-full px-8 py-3 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-300 text-stone-950 font-serif font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+                  >
+                    Continuar
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
