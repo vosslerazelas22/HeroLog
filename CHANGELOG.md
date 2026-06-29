@@ -15,6 +15,26 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.0.13] - 2026-06-29
+
+### Adicionado
+
+- **Modo Foco (`FocusModeScreen.tsx`)** — novo componente de interface imersiva para a Câmara do Foco, integrado ao `App.tsx` com sincronização de estados e controle do timer Pomodoro.
+
+### Alterado
+
+- **Textos do Modo Foco** — legendas de status atualizadas:
+  - Sessão ativa: `SESSÃO EM ANDAMENTO`.
+  - Sessão pausada: `SESSÃO PAUSADA`.
+- **Layout responsivo** — instruções de teclas de atalho físicas ocultadas na versão mobile; exibidas exclusivamente em desktop (`hidden md:block`): `ESC para sair • ESPAÇO para pausar`.
+
+### Arquivos alterados
+
+- `/src/components/FocusModeScreen.tsx` — criado; interface imersiva da Câmara do Foco.
+- `/src/App.tsx` — integração do Modo Foco e sincronização com o timer Pomodoro.
+
+---
+
 ## [1.0.12] - 2026-06-28
 
 ### Adicionado
