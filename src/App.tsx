@@ -56,6 +56,7 @@ import { StatsTab } from './components/StatsTab';
 import { AchievementsTab } from './components/AchievementsTab';
 import { GuideTab } from './components/GuideTab';
 import { TitlesTab, TITLE_CATALOG } from './components/TitlesTab';
+import { FocusModeScreen } from './components/FocusModeScreen';
 
 // Icons
 import {
@@ -161,6 +162,28 @@ function App({ userId, signOut }: AppProps) {
   const lastKnownCombatLevelRef = useRef<number>(gameState.combatLevel);
   const lastKnownSkillLevelsRef = useRef<Record<string, number>>({});
   const isImportingRef = useRef<boolean>(false);
+
+  // Focus Mode (Immersive Mode) State
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
+  const [isFocusCompleted, setIsFocusCompleted] = useState<boolean>(false);
+  const isFocusModeRef = useRef<boolean>(false);
+  useEffect(() => {
+    isFocusModeRef.current = isFocusMode;
+  }, [isFocusMode]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!document.fullscreenElement;
+      if (!isCurrentlyFullscreen && isFocusModeRef.current) {
+        setIsFocusMode(false);
+        setIsFocusCompleted(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Sub-system Timers state
   const [timerDuration, setTimerDuration] = useState<number>(() => {
@@ -1647,6 +1670,17 @@ function App({ userId, signOut }: AppProps) {
 
   // Complete Study Session successfully
   const completeFocusQuest = async () => {
+    if (isFocusModeRef.current && !isFocusCompleted) {
+      safelyClearTimerLoops();
+      setIsRunning(false);
+      setIsPaused(false);
+      setIsGraceActive(false);
+      setActiveScreenEvent(null);
+      localStorage.removeItem('herolog_active_session');
+      setIsFocusCompleted(true);
+      return;
+    }
+
     safelyClearTimerLoops();
     setIsRunning(false);
     setIsPaused(false);
@@ -3338,6 +3372,29 @@ function App({ userId, signOut }: AppProps) {
     '--mobile-sidebar-translate': `${mobileSidebarTranslateX}px`,
     touchAction: isMobileSidebarDragging ? 'none' : 'pan-y',
   } as React.CSSProperties;
+
+  if (isFocusMode) {
+    return (
+      <FocusModeScreen
+        timeLeft={timeLeft}
+        isPaused={isPaused}
+        togglePauseQuest={togglePauseQuest}
+        isFocusCompleted={isFocusCompleted}
+        setIsFocusCompleted={setIsFocusCompleted}
+        setIsFocusMode={setIsFocusMode}
+        completeFocusQuest={completeFocusQuest}
+        selectedSkillIdx={selectedSkillIdx}
+        gameState={gameState}
+        isWildernessChecked={isWildernessChecked}
+        isDungeonMode={isDungeonMode}
+        dungeonSessions={dungeonSessions}
+        pauseCount={pauseCount}
+        muteSfx={muteSfx}
+        sound={sound}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-quest-deep text-amber-100 font-sans flex flex-col antialiased relative overflow-x-hidden select-none">
       
@@ -3966,6 +4023,21 @@ function App({ userId, signOut }: AppProps) {
                             </div>
                           )}
                         </div>
+
+                        {isRunning && (
+                          <button
+                            onClick={() => {
+                              document.documentElement.requestFullscreen().catch((err) => {
+                                console.warn("Fullscreen API not supported or blocked:", err);
+                              });
+                              setIsFocusMode(true);
+                            }}
+                            className="w-full py-2.5 px-3 bg-stone-900 hover:bg-stone-850 text-amber-300 hover:text-amber-200 border border-amber-500/20 hover:border-amber-500/40 rounded text-xs font-serif font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[1px_2px_rgba(0,0,0,0.4)]"
+                          >
+                            <span>⛶</span>
+                            <span>Entrar na Câmara do Foco</span>
+                          </button>
+                        )}
 
                         {/* DUNGEON MODE TRIGGER BUTTON */}
                         <div className="flex gap-2 items-center relative z-20">
