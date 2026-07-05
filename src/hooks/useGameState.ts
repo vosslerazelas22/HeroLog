@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { CharacterState } from '../types';
 
@@ -54,7 +53,13 @@ export const INITIAL_STATE: CharacterState = {
     { id: 't-1', title: 'Ler WAY OF THE KINGS', notes: 'Completar o capítulo pendente do épico de Brandon Sanderson', difficulty: 'Medium', completed: false, tags: ['study'], checklist: [] },
   ],
   equippedEquipment: [null, null, null],
-  longBreakMinutes: 15,
+  pomodoroSettings: {
+    focusDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+    autoStartBreak: false,
+    autoStartFocus: false,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -62,6 +67,21 @@ export const INITIAL_STATE: CharacterState = {
 // ---------------------------------------------------------------------------
 export function normalizeGameState(parsed: any): CharacterState {
   const baseState: CharacterState = { ...INITIAL_STATE, ...parsed };
+
+  // Migração/Inicialização de pomodoroSettings
+  const oldLongBreak = parsed?.longBreakMinutes ?? 15;
+  baseState.pomodoroSettings = {
+    focusDuration: parsed?.pomodoroSettings?.focusDuration ?? 25,
+    shortBreakDuration: parsed?.pomodoroSettings?.shortBreakDuration ?? 5,
+    longBreakDuration: parsed?.pomodoroSettings?.longBreakDuration ?? oldLongBreak,
+    autoStartBreak: parsed?.pomodoroSettings?.autoStartBreak ?? false,
+    autoStartFocus: parsed?.pomodoroSettings?.autoStartFocus ?? false,
+    ...parsed?.pomodoroSettings,
+  };
+
+  if ('longBreakMinutes' in baseState) {
+    delete (baseState as any).longBreakMinutes;
+  }
 
   if (baseState.skills) {
     baseState.skills = baseState.skills.map((sk: any, idx: number) => ({
@@ -108,35 +128,56 @@ function setLocalUpdatedAt(ts: string) {
 // ---------------------------------------------------------------------------
 // Supabase sync helpers
 // ---------------------------------------------------------------------------
-async function fetchRemoteSave(userId: string): Promise<{ game_state: any; updated_at: string } | null> {
-  const { data, error } = await supabase
-    .from('saves')
-    .select('game_state, updated_at')
-    .eq('user_id', userId)
-    .single();
+const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
-  if (error || !data) return null;
-  return data as { game_state: any; updated_at: string };
+async function fetchRemoteSave(userId: string): Promise<{ game_state: any; updated_at: string } | null> {
+  if (!isUUID(userId)) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('saves')
+      .select('game_state, updated_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code !== 'PGRST116') {
+        console.warn('[HeroLog] Erro ao buscar save remoto:', error.message);
+      }
+      return null;
+    }
+    return data as { game_state: any; updated_at: string } | null;
+  } catch (err: any) {
+    console.error('[HeroLog] Erro de rede ao buscar save remoto:', err?.message || err);
+    return null;
+  }
 }
 
 async function pushRemoteSave(userId: string, state: CharacterState): Promise<string | null> {
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from('saves')
-    .upsert({ user_id: userId, game_state: state, updated_at: now });
+  if (!isUUID(userId)) return null;
 
-  if (error) {
-    console.error('[HeroLog] Erro ao sincronizar com Supabase:', error.message);
+  const now = new Date().toISOString();
+  try {
+    const { error } = await supabase
+      .from('saves')
+      .upsert({ user_id: userId, game_state: state, updated_at: now });
+
+    if (error) {
+      console.error('[HeroLog] Erro ao sincronizar com Supabase:', error.message);
+      return null;
+    }
+    return now;
+  } catch (err: any) {
+    console.error('[HeroLog] Erro ao sincronizar com Supabase:', err?.message || err);
     return null;
   }
-  return now;
 }
 
 // ---------------------------------------------------------------------------
 // Hook principal
 // ---------------------------------------------------------------------------
 interface UseGameStateOptions {
-  user: User | null;
+  user: { id: string } | null;
   onConflict?: (remoteState: CharacterState, localState: CharacterState) => Promise<'remote' | 'local'>;
 }
 
@@ -152,51 +193,70 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
   useEffect(() => {
     if (!user) return;
 
+    if (!isUUID(user.id)) {
+      setSyncStatus('idle');
+      return;
+    }
+
     async function loadRemoteSave() {
       setSyncStatus('syncing');
-      const remote = await fetchRemoteSave(user!.uid ?? user!.id);
+      try {
+        const remote = await fetchRemoteSave(user!.id);
 
-      if (!remote) {
-        // Nenhum save na nuvem ainda — faz push do local imediatamente
-        const ts = await pushRemoteSave(user!.id, gameState);
-        if (ts) setLocalUpdatedAt(ts);
-        setSyncStatus('idle');
-        return;
-      }
+        if (!remote) {
+          // Nenhum save na nuvem ainda — faz push do local imediatamente
+          const ts = await pushRemoteSave(user!.id, gameState);
+          if (ts) {
+            setLocalUpdatedAt(ts);
+            setSyncStatus('idle');
+          } else {
+            setSyncStatus('error');
+          }
+          return;
+        }
 
-      const remoteDate = new Date(remote.updated_at).getTime();
-      const localUpdatedAt = getLocalUpdatedAt();
-      const localDate = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
+        const remoteDate = new Date(remote.updated_at).getTime();
+        const localUpdatedAt = getLocalUpdatedAt();
+        const localDate = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
 
-      if (remoteDate <= localDate) {
-        // Local é mais recente ou igual — nada a fazer
-        setSyncStatus('idle');
-        return;
-      }
+        if (remoteDate <= localDate) {
+          // Local é mais recente ou igual — nada a fazer
+          setSyncStatus('idle');
+          return;
+        }
 
-      // Remoto é mais novo que o local que tínhamos quando abrimos o app
-      const remoteState = normalizeGameState(remote.game_state);
+        // Remoto é mais novo que o local que tínhamos quando abrimos o app
+        const remoteState = normalizeGameState(remote.game_state);
 
-      if (onConflict) {
-        setSyncStatus('conflict');
-        const choice = await onConflict(remoteState, gameState);
-        if (choice === 'remote') {
+        if (onConflict) {
+          setSyncStatus('conflict');
+          const choice = await onConflict(remoteState, gameState);
+          if (choice === 'remote') {
+            setGameState(remoteState);
+            saveToLocalStorage(remoteState);
+            setLocalUpdatedAt(remote.updated_at);
+          } else {
+            // Usuário escolheu manter o local — faz push para sobrescrever o remoto
+            const ts = await pushRemoteSave(user!.id, gameState);
+            if (ts) {
+              setLocalUpdatedAt(ts);
+              setSyncStatus('idle');
+            } else {
+              setSyncStatus('error');
+            }
+          }
+        } else {
+          // Sem handler de conflito: aplica remoto automaticamente (comportamento padrão)
           setGameState(remoteState);
           saveToLocalStorage(remoteState);
           setLocalUpdatedAt(remote.updated_at);
-        } else {
-          // Usuário escolheu manter o local — faz push para sobrescrever o remoto
-          const ts = await pushRemoteSave(user!.id, gameState);
-          if (ts) setLocalUpdatedAt(ts);
         }
-      } else {
-        // Sem handler de conflito: aplica remoto automaticamente (comportamento padrão)
-        setGameState(remoteState);
-        saveToLocalStorage(remoteState);
-        setLocalUpdatedAt(remote.updated_at);
-      }
 
-      setSyncStatus('idle');
+        setSyncStatus('idle');
+      } catch (err: any) {
+        console.error('[HeroLog] Erro durante o carregamento do save remoto:', err);
+        setSyncStatus('error');
+      }
     }
 
     loadRemoteSave();
@@ -217,17 +277,22 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
     saveToLocalStorage(gameState);
 
     // Debounce para o save remoto
-    if (!user) return;
+    if (!user || !isUUID(user.id)) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
       setSyncStatus('syncing');
-      const ts = await pushRemoteSave(user.id, gameState);
-      if (ts) {
-        setLocalUpdatedAt(ts);
-        setSyncStatus('idle');
-      } else {
+      try {
+        const ts = await pushRemoteSave(user.id, gameState);
+        if (ts) {
+          setLocalUpdatedAt(ts);
+          setSyncStatus('idle');
+        } else {
+          setSyncStatus('error');
+        }
+      } catch (err: any) {
+        console.error('[HeroLog] Erro no push automático do save:', err);
         setSyncStatus('error');
       }
     }, SYNC_DEBOUNCE_MS);
@@ -245,7 +310,7 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
     localStorage.removeItem(`${STORAGE_KEY}_updated_at`);
     setGameState(INITIAL_STATE);
     // Push do reset para a nuvem também, se logado
-    if (user) pushRemoteSave(user.id, INITIAL_STATE);
+    if (user && isUUID(user.id)) pushRemoteSave(user.id, INITIAL_STATE);
   }
 
   const importGameState = useCallback((parsed: any): CharacterState => {
