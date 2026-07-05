@@ -44,19 +44,62 @@ export interface ActiveSession {
   isWilderness?: boolean;
 }
 
-// Tabs
-import { HabitsTab } from './components/HabitsTab';
-import { DailiesTab } from './components/DailiesTab';
-import { TodosTab } from './components/TodosTab';
-import { HistoryTab } from './components/HistoryTab';
-import { HeatmapTab } from './components/HeatmapTab';
-import { QuestsTab, getRotatingDailyQuests, guildQuests, isQuestClaimed } from './components/QuestsTab';
-import { ShopTab } from './components/ShopTab';
-import { StatsTab } from './components/StatsTab';
-import { AchievementsTab } from './components/AchievementsTab';
-import { GuideTab } from './components/GuideTab';
-import { TitlesTab, TITLE_CATALOG } from './components/TitlesTab';
-import { FocusModeScreen } from './components/FocusModeScreen';
+// Tabs & Modules
+import {
+  HabitsTab,
+  DailiesTab,
+  TodosTab,
+  useHabits,
+  useDailies,
+  useTodos,
+  HistoryTab,
+  QuestsTab,
+  useGuildQuests,
+  getRotatingDailyQuests,
+  guildQuests,
+  isQuestClaimed,
+  useQuestProgress,
+} from './modules/quests';
+
+import {
+  HeatmapTab,
+  ShopTab,
+  StatsTab,
+  AchievementsTab,
+  GuideTab,
+  TitleShop,
+  useShop,
+} from './modules/kingdom';
+
+import {
+  TitleSelector,
+  TITLE_CATALOG,
+  useInventory,
+  useTitles,
+  useCharacter,
+  useLevelUp,
+  CharacterScreen,
+  CharacterSummary,
+  InventoryScreen,
+} from './modules/character';
+
+import { useSkills, SkillsScreen, QuickSkillsGrid } from './modules/skills';
+
+import {
+  FocusModeScreen,
+  useFocusSession,
+  useTimerControls,
+  useBreakTimer,
+  useAmbientSound,
+  AmbientSoundButton,
+  SessionConfig,
+  ModeDescriptionModal,
+  ModeDescriptionBlock,
+} from './modules/focus';
+
+import { BottomNav } from './components/navigation/BottomNav';
+import { Modal } from './components/Modal';
+import { SkillSelectorModal } from './components/SkillSelectorModal';
 
 // Icons
 import {
@@ -87,6 +130,10 @@ import {
   Calendar,
   Layers,
   Award,
+  ToggleLeft,
+  ToggleRight,
+  Skull,
+  Scroll,
 } from 'lucide-react';
 
 const STATIC_QUOTES = [
@@ -145,6 +192,7 @@ function App({ userId, signOut }: AppProps) {
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<string>('focus');
+  const [shopSubTab, setShopSubTab] = useState<'items' | 'titles'>('items');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [mobileSidebarDragX, setMobileSidebarDragX] = useState<number>(0);
   const [isMobileSidebarDragging, setIsMobileSidebarDragging] = useState<boolean>(false);
@@ -157,25 +205,46 @@ function App({ userId, signOut }: AppProps) {
     isHorizontal: false,
   });
 
-  // Epic Level Up Modal Queue and references
-  const [levelUpQueue, setLevelUpQueue] = useState<LevelUpModalType[]>([]);
-  const lastKnownCombatLevelRef = useRef<number>(gameState.combatLevel);
-  const lastKnownSkillLevelsRef = useRef<Record<string, number>>({});
-  const isImportingRef = useRef<boolean>(false);
-
   // Focus Mode (Immersive Mode) State
-  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
-  const [isFocusCompleted, setIsFocusCompleted] = useState<boolean>(false);
+  const [sessionConfig, setSessionConfig] = useState<SessionConfig>(() => {
+    let initialSkillIdx = 0;
+    let initialIsWilderness = false;
+    let initialIsDungeon = false;
+    let initialDungeonStep = 0;
+
+    try {
+      const data = localStorage.getItem('herolog_active_session');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session && session.isActive) {
+          initialSkillIdx = session.skillIdx || 0;
+          initialIsWilderness = !!session.isWilderness;
+          initialIsDungeon = !!session.isDungeon;
+          initialDungeonStep = session.dungeonStep || 0;
+        }
+      }
+    } catch (e) {}
+
+    return {
+      selectedSkillIdx: initialSkillIdx,
+      isWildernessChecked: initialIsWilderness,
+      isDungeonMode: initialIsDungeon,
+      dungeonSessions: initialDungeonStep,
+      sessionNotes: '',
+      isFocusMode: false,
+    };
+  });
+
   const isFocusModeRef = useRef<boolean>(false);
   useEffect(() => {
-    isFocusModeRef.current = isFocusMode;
-  }, [isFocusMode]);
+    isFocusModeRef.current = sessionConfig.isFocusMode;
+  }, [sessionConfig.isFocusMode]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!document.fullscreenElement;
       if (!isCurrentlyFullscreen && isFocusModeRef.current) {
-        setIsFocusMode(false);
+        setSessionConfig(prev => ({ ...prev, isFocusMode: false }));
         setIsFocusCompleted(false);
       }
     };
@@ -185,109 +254,19 @@ function App({ userId, signOut }: AppProps) {
     };
   }, []);
 
-  // Sub-system Timers state
-  const [timerDuration, setTimerDuration] = useState<number>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive && session.endTime > Date.now()) {
-          return Math.round(session.duration / 1000);
-        }
-      }
-    } catch (e) {}
-    return 25 * 60;
-  });
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive && session.endTime > Date.now()) {
-          return Math.max(0, Math.round((session.endTime - Date.now()) / 1000));
-        }
-      }
-    } catch (e) {}
-    return 25 * 60;
-  });
-  const [isRunning, setIsRunning] = useState<boolean>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive && session.endTime > Date.now()) {
-          return true;
-        }
-      }
-    } catch (e) {}
-    return false;
-  });
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [pauseCount, setPauseCount] = useState<number>(0);
-  const [isCustomTime, setIsCustomTime] = useState<boolean>(false);
-  const [customInputMins, setCustomInputMins] = useState<string>('25');
   const [isConfirmingAbandon, setIsConfirmingAbandon] = useState<boolean>(false);
-  const [isBreakPrep, setIsBreakPrep] = useState<boolean>(false);
-  const [isBreakActive, setIsBreakActive] = useState<boolean>(false);
-  const [selectedBreakMins, setSelectedBreakMins] = useState<number>(5);
 
-  // Setup options
-  const [selectedSkillIdx, setSelectedSkillIdx] = useState<number>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive) {
-          return session.skillIdx;
-        }
-      }
-    } catch (e) {}
-    return 0;
-  });
   // Ref para garantir que completeFocusQuest sempre leia o skillIdx atual,
   // mesmo quando chamada de dentro de closures stale do setInterval.
   const selectedSkillIdxRef = useRef<number>(0);
-  useEffect(() => { selectedSkillIdxRef.current = selectedSkillIdx; }, [selectedSkillIdx]);
-  const [isWildernessChecked, setIsWildernessChecked] = useState<boolean>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive) {
-          return !!session.isWilderness;
-        }
-      }
-    } catch (e) {}
-    return false;
-  });
-  const [isDungeonMode, setIsDungeonMode] = useState<boolean>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive) {
-          return !!session.isDungeon;
-        }
-      }
-    } catch (e) {}
-    return false;
-  });
-  const [dungeonSessions, setDungeonSessions] = useState<number>(() => {
-    try {
-      const data = localStorage.getItem('herolog_active_session');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session && session.isActive) {
-          return session.dungeonStep || 0;
-        }
-      }
-    } catch (e) {}
-    return 0;
-  });
+  useEffect(() => {
+    selectedSkillIdxRef.current = sessionConfig.selectedSkillIdx;
+  }, [sessionConfig.selectedSkillIdx]);
+
   const [lastDungeonClearedTime, setLastDungeonClearedTime] = useState<number>(0);
   const [showActionWindowTooltip, setShowActionWindowTooltip] = useState<boolean>(false);
   const [showDungeonTooltip, setShowDungeonTooltip] = useState<boolean>(false);
-  const [sessionNotes, setSessionNotes] = useState<string>('');
+  const [showWildernessTooltip, setShowWildernessTooltip] = useState<boolean>(false);
   const [muteSfx, setMuteSfx] = useState<boolean>(false);
 
   // Modals Toggles
@@ -295,20 +274,32 @@ function App({ userId, signOut }: AppProps) {
   const [isImportTextOpen, setIsImportTextOpen] = useState<boolean>(false);
   const [pastedSaveText, setPastedSaveText] = useState<string>('');
   const [isSkillsModalOpen, setIsSkillsModalOpen] = useState<boolean>(false);
-  const [inspectingItem, setInspectingItem] = useState<InventoryItem | null>(null);
+  const [isSkillSelectorOpen, setIsSkillSelectorOpen] = useState<boolean>(false);
+  const [isTimerSettingsModalOpen, setIsTimerSettingsModalOpen] = useState<boolean>(false);
   const [newSkillNameInput, setNewSkillNameInput] = useState<string>('');
   const [selectedNewSkillEmoji, setSelectedNewSkillEmoji] = useState<string>('📚');
   const [showSkillsTooltip, setShowSkillsTooltip] = useState<boolean>(false);
   const [inspectingSkillIdx, setInspectingSkillIdx] = useState<number | null>(null);
   const [editSkillName, setEditSkillName] = useState<string>('');
+  const [isPrestigeInfoOpen, setIsPrestigeInfoOpen] = useState<boolean>(false);
   
   // Game events states
+  interface Toast {
+    id: string;
+    message: string;
+    type: 'info' | 'error' | 'success';
+  }
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const showToast = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
+    const id = Math.random().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
   const [logs, setLogs] = useState<{ id: string; time: string; text: string; highlighted: boolean }[]>([]);
-  const [activeScreenEvent, setActiveScreenEvent] = useState<{ text: string; multiplierType: 'xp' | 'gold' | 'instant' } | null>(null);
   const [quoteOfTheDay, setQuoteOfTheDay] = useState<string[]>(STATIC_QUOTES[0]);
-  const [isPlayerDead, setIsPlayerDead] = useState<boolean>(false);
-  const [isGraceActive, setIsGraceActive] = useState<boolean>(false);
-  const [graceSecondsLeft, setGraceSecondsLeft] = useState<number>(3);
 
   // Reward claim modals Toggles
   const [customDialog, setCustomDialog] = useState<{
@@ -335,34 +326,6 @@ function App({ userId, signOut }: AppProps) {
       });
     });
 
-  const [rewardsModalData, setRewardsModalData] = useState<{
-    visible: boolean;
-    skillName: string;
-    skillIdx: number;
-    xpEarned: number;
-    goldEarned: number;
-    notes: string;
-    durationMins: number;
-    lootName?: string;
-    lootEmoji?: string;
-    droppedTitleName?: string;
-    droppedTitleEmoji?: string;
-    aiChronicleLoading: boolean;
-    aiChronicleResult?: string;
-    dungeonClearGoldBonus: number;
-    hasUsedDoubleLoot: boolean;
-    hasUsedFocusElixir: boolean;
-    hasUsedRuneFortune: boolean;
-    hasUsedCrystalClarity: boolean;
-    usedEquipmentIndicesAndCharges: { index: number; charges: number }[];
-    lootedItem?: { name: string; emoji: string };
-    droppedTitle?: { id: string; name: string; emoji: string };
-    isWildernessChecked: boolean;
-    isDungeonMode: boolean;
-    pauseCount: number;
-    comboBonusPercent: number;
-  } | null>(null);
-
   const [dailyReport, setDailyReport] = useState<{
     rewardAmount: number;
     currentStreak: number;
@@ -375,87 +338,7 @@ function App({ userId, signOut }: AppProps) {
 
   const [completionNotes, setCompletionNotes] = useState<string>('');
   const [completionTag, setCompletionTag] = useState<string>('');
-  const [rewardsStep, setRewardsStep] = useState<number>(1);
 
-  // Refs for background loops
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const eventIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const graceTimerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const focusEndTimeRef = useRef<number | null>(null);
-  const isBreakActiveRef = useRef<boolean>(false);
-  const isRunningRef = useRef(false);
-  const isPausedRef = useRef(false);
-  const timerDurationRef = useRef(25 * 60);
-
-  // Track Combat and Skill Level Up
-  useEffect(() => {
-    if (gameState.skills) {
-      gameState.skills.forEach(sk => {
-        if (lastKnownSkillLevelsRef.current[sk.name] === undefined) {
-          lastKnownSkillLevelsRef.current[sk.name] = sk.level;
-        }
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    const prevCombat = lastKnownCombatLevelRef.current;
-    const currentCombat = gameState.combatLevel;
-
-    if (isImportingRef.current) {
-      lastKnownCombatLevelRef.current = currentCombat;
-      if (gameState.skills) {
-        gameState.skills.forEach(sk => {
-          lastKnownSkillLevelsRef.current[sk.name] = sk.level;
-        });
-      }
-      isImportingRef.current = false;
-      return;
-    }
-
-    // Detect Combat Level Up
-    if (currentCombat > prevCombat && prevCombat > 0) {
-      setLevelUpQueue(prevQueue => [
-        ...prevQueue,
-        {
-          type: 'combat',
-          oldLevel: prevCombat,
-          newLevel: currentCombat,
-          charName: gameState.charName || 'Aventureiro',
-          charClass: gameState.charClass || 'Guerreiro'
-        }
-      ]);
-    }
-    lastKnownCombatLevelRef.current = currentCombat;
-
-    // Detect Skills Level Up
-    if (gameState.skills) {
-      gameState.skills.forEach(sk => {
-        const prevSkillLvl = lastKnownSkillLevelsRef.current[sk.name];
-        if (prevSkillLvl !== undefined && sk.level > prevSkillLvl && prevSkillLvl > 0) {
-          setLevelUpQueue(prevQueue => [
-            ...prevQueue,
-            {
-              type: 'skill',
-              skillName: sk.name,
-              emoji: sk.emoji || '🎯',
-              oldLevel: prevSkillLvl,
-              newLevel: sk.level
-            }
-          ]);
-        }
-        lastKnownSkillLevelsRef.current[sk.name] = sk.level;
-      });
-    }
-  }, [gameState.combatLevel, gameState.skills, gameState.charName, gameState.charClass]);
-
-  // Play sound when active level up changes
-  useEffect(() => {
-    if (levelUpQueue.length > 0 && !muteSfx) {
-      sound.playLevelUp();
-    }
-  }, [levelUpQueue.length, muteSfx]);
 
   // Expose test/debug helpers to window for manual testing in DevTools
   useEffect(() => {
@@ -499,11 +382,6 @@ function App({ userId, signOut }: AppProps) {
       delete (window as any).setSkillLevel;
     };
   }, []);
-
-  useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
-  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
-  useEffect(() => { timerDurationRef.current = timerDuration; }, [timerDuration]);
-  useEffect(() => { isBreakActiveRef.current = isBreakActive; }, [isBreakActive]);
 
   const completeSessionOnReload = (session: ActiveSession) => {
     localStorage.removeItem('herolog_active_session');
@@ -754,17 +632,23 @@ function App({ userId, signOut }: AppProps) {
       if (session.isDungeon) {
         const nextSessions = session.dungeonStep + 1;
         if (nextSessions >= 4) {
-          setDungeonSessions(0);
-          setIsDungeonMode(false);
+          setSessionConfig(prevConfig => ({
+            ...prevConfig,
+            dungeonSessions: 0,
+            isDungeonMode: false,
+          }));
           setLastDungeonClearedTime(Date.now());
-          setSelectedBreakMins(prev.longBreakMinutes || 15);
+          setSelectedBreakMins(prev.pomodoroSettings.longBreakDuration || 15);
           dungeonClearGoldBonus = 2500;
           setTimeout(() => {
             addSystemLog('🏆 EXPLORAÇÃO MASMORRA SUCESSO: Concluiu as 4 sessões heróicas consecutivas! Um bônus monumental místico de +2.500 GP foi adicionado aos teus espólios!', true);
           }, 120);
         } else {
-          setDungeonSessions(nextSessions);
-          setSelectedBreakMins(5);
+          setSessionConfig(prevConfig => ({
+            ...prevConfig,
+            dungeonSessions: nextSessions,
+          }));
+          setSelectedBreakMins(prev.pomodoroSettings.shortBreakDuration || 5);
           setTimeout(() => {
             addSystemLog(`⚔️ Masmorra Progresso: (${nextSessions}/4) focos consecutivos selados. Só mais ${4 - nextSessions} sessões para a glória eterna!`, true);
           }, 120);
@@ -1001,10 +885,6 @@ function App({ userId, signOut }: AppProps) {
       };
     });
 
-    setIsRunning(false);
-    setIsPaused(false);
-    setIsGraceActive(false);
-    setActiveScreenEvent(null);
     setIsBreakPrep(true);
   };
 
@@ -1015,43 +895,16 @@ function App({ userId, signOut }: AppProps) {
         const session = JSON.parse(data) as ActiveSession;
         if (session && session.isActive) {
           if (session.endTime > Date.now()) {
-            const endTime = session.endTime;
-            focusEndTimeRef.current = endTime;
-
-            // ── CORREÇÃO: Restaurar estado completo da sessão ──────────────
-            // Sem isso, selectedSkillIdx, timerDuration e modos voltam para
-            // os valores padrão, fazendo completeFocusQuest() registrar
-            // a skill errada com o tempo padrão.
-            setSelectedSkillIdx(session.skillIdx);
-            setTimerDuration(session.duration / 1000);
-            setIsDungeonMode(!!session.isDungeon);
-            setIsWildernessChecked(!!session.isWilderness);
-            setIsRunning(true);
-            setIsPaused(false);
+            // Restore selection states in App.tsx so they are in sync
+            setSessionConfig(prev => ({
+              ...prev,
+              selectedSkillIdx: session.skillIdx,
+              isDungeonMode: !!session.isDungeon,
+              isWildernessChecked: !!session.isWilderness,
+              dungeonSessions: session.dungeonStep || 0,
+            }));
             setIsBreakActive(false);
             setIsBreakPrep(false);
-
-            // Calcular tempo restante preciso em relação ao endTime absoluto
-            const initialRemaining = Math.max(0, Math.round((endTime - Date.now()) / 1000));
-            setTimeLeft(initialRemaining);
-            // ──────────────────────────────────────────────────────────────
-
-            addSystemLog(`⚔️ Recuperando portal rúnico! Jornada ativa restaurada com sucesso para a habilidade selecionada.`, true);
-            
-            triggerRandomAmbientEncounterScheduler();
-
-            timerIntervalRef.current = setInterval(() => {
-              const now = Date.now();
-              const remaining = Math.max(0, Math.round((endTime - now) / 1000));
-              setTimeLeft(() => {
-                if (remaining <= 0) {
-                  clearInterval(timerIntervalRef.current!);
-                  completeFocusQuest();
-                  return 0;
-                }
-                return remaining;
-              });
-            }, 1000);
           } else {
             completeSessionOnReload(session);
           }
@@ -1282,51 +1135,6 @@ function App({ userId, signOut }: AppProps) {
       return prev;
     });
 
-    // Detect Tab out blur events for Wilderness stakes
-    const handleVisChange = () => {
-      if (document.hidden) {
-        triggerTabAwayInfraction();
-      } else {
-        if (focusEndTimeRef.current !== null && (isRunningRef.current || isBreakActiveRef.current) && !isPausedRef.current) {
-          const now = Date.now();
-          const remaining = Math.max(0, Math.round((focusEndTimeRef.current - now) / 1000));
-          setTimeLeft(remaining);
-
-          if (remaining <= 0) {
-            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-            if (isBreakActiveRef.current) {
-              setIsBreakActive(false);
-              isBreakActiveRef.current = false;
-              addSystemLog('✨ Mana totalmente regenerada enquanto você esteve fora! Nova Jornada de Foco disponível.', true);
-              setTimeLeft(timerDurationRef.current);
-            } else {
-              completeFocusQuest();
-            }
-          }
-        }
-      }
-    };
-    
-    const handleWindowBlur = () => {
-      triggerTabAwayInfraction();
-    };
-
-    const handleWindowFocus = () => {
-      // If user comes back while grace warning modal is ticking, keep state intact on safe grounds
-    };
-
-    document.addEventListener('visibilitychange', handleVisChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      if (eventIntervalRef.current) clearInterval(eventIntervalRef.current);
-      if (graceTimerIntervalRef.current) clearInterval(graceTimerIntervalRef.current);
-    };
   }, []);
 
   // System Logs Handler
@@ -1336,6 +1144,15 @@ function App({ userId, signOut }: AppProps) {
       { id: `${Date.now()}_${Math.random()}`, time: timeStr, text, highlighted },
       ...prev.slice(0, 50)
     ]);
+
+    // Dispara toasts heróicos ou avisos para os 3 eventos específicos
+    if (text.includes('gastou todas as suas cargas e quebrou')) {
+      showToast(text, 'error');
+    } else if (text.includes('já possui este nome exato')) {
+      showToast('❌ Já existe uma habilidade com este nome.', 'error');
+    } else if (text.includes('Não é possível remover ou alterar habilidades') && text.includes('foco estiver ativa')) {
+      showToast('❌ Não é possível remover habilidades durante o foco.', 'error');
+    }
   };
 
   // Setup clock phase details
@@ -1347,127 +1164,11 @@ function App({ userId, signOut }: AppProps) {
     return '🌙 Noite';
   };
 
-  // Timer Control Hooks
-  const changeDuration = (minutes: number) => {
-    if (isRunning) return;
-    setIsCustomTime(false);
-    const secs = minutes * 60;
-    setTimerDuration(secs);
-    setTimeLeft(secs);
-  };
-
-  const selectCustomTime = () => {
-    if (isRunning) return;
-    setIsCustomTime(true);
-  };
-
-  const applyCustomTime = () => {
-    const minsVal = parseInt(customInputMins);
-    if (!minsVal || minsVal < 1 || minsVal > 480) return;
-    const secs = minsVal * 60;
-    setTimerDuration(secs);
-    setTimeLeft(secs);
-  };
-
   // Start Focus Quest Pomodoro
   const startQuestTimer = () => {
-    if (gameState.skills.length === 0) {
-      addSystemLog('❌ Impeditivo: Você precisa cadastrar e selecionar uma habilidade antes de iniciar su jornada.', false);
-      return;
-    }
-
     setIsBreakPrep(false);
     setIsBreakActive(false);
-    setIsRunning(true);
-    setIsPaused(false);
-    setPauseCount(0);
-    setIsPlayerDead(false);
-    setIsGraceActive(false);
-
-    const activeSkillName = gameState.skills[selectedSkillIdx]?.name || 'Código Sagrado';
-    addSystemLog(`⚔️ Jornada de Foco Ativada: Canalizando forças mentais focando em "${activeSkillName}" por ${Math.floor(timerDuration/ 60)}m!`, true);
-    
-    if (isWildernessChecked) {
-      addSystemLog('💀 ALERTA DE PERIGO: Adentraste a Terra Selvagem (Wilderness)! Não minimizes esta janela ou sofreras Morte Cognitiva.', true);
-    }
-
-    if (!muteSfx) sound.playFocusBell();
-
-    // Trigger random encounters in intervals
-    triggerRandomAmbientEncounterScheduler();
-
-    const endTime = Date.now() + timeLeft * 1000;
-    focusEndTimeRef.current = endTime;
-
-    const activeSession: ActiveSession = {
-      isActive: true,
-      skillIdx: selectedSkillIdx,
-      duration: timerDuration * 1000,
-      endTime: endTime,
-      startTime: Date.now() - (timerDuration - timeLeft) * 1000,
-      isDungeon: isDungeonMode,
-      dungeonStep: dungeonSessions,
-      isWilderness: isWildernessChecked,
-    };
-    localStorage.setItem('herolog_active_session', JSON.stringify(activeSession));
-
-    timerIntervalRef.current = setInterval(() => {
-      const now = Date.now();
-      const remaining = Math.max(0, Math.round((endTime - now) / 1000));
-      
-      setTimeLeft(() => {
-        if (remaining <= 0) {
-          clearInterval(timerIntervalRef.current!);
-          completeFocusQuest();
-          return 0;
-        }
-        return remaining;
-      });
-    }, 1000);
-  };
-
-  // Pause Focus Quest Pomodoro
-  const togglePauseQuest = () => {
-    if (!isRunning) return;
-    
-    if (isPaused) {
-      setIsPaused(false);
-      addSystemLog(`⚔️ Jornada de Foco retomada do repouso profundo!`);
-      
-      const endTime = Date.now() + timeLeft * 1000;
-      focusEndTimeRef.current = endTime;
-
-      const activeSession: ActiveSession = {
-        isActive: true,
-        skillIdx: selectedSkillIdx,
-        duration: timerDuration * 1000,
-        endTime: endTime,
-        startTime: Date.now() - (timerDuration - timeLeft) * 1000,
-        isDungeon: isDungeonMode,
-        dungeonStep: dungeonSessions,
-        isWilderness: isWildernessChecked,
-      };
-      localStorage.setItem('herolog_active_session', JSON.stringify(activeSession));
-
-      timerIntervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const remaining = Math.max(0, Math.round((endTime - now) / 1000));
-        setTimeLeft(() => {
-          if (remaining <= 0) {
-            clearInterval(timerIntervalRef.current!);
-            completeFocusQuest();
-            return 0;
-          }
-          return remaining;
-        });
-      }, 1000);
-    } else {
-      setIsPaused(true);
-      setPauseCount(prev => prev + 1);
-      clearInterval(timerIntervalRef.current!);
-      localStorage.removeItem('herolog_active_session');
-      addSystemLog(`⏸️ Jornada de Foco congelada nas chagas da meditação.`);
-    }
+    startSession();
   };
 
   // Abandon focus quest
@@ -1482,504 +1183,223 @@ function App({ userId, signOut }: AppProps) {
       return;
     }
 
-    safelyClearTimerLoops();
-    setTimeLeft(timerDuration);
-    setIsRunning(false);
-    setIsPaused(false);
-    setIsGraceActive(false);
+    cancelSession();
     setIsConfirmingAbandon(false);
-    setActiveScreenEvent(null);
-    localStorage.removeItem('herolog_active_session');
-    addSystemLog('⚠️ Missão abandonada trágicamente pelo aventureiro.');
 
-    if (isDungeonMode) {
-      setIsDungeonMode(false);
-      setDungeonSessions(0);
+    if (sessionConfig.isDungeonMode) {
+      setSessionConfig(prev => ({
+        ...prev,
+        isDungeonMode: false,
+        dungeonSessions: 0
+      }));
       addSystemLog('💀 FRACASSO NA MASMORRA: Ao abandonar, sua expedição na Masmorra colapsou tragicamente e todo o progresso heróico de focos seguidos foi perdido nas cinzas.', true);
     }
   };
 
-  // Safely cleanup background tick loops
-  const safelyClearTimerLoops = () => {
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    if (eventIntervalRef.current) clearInterval(eventIntervalRef.current);
-    if (graceTimerIntervalRef.current) clearInterval(graceTimerIntervalRef.current);
-  };
 
-  // Break/Descanso functions
-  const startBreakTimer = (durationMinutes: number) => {
-    safelyClearTimerLoops();
-    setIsBreakPrep(false);
-    setIsBreakActive(true);
-    
-    const breakDuration = durationMinutes * 60;
-    setTimeLeft(breakDuration);
-    
-    addSystemLog(`🍵 Recuperando mana: Iniciando meditação de descanso de ${durationMinutes} minutos...`, true);
-    if (!muteSfx) sound.playFocusBell();
+  // Focus session state management hook invocation
+  const focusSession = useFocusSession({
+    gameState,
+    setGameState,
+    sessionConfig,
+    onLog: (msg, flash) => addSystemLog(msg, flash),
+    muteSfx,
+    sound,
+  });
 
-    const endTime = Date.now() + breakDuration * 1000;
-    focusEndTimeRef.current = endTime;
-    timerIntervalRef.current = setInterval(() => {
-      const now = Date.now();
-      const remaining = Math.max(0, Math.round((endTime - now) / 1000));
-      
-      setTimeLeft(remaining);
-      
-      if (remaining <= 0) {
-        clearInterval(timerIntervalRef.current!);
-        setIsBreakActive(false);
-        addSystemLog('✨ Mana totalmente regenerada! A vitalidade mística do seu herói foi restaurada. Sinta-se à vontade para iniciar nova Missão de Foco.', true);
-        if (!muteSfx) sound.playFocusBell();
-        setTimeLeft(timerDuration); // Restaura a duração de foco anterior
-      }
-    }, 1000);
-  };
+  const {
+    timeLeft,
+    setTimeLeft,
+    isRunning,
+    isPaused,
+    isFocusCompleted,
+    setIsFocusCompleted,
+    pauseCount,
+    isGraceActive,
+    graceSecondsLeft,
+    isPlayerDead,
+    setIsPlayerDead,
+    activeScreenEvent,
+    rewardsModalData,
+    rewardsStep,
+    setRewardsStep,
+    startSession,
+    cancelSession,
+    togglePauseQuest,
+    completeFocusQuest,
+    triggerTabAwayInfraction,
+    handleReturnToFocusCap,
+    respawnHero,
+    closeRewardsModal,
+    updateRewardsModalData,
+    enterBreak,
+    exitBreak,
+  } = focusSession;
 
-  const skipBreak = () => {
-    safelyClearTimerLoops();
-    setIsBreakActive(false);
-    setIsBreakPrep(false);
-    setTimeLeft(timerDuration); // Restaura a duração de foco anterior
-    addSystemLog('⏩ Descanso pulado. Preparando canais ocultos para uma nova Jornada de Foco!');
-  };
-
-  // Focus ambient modifiers & Events
-  const triggerRandomAmbientEncounterScheduler = () => {
-    eventIntervalRef.current = setInterval(() => {
-      if (isPaused) return;
-
-      const rolls = [
-        { text: '⚡ Ondas Alfa Intensificadas! Bônus de +25% de XP nesta sessão.', multiplierType: 'xp' },
-        { text: '💎 Sorte de Alquimista! Você encontrou pepitas místicas: Ouro amplificado.', multiplierType: 'gold' },
-        { text: '📚 Sopro de Inspiração Filosófica! Recompensa bônus garantida.', multiplierType: 'instant' }
-      ];
-      
-      // 30% chance of random encounter
-      if (Math.random() < 0.3) {
-        const event = rolls[Math.floor(Math.random() * rolls.length)];
-        setActiveScreenEvent(event as any);
-        addSystemLog(`✨ Evento: ${event.text}`, true);
-        if (!muteSfx) sound.playCoins();
-
-        // Expire event aura in 15 seconds
-        setTimeout(() => {
-          setActiveScreenEvent(null);
-        }, 15000);
-      }
-    }, 45000);
-  };
-
-  // Wilderness infraction detection
-  const triggerTabAwayInfraction = () => {
-    // Wilderness must be toggled, timer active, and not already paused or in grace cycle
-    if (!isRunning || !isWildernessChecked || isPaused || isGraceActive || isPlayerDead) return;
-
-    // Check if player has the DEATH-PROOF title equipped
-    if (gameState.equippedTitle === 'DEATH-PROOF') {
-      setIsPaused(true);
-      addSystemLog('🛡️ ESCUDO RÚNICO [DEATH-PROOF]: Você se distraiu e saiu do Santuário! A Morte Cognitiva foi convertida em Pausa por causa de o teu título equipado!', true);
-      return;
-    }
-
-    setIsGraceActive(true);
-    setGraceSecondsLeft(3);
-    if (!muteSfx) sound.playWildernessWarning();
-
-    addSystemLog('⚠️ INFRAÇÃO COGNITIVA: Você se distraiu e saiu do Santuário! Sombra da Morte se aproxima em 3s!', true);
-
-    let count = 3;
-    graceTimerIntervalRef.current = setInterval(() => {
-      count--;
-      setGraceSecondsLeft(count);
-      if (!muteSfx) sound.playWildernessWarning();
-
-      if (count <= 0) {
-        clearInterval(graceTimerIntervalRef.current!);
-        setIsGraceActive(false);
-        // Execute death penalty
-        triggerCognitiveDeath();
-      }
-    }, 1000);
-  };
-
-  // Terminate player's session tragically
-  const triggerCognitiveDeath = () => {
-    safelyClearTimerLoops();
-    setIsPlayerDead(true);
-    setIsRunning(false);
-    setIsPaused(false);
-    setIsGraceActive(false);
-    setActiveScreenEvent(null);
-    setTimeLeft(timerDuration);
-    setSessionNotes('');
-    localStorage.removeItem('herolog_active_session');
-
-    if (!muteSfx) sound.playDeath();
-    addSystemLog('💀 MORTE COGNITIVA: Você falhou no voto de silêncio e foi expulso da Terra Selvagem. Todas recompensas perdidas!', true);
-    
-    // Streak break penalty
-    setGameState(prev => {
-      // Ranger has streak decay protection benefits of +15% saving rolls
-      const roll = Math.random();
-      const saveChance = prev.charClass === 'Ranger' ? 0.15 : 0;
-      
-      let finalStreak = prev.streak;
-      if (roll >= saveChance && prev.streak > 0) {
-        finalStreak = 0;
-        setTimeout(() => {
-          addSystemLog('⚠️ Sua streak de dias ininterruptos de foco colapsou de volta ao zero.', false);
-        }, 100);
-      } else if (prev.streak > 0) {
-        setTimeout(() => {
-          addSystemLog('🏹 Esquiva Rápida! Sua agilidade como Ranger salvou sua streak de dias de expirar mesmo na falha da Wilderness!', true);
-        }, 100);
-      }
-      return {
-        ...prev,
-        streak: finalStreak,
-        combo: 0
-      };
-    });
-  };
-
-  // Respawn herói
-  const respawnHero = () => {
-    setIsPlayerDead(false);
-    setGameState(prev => {
-      const nextLevel = Math.max(1, prev.combatLevel - 1);
-      const goldPenalty = 50;
-      const nextGold = Math.max(0, prev.gold - goldPenalty);
-      
-      return {
-        ...prev,
-        hp: prev.maxHp,
-        combatLevel: nextLevel,
-        combatXP: 0,
-        gold: nextGold,
-      };
-    });
-    addSystemLog('🛡️ Ressurgindo na capela do Santuário. Sacuda as cinzas do desatenção! Tua integridade (HP) foi totalmente restaurada, mas pagaste com o rebaixamento de 1 Nível de Combate e a perda de -50 GP.', true);
-  };
-
-  const handleReturnToFocusCap = () => {
-    if (graceTimerIntervalRef.current) clearInterval(graceTimerIntervalRef.current);
-    setIsGraceActive(false);
-    addSystemLog('🛡️ Retornou a tempo! A aura de estabilidade celestial te acolhe novamente.', true);
-  };
-
-  // Complete Study Session successfully
-  const completeFocusQuest = async () => {
-    if (isFocusModeRef.current && !isFocusCompleted) {
-      safelyClearTimerLoops();
-      setIsRunning(false);
-      setIsPaused(false);
-      setIsGraceActive(false);
-      setActiveScreenEvent(null);
-      localStorage.removeItem('herolog_active_session');
-      setIsFocusCompleted(true);
-      return;
-    }
-
-    safelyClearTimerLoops();
-    setIsRunning(false);
-    setIsPaused(false);
-    setIsGraceActive(false);
-    setActiveScreenEvent(null);
-    setTimeLeft(timerDuration);
-    localStorage.removeItem('herolog_active_session');
-
-    // Usa o ref para garantir o skillIdx correto mesmo em closures stale do setInterval.
-    // selectedSkillIdx (estado) pode estar desatualizado quando esta função foi capturada
-    // pelo closure do setInterval no início da sessão.
-    const currentSkillIdx = selectedSkillIdxRef.current;
-    const studiedMinutes = Math.floor(timerDuration / 60);
-    const activeSkillName = gameState.skills[currentSkillIdx]?.name || 'Código Sagrado';
-
-    // Calculate core rewards
-    const baseXP = studiedMinutes * 2;
-    const baseGold = studiedMinutes * 3;
-
-    // Apply multipliers setup
-    let xpMultiplier = 1.0;
-    let goldMultiplier = 1.0;
-
-    // Titles perk multipliers
-    const eqTitleId = gameState.equippedTitle;
-    let titleXpAdd = 0;
-    let titleGoldAdd = 0;
-
-    if (eqTitleId === 'LEGEND_GP') titleXpAdd += 0.05;
-    if (eqTitleId === 'INFERNO') titleXpAdd += 0.08;
-    if (eqTitleId === 'STARBOUND') { titleXpAdd += 0.10; titleGoldAdd += 0.08; }
-    if (eqTitleId === 'DRAGONBORN') titleXpAdd += 0.15;
-    if (eqTitleId === 'VOIDWALKER') titleXpAdd += 0.20;
-    if (eqTitleId === 'THE_WATCHER') { titleXpAdd += 0.25; titleGoldAdd += 0.15; }
-    if (eqTitleId === 'TRANSCENDENT') { titleXpAdd += 0.30; titleGoldAdd += 0.20; }
-    if (eqTitleId === 'THE_ETERNAL_SCHOLAR') { titleXpAdd += 0.50; titleGoldAdd += 0.30; }
-
-    // Achievements
-    if (eqTitleId === 'IRON_WILL') titleXpAdd += 0.05;
-    if (eqTitleId === 'DIAMOND_MIND') { titleXpAdd += 0.08; titleGoldAdd += 0.05; }
-    if (eqTitleId === 'THE_CENTURY') { titleXpAdd += 0.12; titleGoldAdd += 0.08; }
-    if (eqTitleId === 'A_FULL_YEAR') { titleXpAdd += 0.25; titleGoldAdd += 0.15; }
-    if (eqTitleId === 'CENTURION') titleXpAdd += 0.05;
-    if (eqTitleId === 'THE_OBSESSED') { titleXpAdd += 0.15; titleGoldAdd += 0.10; }
-    if (eqTitleId === 'IMMORTAL_SCHOLAR') { titleXpAdd += 0.25; titleGoldAdd += 0.20; }
-    if (eqTitleId === 'DEATH-PROOF') {
-      if (isWildernessChecked) titleXpAdd += 0.25;
-    }
-    if (eqTitleId === 'DUNGEON_LORD') {
-      if (isDungeonMode) titleXpAdd += 0.15;
-    }
-    if (eqTitleId === 'RAID_VETERAN') {
-      if (isDungeonMode) { titleXpAdd += 0.25; titleGoldAdd += 0.20; }
-    }
-    if (eqTitleId === 'LEGEND_ACH') titleXpAdd += 0.10;
-    if (eqTitleId === 'PANTHEON') titleXpAdd += 0.20;
-    if (eqTitleId === 'MANIAC') titleXpAdd += 0.10;
-    if (eqTitleId === 'IN_THE_ZONE') titleXpAdd += 0.05;
-    if (eqTitleId === 'MARATHONER') {
-      if (studiedMinutes >= 60) titleXpAdd += 0.15;
-    }
-    if (eqTitleId === 'XP_GOD') { titleXpAdd += 0.20; titleGoldAdd += 0.10; }
-    if (eqTitleId === 'NOCTURNAL') titleXpAdd += 0.15;
-    if (eqTitleId === 'ASCENDED') titleXpAdd += 0.10;
-
-    // Drops
-    if (eqTitleId === 'BLESSED') { titleXpAdd += 0.08; titleGoldAdd += 0.10; }
-    if (eqTitleId === 'SHADOW') titleXpAdd += 0.10;
-    if (eqTitleId === 'THE_FORSAKEN') {
-      if (isWildernessChecked) titleXpAdd += 0.15;
-    }
-    if (eqTitleId === 'CELESTIAL') { titleXpAdd += 0.20; titleGoldAdd += 0.15; }
-    if (eqTitleId === 'THUNDERSTRUCK') {
-      if (isWildernessChecked) titleXpAdd += 0.25;
-      titleGoldAdd += 0.10;
-    }
-    if (eqTitleId === 'HAUNTED') { titleXpAdd += 0.10; titleGoldAdd += 0.20; }
-    if (eqTitleId === 'BLOOD_FORGED') {
-      if (isDungeonMode) { titleXpAdd += 0.20; titleGoldAdd += 0.20; }
-    }
-
-    xpMultiplier += titleXpAdd;
-    goldMultiplier += titleGoldAdd;
-
-    // Class perks
-    if (gameState.charClass === 'Mage') xpMultiplier += 0.20; // +20% XP
-    if (gameState.charClass === 'Warrior') goldMultiplier += 0.20; // +20% Gold
-
-    // Combo system boosts
-    const comboBoost = Math.min(gameState.combo * 0.05, 0.50); // capping at +50% XP
-    xpMultiplier += comboBoost;
-
-    // Active random events
-    if (activeScreenEvent?.multiplierType === 'xp') xpMultiplier += 0.25;
-    if (activeScreenEvent?.multiplierType === 'gold') goldMultiplier += 0.50;
-
-    // Wilderness survival bonuses (+25% extras)
-    if (isWildernessChecked) {
-      xpMultiplier += 0.25;
-      goldMultiplier += 0.25;
-    }
-
-    // Dungeon Run rewards (+50% XP per minute every session)
-    if (isDungeonMode) {
-      xpMultiplier += 0.50;
-    }
-
-    // Active single use consumables bought from goblin shop check
-    const doubleLootIdx = gameState.inventory.findIndex(item => item.buff === 'DoubleLoot');
-    let hasUsedDoubleLoot = false;
-    if (doubleLootIdx >= 0) {
-      goldMultiplier *= 2.0;
-      hasUsedDoubleLoot = true;
-    }
-
-    const focusElixirIdx = gameState.inventory.findIndex(item => item.buff === 'FocusElixir');
-    let hasUsedFocusElixir = false;
-    if (focusElixirIdx >= 0) {
-      xpMultiplier += 0.20;
-      hasUsedFocusElixir = true;
-    }
-
-    const runeFortuneIdx = gameState.inventory.findIndex(item => item.buff === 'RuneFortune');
-    let hasUsedRuneFortune = false;
-    if (runeFortuneIdx >= 0) {
-      goldMultiplier *= 2.0;
-      hasUsedRuneFortune = true;
-    }
-
-    const crystalClarityIdx = gameState.inventory.findIndex(item => item.buff === 'CrystalClarity');
-    let hasUsedCrystalClarity = false;
-    if (crystalClarityIdx >= 0) {
-      xpMultiplier *= 2.00;
-      hasUsedCrystalClarity = true;
-    }
-
-    // --- EQUIPMENT SLOTS ACTIVE BOOSTS ---
-    const equipped = gameState.equippedEquipment || [null, null, null];
-    let usedEquipmentIndicesAndCharges: { index: number; charges: number }[] = [];
-
-    equipped.forEach((item, index) => {
-      if (item) {
-        let activated = false;
-        if (item.buff === 'PixelOwl') {
-          xpMultiplier += 0.05;
-          activated = true;
-        } else if (item.buff === 'DragonQuill') {
-          if (studiedMinutes >= 45) {
-            xpMultiplier += 0.08;
-            activated = true;
-          }
-        } else if (item.buff === 'CrystalBall') {
-          xpMultiplier += 0.10;
-          activated = true;
-        } else if (item.buff === 'AncientTome') {
-          if (studiedMinutes >= 60) {
-            xpMultiplier += 0.15;
-            activated = true;
-          }
-        }
-
-        if (activated) {
-          const currentCharges = item.charges ?? 8;
-          usedEquipmentIndicesAndCharges.push({ index, charges: currentCharges - 1 });
-        }
-      }
-    });
-
-    const finalXP = Math.floor(baseXP * xpMultiplier);
-    const finalGold = Math.floor(baseGold * goldMultiplier);
-
-    // Loot rates custom multiplier based on title
-    let lootRateMultiplier = 1.0;
-    if (eqTitleId === 'VOIDWALKER') lootRateMultiplier += 0.50;
-    if (eqTitleId === 'TRANSCENDENT' || eqTitleId === 'CELESTIAL') lootRateMultiplier += 1.00;
-    if (eqTitleId === 'IMMORTAL_SCHOLAR') lootRateMultiplier += 0.50;
-    if (eqTitleId === 'NOCTURNAL') lootRateMultiplier += 0.30;
-    if (eqTitleId === 'SHADOW') lootRateMultiplier += 0.75;
-
-    // Random Loot drops (Quad Loot Rolls & 40% Legendary Chance in Dungeon Mode)
-    const landedLoots: { name: string; emoji: string }[] = [];
-    const rollCount = isDungeonMode ? 4 : 1;
-
-    for (let r = 0; r < rollCount; r++) {
-      let thresholdChance = isDungeonMode ? 0.40 : (studiedMinutes >= 90 ? 0.70 : studiedMinutes >= 50 ? 0.45 : 0.25);
-      thresholdChance = Math.min(0.95, thresholdChance * lootRateMultiplier);
-      if (Math.random() < thresholdChance) {
-        const lootCatalog = isDungeonMode 
-          ? [
-              { name: 'Grimório Lendário do Caos 🔮', emoji: '🔮' },
-              { name: 'Espada do Foco Inabalável 🗡️', emoji: '🗡️' },
-              { name: 'Cálice Sagrado da Sabedoria 🏆', emoji: '🏆' },
-              { name: 'Relíquia Secreta Arcana 🔱', emoji: '🔱' },
-              { name: 'Pedra Filosofal Rúnica 💎', emoji: '💎' }
-            ]
-          : [
-              { name: 'Grimório de Prata', emoji: '📚' },
-              { name: 'Pergaminho Antigo', emoji: '📜' },
-              { name: 'Poção Celestina', emoji: '🧪' },
-              { name: 'Fécula de Estrelas', emoji: '✨' },
-              { name: 'Broche de Ouro', emoji: '🏅' }
-            ];
-        const item = lootCatalog[Math.floor(Math.random() * lootCatalog.length)];
-        landedLoots.push(item);
+  // Break/Descanso timer hook invocation
+  const breakTimer = useBreakTimer({
+    enterBreak,
+    exitBreak,
+    cancelSession,
+    onLog: (msg, flash) => addSystemLog(msg, flash),
+    muteSfx,
+    onBreakComplete: () => {
+      if (gameState.pomodoroSettings.autoStartFocus) {
+        startQuestTimer();
       }
     }
+  });
 
-    let lootedItem: { name: string; emoji: string } | undefined = undefined;
-    if (landedLoots.length > 0) {
-      lootedItem = {
-        name: landedLoots.map(l => l.name).join(', '),
-        emoji: landedLoots[0].emoji
-      };
+  const {
+    isBreakPrep,
+    setIsBreakPrep,
+    isBreakActive,
+    setIsBreakActive,
+    selectedBreakMins,
+    setSelectedBreakMins,
+    enterBreakPrep,
+    startBreakTimer,
+    skipBreak,
+  } = breakTimer;
+
+  // Ambient Sounds hook invocation
+  const ambientSound = useAmbientSound({
+    isWorkSessionActive: isRunning && !isPaused && !isBreakActive,
+  });
+
+  // Timer controls hook invocation
+  const timerControls = useTimerControls({
+    gameState,
+    setGameState,
+    setTimeLeft,
+    isRunning,
+    isBreakActive,
+  });
+
+  const {
+    isCustomTime,
+    setIsCustomTime,
+    customInputMins,
+    setCustomInputMins,
+    changeDuration,
+    selectCustomTime,
+    applyCustomTime,
+  } = timerControls;
+
+  const [ajustesFocus, setAjustesFocus] = React.useState<string>(String(gameState.pomodoroSettings.focusDuration));
+  const [ajustesShortBreak, setAjustesShortBreak] = React.useState<string>(String(gameState.pomodoroSettings.shortBreakDuration));
+  const [ajustesLongBreak, setAjustesLongBreak] = React.useState<string>(String(gameState.pomodoroSettings.longBreakDuration));
+  const [ajustesAutoBreak, setAjustesAutoBreak] = React.useState<boolean>(gameState.pomodoroSettings.autoStartBreak);
+  const [ajustesAutoFocus, setAjustesAutoFocus] = React.useState<boolean>(gameState.pomodoroSettings.autoStartFocus);
+
+  React.useEffect(() => {
+    if (isTimerSettingsModalOpen) {
+      setAjustesFocus(String(gameState.pomodoroSettings.focusDuration));
+      setAjustesShortBreak(String(gameState.pomodoroSettings.shortBreakDuration));
+      setAjustesLongBreak(String(gameState.pomodoroSettings.longBreakDuration));
+      setAjustesAutoBreak(gameState.pomodoroSettings.autoStartBreak);
+      setAjustesAutoFocus(gameState.pomodoroSettings.autoStartFocus);
     }
+  }, [isTimerSettingsModalOpen, gameState.pomodoroSettings]);
 
-    // --- TITLE DROP CHECK ---
-    let baseTitleChance = isDungeonMode ? 0.05 : (studiedMinutes >= 50 ? 0.03 : 0.01);
-    let titleDropMultiplier = 1.0;
-    if (eqTitleId === 'VOIDWALKER') titleDropMultiplier += 0.50;
-    if (eqTitleId === 'NOCTURNAL') titleDropMultiplier += 0.30;
-    if (eqTitleId === 'SHADOW') titleDropMultiplier += 0.75;
+  const {
+    habits: habitsList,
+    onTriggerHabit,
+    onAddHabit,
+    onEditHabit,
+    onDeleteHabit,
+  } = useHabits(gameState, setGameState, addSystemLog, muteSfx, setIsPlayerDead);
 
-    let finalTitleDropChance = baseTitleChance * titleDropMultiplier;
-    let droppedTitle: { id: string; name: string; emoji: string } | undefined = undefined;
+  const {
+    dailies: dailiesList,
+    onToggleDaily,
+    onToggleChecklistItem: onToggleDailyChecklistItem,
+    onAddDaily,
+    onEditDaily,
+    onDeleteDaily,
+  } = useDailies(gameState, setGameState, addSystemLog, muteSfx);
 
-    if (Math.random() < finalTitleDropChance) {
-      const dropTitlesPool = [
-        { id: 'BLESSED', name: 'BLESSED', emoji: '🌸' },
-        { id: 'SHADOW', name: 'SHADOW', emoji: '🌑' },
-        { id: 'THE_FORSAKEN', name: 'THE FORSAKEN', emoji: '🔮' },
-        { id: 'CELESTIAL', name: 'CELESTIAL', emoji: '✨' },
-        { id: 'THUNDERSTRUCK', name: 'THUNDERSTRUCK', emoji: '⚡' },
-        { id: 'HAUNTED', name: 'HAUNTED', emoji: '👻' },
-        { id: 'BLOOD_FORGED', name: 'BLOOD-FORGED', emoji: '🩸' }
-      ];
+  const {
+    todos: todosList,
+    onToggleTodo,
+    onToggleChecklistItem: onToggleTodoChecklistItem,
+    onAddTodo,
+    onEditTodo,
+    onDeleteTodo,
+  } = useTodos(gameState, setGameState, addSystemLog, muteSfx);
 
-      const currentOwned = gameState.ownedTitles || [];
-      const filteredPool = dropTitlesPool.filter(t => {
-        if (currentOwned.includes(t.id)) return false;
-        if (t.id === 'THUNDERSTRUCK' || t.id === 'HAUNTED' || t.id === 'THE_FORSAKEN') {
-          return isWildernessChecked;
-        }
-        if (t.id === 'BLOOD_FORGED') {
-          return isDungeonMode;
-        }
-        return true;
-      });
+  const { onClaimQuestReward: handleClaimQuestRewards } = useGuildQuests(setGameState, addSystemLog, muteSfx);
+  const { dailyQuests: dailyQuestsList, guildQuests: guildQuestsList } = useQuestProgress(gameState);
 
-      if (filteredPool.length > 0) {
-        droppedTitle = filteredPool[Math.floor(Math.random() * filteredPool.length)];
-        setTimeout(() => {
-          addSystemLog(`✨ SORTUDO UNMISSABLE: O reino abençoou sua constância e você dropou o TÍTULO RARO [${droppedTitle?.name}]!`, true);
-        }, 180);
-      }
-    }
+  const {
+    inspectingItem,
+    inspectItem,
+    closeInspection,
+    equipItem: handleEquipItem,
+    unequipItem: handleUnequipItem,
+    sellItem: handleSellItem,
+    discardItem: handleDiscardItem
+  } = useInventory({
+    gameState,
+    setGameState,
+    addSystemLog,
+    muteSfx,
+    sound
+  });
 
-    // Dungeon Run milestone progression calculation
-    let dungeonClearGoldBonus = 0;
-    if (isDungeonMode) {
-      const nextSessions = dungeonSessions + 1;
-      if (nextSessions >= 4) {
-        dungeonClearGoldBonus = 2500;
-      }
-    }
+  const { buyGoblinShopItem: handleBuyGoblinShopItem } = useShop({
+    gameState,
+    setGameState,
+    addSystemLog
+  });
 
-    // Set interactive modal elements defaults
-    setCompletionNotes(sessionNotes);
-    setCompletionTag('');
-    setRewardsStep(1);
+  const {
+    equipTitle: handleEquipTitle,
+    buyTitle: handleBuyTitle,
+    claimAchievementTitle: handleClaimAchievementTitle
+  } = useTitles({
+    gameState,
+    setGameState,
+    addSystemLog,
+    muteSfx,
+    sound
+  });
 
-    // Prepare rewards modal popup
-    setRewardsModalData({
-      visible: true,
-      skillName: activeSkillName,
-      skillIdx: currentSkillIdx,
-      xpEarned: finalXP,
-      goldEarned: finalGold + dungeonClearGoldBonus,
-      notes: sessionNotes,
-      durationMins: studiedMinutes,
-      lootName: lootedItem?.name,
-      lootEmoji: lootedItem?.emoji,
-      droppedTitleName: droppedTitle?.name,
-      droppedTitleEmoji: droppedTitle?.emoji,
-      aiChronicleLoading: false,
-      aiChronicleResult: undefined,
-      dungeonClearGoldBonus,
-      hasUsedDoubleLoot,
-      hasUsedFocusElixir,
-      hasUsedRuneFortune,
-      hasUsedCrystalClarity,
-      usedEquipmentIndicesAndCharges,
-      lootedItem,
-      droppedTitle,
-      isWildernessChecked,
-      isDungeonMode,
-      pauseCount,
-      comboBonusPercent: Math.round(comboBoost * 100),
-    });
-  };
+  const { applyCharacterSetupChanges } = useCharacter({
+    gameState,
+    setGameState,
+    addSystemLog,
+    setIsSettingsOpen
+  });
+
+  const {
+    addCustomSkill,
+    addTagToSkill,
+    removeTagFromSkill,
+    renameSkill,
+    deleteSkill,
+    prestigeSkill
+  } = useSkills({
+    gameState,
+    setGameState,
+    isFocusSessionRunning: isRunning,
+    addSystemLog,
+    muteSfx,
+    sound,
+    setCustomDialog,
+    setSelectedSkillIdx: (idx) => setSessionConfig(prev => ({ ...prev, selectedSkillIdx: idx }))
+  });
+
+  const {
+    activeLevelUp,
+    hasPendingLevelUps,
+    dismissCurrentLevelUp,
+    isImportingRef
+  } = useLevelUp({
+    gameState,
+    muteSfx,
+    sound
+  });
 
   const handleConfirmClaimRewards = (editedNotes: string, selectedTag: string) => {
     if (!rewardsModalData) return;
@@ -2009,18 +1429,24 @@ function App({ userId, signOut }: AppProps) {
 
     // 1. If dungeon run milestones progression calculation is active
     if (isDungeonMode) {
-      const nextSessions = dungeonSessions + 1;
+      const nextSessions = sessionConfig.dungeonSessions + 1;
       if (nextSessions >= 4) {
-        setDungeonSessions(0);
-        setIsDungeonMode(false);
+        setSessionConfig(prev => ({
+          ...prev,
+          dungeonSessions: 0,
+          isDungeonMode: false,
+        }));
         setLastDungeonClearedTime(Date.now());
-        setSelectedBreakMins(gameState.longBreakMinutes || 15);
+        setSelectedBreakMins(gameState.pomodoroSettings.longBreakDuration || 15);
         setTimeout(() => {
           addSystemLog('🏆 EXPLORAÇÃO MASMORRA SUCESSO: Concluiu as 4 sessões heróicas consecutivas! Um bônus monumental místico de +2.500 GP foi adicionado aos teus espólios!', true);
         }, 120);
       } else {
-        setDungeonSessions(nextSessions);
-        setSelectedBreakMins(5);
+        setSessionConfig(prev => ({
+          ...prev,
+          dungeonSessions: nextSessions,
+        }));
+        setSelectedBreakMins(gameState.pomodoroSettings.shortBreakDuration || 5);
         setTimeout(() => {
           addSystemLog(`⚔️ Masmorra Progresso: (${nextSessions}/4) focos consecutivos selados. Só mais ${4 - nextSessions} sessões para a glória eterna!`, true);
         }, 120);
@@ -2270,192 +1696,13 @@ function App({ userId, signOut }: AppProps) {
     // Audio coins chime triggers
     if (!muteSfx) sound.playCoins();
 
-    setSessionNotes('');
-    setRewardsModalData(null);
-    setIsBreakPrep(true);
-  };
-
-  // Claim Daily/Weekly Quest items
-  const handleClaimQuestRewards = (goldReward: number, xpReward: number, questId: string) => {
-    setGameState(prev => {
-      const claimId = questId.startsWith('daily_')
-        ? `claimed_${questId}_${new Date().toDateString()}`
-        : `claimed_${questId}`;
-
-      if ((prev.achievements || []).includes(claimId)) return prev;
-
-      // Apply Combat levels progression too
-      let nextXP = prev.combatXP + Math.floor(xpReward * 0.4);
-      let nextCombatLevel = prev.combatLevel;
-      let combatXPRequirement = nextCombatLevel * 100;
-
-      while (nextXP >= combatXPRequirement) {
-        nextXP -= combatXPRequirement;
-        nextCombatLevel += 1;
-        combatXPRequirement = nextCombatLevel * 100;
-        setTimeout(() => {
-          addSystemLog(`🆙 COMBAT LEVEL UP GILD: Nível de combate militar heróico subiu para ${nextCombatLevel}!`, true);
-          if (!muteSfx) sound.playLevelUp();
-        }, 100);
-      }
-
-      return {
-        ...prev,
-        gold: prev.gold + goldReward,
-        totalGoldEarned: prev.totalGoldEarned + goldReward,
-        totalXP: prev.totalXP + xpReward,
-        combatLevel: nextCombatLevel,
-        combatXP: nextXP,
-        achievements: [...(prev.achievements || []), claimId]
-      };
-    });
-
-    addSystemLog(`📜 Contrato da Gilda Resgatado! Moedas +${goldReward} GP e Relíquias +${xpReward} XP depositadas nas sacolas.`, true);
-  };
-
-  // Buy item and buffs handlers
-  const handleBuyGoblinShopItem = (item: InventoryItem) => {
-    setGameState(prev => {
-      return {
-        ...prev,
-        gold: prev.gold - item.price,
-        inventory: [...prev.inventory, item]
-      };
-    });
-    addSystemLog(`🎒 Comprado no Bazar: ${item.emoji} "${item.name}" por ${item.price} GP!`, true);
-  };
-
-  // --- EQUIPMENT & INVENTORY SYSTEMS HANDLERS ---
-  const handleEquipItem = (item: InventoryItem, slotIdx: number) => {
-    setGameState(prev => {
-      const equipped = prev.equippedEquipment ? [...prev.equippedEquipment] : [null, null, null];
-      const inventory = [...prev.inventory];
-      
-      // Remove item from inventory
-      const invIdx = inventory.findIndex(i => i.id === item.id);
-      if (invIdx >= 0) {
-        inventory.splice(invIdx, 1);
-      }
-      
-      // If there's already an item in that slot, return it to inventory
-      const existing = equipped[slotIdx];
-      if (existing) {
-        inventory.push(existing);
-      }
-      
-      // Equip the new item
-      equipped[slotIdx] = { ...item };
-      
-      return {
-        ...prev,
-        inventory,
-        equippedEquipment: equipped
-      };
-    });
-    
-    addSystemLog(`⚔️ EQUIPADO: "${item.emoji} ${item.name}" foi colocado no Espaço de Equipamento ${slotIdx + 1}!`, true);
-    if (!muteSfx) sound.playCoins();
-  };
-
-  const handleUnequipItem = (slotIdx: number) => {
-    setGameState(prev => {
-      const equipped = prev.equippedEquipment ? [...prev.equippedEquipment] : [null, null, null];
-      const inventory = [...prev.inventory];
-      
-      const item = equipped[slotIdx];
-      if (!item) return prev;
-      
-      equipped[slotIdx] = null;
-      inventory.push(item);
-      
-      return {
-        ...prev,
-        inventory,
-        equippedEquipment: equipped
-      };
-    });
-    
-    addSystemLog('⚔️ DESEQUIPADO: Item retornado para a mochila.', false);
-  };
-
-  const handleSellItem = (item: InventoryItem) => {
-    // Standard sale: 50% of buying price if equipment, 50 GP if drop
-    const sellingPrice = item.isEquipment ? Math.floor(item.price * 0.5) : 50;
-    
-    setGameState(prev => {
-      const inventory = prev.inventory.filter(i => i.id !== item.id);
-      return {
-        ...prev,
-        gold: prev.gold + sellingPrice,
-        inventory
-      };
-    });
-    
-    addSystemLog(`💰 VENDIDO: Você vendeu "${item.emoji} ${item.name}" por ${sellingPrice} GP!`, true);
-    if (!muteSfx) sound.playCoins();
-  };
-
-  const handleDiscardItem = (item: InventoryItem) => {
-    setGameState(prev => {
-      const inventory = prev.inventory.filter(i => i.id !== item.id);
-      return {
-        ...prev,
-        inventory
-      };
-    });
-    addSystemLog(`🎒 DESCARTADO: Você descartou o item "${item.emoji} ${item.name}".`, false);
-  };
-
-  const handleDismissLevelUp = () => {
-    setLevelUpQueue(prev => prev.slice(1));
-  };
-
-  // --- HONORARY TITLES SYSTEMS TRIVIA HANDLERS ---
-  const handleEquipTitle = (titleId: string | null) => {
-    setGameState(prev => {
-      return {
-        ...prev,
-        equippedTitle: titleId
-      };
-    });
-    if (titleId) {
-      addSystemLog(`👑 TÍTULO EQUIPADO: Agora você ostenta o título de [${titleId}]! Seus buffs de passivos agora estão ativos.`, true);
-      if (!muteSfx) sound.playCoins();
+    setSessionConfig(prev => ({ ...prev, sessionNotes: '' }));
+    closeRewardsModal();
+    if (gameState.pomodoroSettings.autoStartBreak) {
+      startBreakTimer(selectedBreakMins);
     } else {
-      addSystemLog('👑 TÍTULO REVEZADO: Você desequipou seu título honorário.', false);
+      setIsBreakPrep(true);
     }
-  };
-
-  const handleBuyTitle = (titleId: string, price: number) => {
-    setGameState(prev => {
-      if (prev.gold < price) return prev;
-      const nextOwned = [...(prev.ownedTitles || [])];
-      if (!nextOwned.includes(titleId)) {
-        nextOwned.push(titleId);
-      }
-      return {
-        ...prev,
-        gold: prev.gold - price,
-        ownedTitles: nextOwned
-      };
-    });
-    addSystemLog(`👑 TÍTULO ADQUIRIDO: Você obteve o brasão honorário de [${titleId}] por ${price} GP!`, true);
-    if (!muteSfx) sound.playCoins();
-  };
-
-  const handleClaimAchievementTitle = (titleId: string) => {
-    setGameState(prev => {
-      const nextOwned = [...(prev.ownedTitles || [])];
-      if (!nextOwned.includes(titleId)) {
-        nextOwned.push(titleId);
-      }
-      return {
-        ...prev,
-        ownedTitles: nextOwned
-      };
-    });
-    addSystemLog(`🏆 RESGATE DE SUPREMACIA: Você resgatou e desbloqueou com sucesso o título de Conquista [${titleId}]!`, true);
-    if (!muteSfx) sound.playLevelUp();
   };
 
   // --- HABITICA INTEGRATION TASK ACTIONS ---
@@ -2474,656 +1721,43 @@ function App({ userId, signOut }: AppProps) {
     }
   };
 
-  const handleTriggerHabit = (habitId: string, isUp: boolean) => {
-    const habit = gameState.habits.find(h => h.id === habitId);
-    if (!habit) return;
-
-    const { xp, gold, damage } = getDifficultyRewards(habit.difficulty);
-
-    if (isUp) {
-      setGameState(prev => {
-        let mulXP = 1.0;
-        let mulGold = 1.0;
-        if (prev.charClass === 'Mage') mulXP += 0.2;
-        if (prev.charClass === 'Warrior') mulGold += 0.2;
-
-        const finalGold = Math.floor(gold * mulGold);
-        const finalXP = Math.floor(xp * mulXP);
-
-        let combatXPApplied = prev.combatXP + finalXP;
-        let currentCombatLevel = prev.combatLevel;
-        let requirement = currentCombatLevel * 100;
-        let didLevelUp = false;
-
-        while (combatXPApplied >= requirement) {
-          combatXPApplied -= requirement;
-          currentCombatLevel += 1;
-          requirement = currentCombatLevel * 100;
-          didLevelUp = true;
-        }
-
-        const nextHp = didLevelUp ? prev.maxHp : prev.hp;
-
-        if (didLevelUp) {
-          setTimeout(() => {
-            addSystemLog(`🆙 COMBAT LEVEL UP: Nível de combate militar subiu para ${currentCombatLevel}! Vitalidade restaurada!`, true);
-            if (!muteSfx) sound.playLevelUp();
-          }, 100);
-        }
-
-        const updatedHabits = prev.habits.map(h => {
-          if (h.id === habitId) {
-            return { ...h, upCount: h.upCount + 1, streak: h.streak + 1, lastTriggeredDate: new Date().toDateString() };
-          }
-          return h;
-        });
-
-        return {
-          ...prev,
-          gold: prev.gold + finalGold,
-          totalGoldEarned: prev.totalGoldEarned + finalGold,
-          totalXP: prev.totalXP + finalXP,
-          combatLevel: currentCombatLevel,
-          combatXP: combatXPApplied,
-          hp: nextHp,
-          habits: updatedHabits
-        };
-      });
-
-      if (!muteSfx) sound.playCoins();
-      addSystemLog(`✨ Prática Virtuosa: Completou o hábito positivo "${habit.title}"! Ganhou +${gold} GP e +${xp} XP.`, true);
-    } else {
-      setGameState(prev => {
-        let finalDamage = damage;
-        if (prev.charClass === 'Ranger') finalDamage = Math.max(1, Math.floor(damage * 0.7));
-
-        const nextHp = Math.max(0, prev.hp - finalDamage);
-        const didDie = nextHp === 0;
-
-        if (didDie) {
-          setTimeout(() => {
-            setIsPlayerDead(true);
-            if (!muteSfx) sound.playDeath();
-          }, 100);
-        }
-
-        const updatedHabits = prev.habits.map(h => {
-          if (h.id === habitId) {
-            return { ...h, downCount: h.downCount + 1, streak: Math.max(0, h.streak - 1), lastTriggeredDate: new Date().toDateString() };
-          }
-          return h;
-        });
-
-        return {
-          ...prev,
-          hp: nextHp,
-          habits: updatedHabits
-        };
-      });
-
-      if (!muteSfx) {
-        try {
-          sound.playWildernessWarning();
-        } catch {}
-      }
-      addSystemLog(`⚠️ Desvio Espiritual: Sofreu dano pelo hábito negativo "${habit.title}"! Perdeu -${damage} HP de sua integridade.`, false);
-    }
-  };
-
-  const handleAddHabit = (newHabit: Omit<Habit, 'id' | 'upCount' | 'downCount' | 'streak'>) => {
-    setGameState(prev => {
-      const added: Habit = {
-        ...newHabit,
-        id: `h-${Date.now()}`,
-        upCount: 0,
-        downCount: 0,
-        streak: 0,
-      };
-      return {
-        ...prev,
-        habits: [...prev.habits, added]
-      };
-    });
-    addSystemLog(`🔥 Runas Consagradas: Novo hábito "${newHabit.title}" adicionado à sua capela diária!`);
-  };
-
-  const handleEditHabit = (edited: Habit) => {
-    setGameState(prev => ({
-      ...prev,
-      habits: prev.habits.map(h => h.id === edited.id ? edited : h)
-    }));
-    addSystemLog(`⚙️ Runas Alteradas: Hábito "${edited.title}" atualizado.`);
-  };
-
-  const handleDeleteHabit = (habitId: string) => {
-    setGameState(prev => ({
-      ...prev,
-      habits: prev.habits.filter(h => h.id !== habitId)
-    }));
-    addSystemLog(`🗑️ Runas Banidas: Hábito removido com sucesso.`);
-  };
-
-  const handleToggleDaily = (dailyId: string) => {
-    const daily = gameState.dailies.find(d => d.id === dailyId);
-    if (!daily) return;
-
-    const isCompleting = !daily.completed;
-    const { xp, gold } = getDifficultyRewards(daily.difficulty);
-
-    setGameState(prev => {
-      let finalGold = gold;
-      let finalXP = xp;
-      let updatedDailies = prev.dailies;
-
-      if (isCompleting) {
-        let mulXP = 1.0;
-        let mulGold = 1.0;
-        if (prev.charClass === 'Mage') mulXP += 0.2;
-        if (prev.charClass === 'Warrior') mulGold += 0.2;
-
-        finalGold = Math.floor(gold * mulGold);
-        finalXP = Math.floor(xp * mulXP);
-
-        updatedDailies = prev.dailies.map(d => {
-          if (d.id === dailyId) {
-            return { ...d, completed: true, streak: d.streak + 1 };
-          }
-          return d;
-        });
-
-        let combatXPApplied = prev.combatXP + finalXP;
-        let currentCombatLevel = prev.combatLevel;
-        let requirement = currentCombatLevel * 100;
-        let didLevelUp = false;
-
-        while (combatXPApplied >= requirement) {
-          combatXPApplied -= requirement;
-          currentCombatLevel += 1;
-          requirement = currentCombatLevel * 100;
-          didLevelUp = true;
-        }
-
-        const nextHp = didLevelUp ? prev.maxHp : prev.hp;
-
-        if (didLevelUp) {
-          setTimeout(() => {
-            addSystemLog(`🆙 COMBAT LEVEL UP: Nível de combate heróico subiu para ${currentCombatLevel}! HP restaurado!`, true);
-            if (!muteSfx) sound.playLevelUp();
-          }, 100);
-        }
-
-        setTimeout(() => {
-          addSystemLog(`📅 Voto Diário Cumprido: Concluiu "${daily.title}"! (+${finalGold} GP, +${finalXP} XP, Streak: ${daily.streak + 1} dias)`, true);
-          if (!muteSfx) sound.playCoins();
-        }, 10);
-
-        return {
-          ...prev,
-          gold: prev.gold + finalGold,
-          totalGoldEarned: prev.totalGoldEarned + finalGold,
-          totalXP: prev.totalXP + finalXP,
-          combatLevel: currentCombatLevel,
-          combatXP: combatXPApplied,
-          hp: nextHp,
-          dailies: updatedDailies
-        };
-      } else {
-        let mulXP = 1.0;
-        let mulGold = 1.0;
-        if (prev.charClass === 'Mage') mulXP += 0.2;
-        if (prev.charClass === 'Warrior') mulGold += 0.2;
-
-        finalGold = Math.floor(gold * mulGold);
-        finalXP = Math.floor(xp * mulXP);
-
-        updatedDailies = prev.dailies.map(d => {
-          if (d.id === dailyId) {
-            return { ...d, completed: false, streak: Math.max(0, d.streak - 1) };
-          }
-          return d;
-        });
-
-        let combatXPApplied = prev.combatXP - finalXP;
-        let currentCombatLevel = prev.combatLevel;
-
-        while (combatXPApplied < 0 && currentCombatLevel > 1) {
-          currentCombatLevel -= 1;
-          const requirement = currentCombatLevel * 100;
-          combatXPApplied += requirement;
-        }
-        if (combatXPApplied < 0) combatXPApplied = 0;
-
-        setTimeout(() => {
-          addSystemLog(`↩️ Reversão de Voto: Diária "${daily.title}" desmarcada. Perdidos -${finalGold} GP e -${finalXP} XP.`);
-        }, 10);
-
-        return {
-          ...prev,
-          gold: Math.max(0, prev.gold - finalGold),
-          totalGoldEarned: Math.max(0, prev.totalGoldEarned - finalGold),
-          totalXP: Math.max(0, prev.totalXP - finalXP),
-          combatLevel: currentCombatLevel,
-          combatXP: combatXPApplied,
-          dailies: updatedDailies
-        };
-      }
-    });
-  };
-
-  const handleToggleDailyChecklistItem = (dailyId: string, itemId: string) => {
-    setGameState(prev => {
-      const updatedDailies = prev.dailies.map(d => {
-        if (d.id === dailyId) {
-          const updatedChecklist = d.checklist.map(item => {
-            if (item.id === itemId) {
-              return { ...item, completed: !item.completed };
-            }
-            return item;
-          });
-          return { ...d, checklist: updatedChecklist };
-        }
-        return d;
-      });
-      return {
-        ...prev,
-        dailies: updatedDailies
-      };
-    });
-  };
-
-  const handleAddDaily = (newDaily: Omit<Daily, 'id' | 'completed' | 'checklist'> & { checklist: string[] }) => {
-    setGameState(prev => {
-      const formattedChecklist = newDaily.checklist.map((text, idx) => ({
-        id: `dc-${Date.now()}-${idx}`,
-        text,
-        completed: false
-      }));
-
-      const added: Daily = {
-        id: `d-${Date.now()}`,
-        title: newDaily.title,
-        notes: newDaily.notes,
-        difficulty: newDaily.difficulty,
-        completed: false,
-        streak: newDaily.streak,
-        repeats: newDaily.repeats,
-        every: newDaily.every,
-        tags: newDaily.tags,
-        checklist: formattedChecklist,
-      };
-
-      return {
-        ...prev,
-        dailies: [...prev.dailies, added]
-      };
-    });
-    addSystemLog(`📅 Novo Voto de Diária Consagrado: "${newDaily.title}"!`);
-  };
-
-  const handleEditDaily = (edited: Daily) => {
-    setGameState(prev => ({
-      ...prev,
-      dailies: prev.dailies.map(d => d.id === edited.id ? edited : d)
-    }));
-    addSystemLog(`⚙️ Diária Modificada: "${edited.title}" atualizada.`);
-  };
-
-  const handleDeleteDaily = (dailyId: string) => {
-    setGameState(prev => ({
-      ...prev,
-      dailies: prev.dailies.filter(d => d.id !== dailyId)
-    }));
-    addSystemLog(`🗑️ Voto de Diária Aniquilado.`);
-  };
-
-  const handleToggleTodo = (todoId: string) => {
-    const todo = gameState.todos.find(t => t.id === todoId);
-    if (!todo) return;
-
-    const isCompleting = !todo.completed;
-    const { xp, gold } = getDifficultyRewards(todo.difficulty);
-
-    setGameState(prev => {
-      let finalGold = gold;
-      let finalXP = xp;
-      let updatedTodos = prev.todos;
-
-      if (isCompleting) {
-        let mulXP = 1.0;
-        let mulGold = 1.0;
-        if (prev.charClass === 'Mage') mulXP += 0.2;
-        if (prev.charClass === 'Warrior') mulGold += 0.2;
-
-        finalGold = Math.floor(gold * mulGold);
-        finalXP = Math.floor(xp * mulXP);
-
-        updatedTodos = prev.todos.map(t => {
-          if (t.id === todoId) {
-            return { ...t, completed: true };
-          }
-          return t;
-        });
-
-        let combatXPApplied = prev.combatXP + finalXP;
-        let currentCombatLevel = prev.combatLevel;
-        let requirement = currentCombatLevel * 100;
-        let didLevelUp = false;
-
-        while (combatXPApplied >= requirement) {
-          combatXPApplied -= requirement;
-          currentCombatLevel += 1;
-          requirement = currentCombatLevel * 100;
-          didLevelUp = true;
-        }
-
-        const nextHp = didLevelUp ? prev.maxHp : prev.hp;
-
-        if (didLevelUp) {
-          setTimeout(() => {
-            addSystemLog(`🆙 COMBAT LEVEL UP: Nível de combate heróico subiu para ${currentCombatLevel}! HP restaurado!`, true);
-            if (!muteSfx) sound.playLevelUp();
-          }, 100);
-        }
-
-        setTimeout(() => {
-          addSystemLog(`✔️ Afazer Cumprido: Concluiu aventura "${todo.title}"! (+${finalGold} GP, +${finalXP} XP!)`, true);
-          if (!muteSfx) sound.playCoins();
-        }, 10);
-
-        return {
-          ...prev,
-          gold: prev.gold + finalGold,
-          totalGoldEarned: prev.totalGoldEarned + finalGold,
-          totalXP: prev.totalXP + finalXP,
-          combatLevel: currentCombatLevel,
-          combatXP: combatXPApplied,
-          hp: nextHp,
-          todos: updatedTodos
-        };
-      } else {
-        let mulXP = 1.0;
-        let mulGold = 1.0;
-        if (prev.charClass === 'Mage') mulXP += 0.2;
-        if (prev.charClass === 'Warrior') mulGold += 0.2;
-
-        finalGold = Math.floor(gold * mulGold);
-        finalXP = Math.floor(xp * mulXP);
-
-        updatedTodos = prev.todos.map(t => {
-          if (t.id === todoId) {
-            return { ...t, completed: false };
-          }
-          return t;
-        });
-
-        let combatXPApplied = prev.combatXP - finalXP;
-        let currentCombatLevel = prev.combatLevel;
-
-        while (combatXPApplied < 0 && currentCombatLevel > 1) {
-          currentCombatLevel -= 1;
-          const requirement = currentCombatLevel * 100;
-          combatXPApplied += requirement;
-        }
-        if (combatXPApplied < 0) combatXPApplied = 0;
-
-        setTimeout(() => {
-          addSystemLog(`↩️ Reversão de Contrato: Afazer "${todo.title}" reaberto. Perdidos -${finalGold} GP e -${finalXP} XP.`);
-        }, 10);
-
-        return {
-          ...prev,
-          gold: Math.max(0, prev.gold - finalGold),
-          totalGoldEarned: Math.max(0, prev.totalGoldEarned - finalGold),
-          totalXP: Math.max(0, prev.totalXP - finalXP),
-          combatLevel: currentCombatLevel,
-          combatXP: combatXPApplied,
-          todos: updatedTodos
-        };
-      }
-    });
-  };
-
-  const handleToggleTodoChecklistItem = (todoId: string, itemId: string) => {
-    setGameState(prev => {
-      const updatedTodos = prev.todos.map(t => {
-        if (t.id === todoId) {
-          const updatedChecklist = t.checklist.map(item => {
-            if (item.id === itemId) {
-              return { ...item, completed: !item.completed };
-            }
-            return item;
-          });
-          return { ...t, checklist: updatedChecklist };
-        }
-        return t;
-      });
-      return {
-        ...prev,
-        todos: updatedTodos
-      };
-    });
-  };
-
-  const handleAddTodo = (newTodo: Omit<Todo, 'id' | 'completed' | 'checklist'> & { checklist: string[] }) => {
-    setGameState(prev => {
-      const formattedChecklist = newTodo.checklist.map((text, idx) => ({
-        id: `tc-${Date.now()}-${idx}`,
-        text,
-        completed: false
-      }));
-
-      const added: Todo = {
-        id: `t-${Date.now()}`,
-        title: newTodo.title,
-        notes: newTodo.notes,
-        difficulty: newTodo.difficulty,
-        completed: false,
-        tags: newTodo.tags,
-        checklist: formattedChecklist,
-      };
-
-      return {
-        ...prev,
-        todos: [...prev.todos, added]
-      };
-    });
-    addSystemLog(`📜 Novo Contrato / Afazer em mãos: "${newTodo.title}"!`);
-  };
-
-  const handleEditTodo = (edited: Todo) => {
-    setGameState(prev => ({
-      ...prev,
-      todos: prev.todos.map(t => t.id === edited.id ? edited : t)
-    }));
-    addSystemLog(`⚙️ Afazer Editado: "${edited.title}" atualizado.`);
-  };
-
-  const handleDeleteTodo = (todoId: string) => {
-    setGameState(prev => ({
-      ...prev,
-      todos: prev.todos.filter(t => t.id !== todoId)
-    }));
-    addSystemLog(`🗑️ Contrato de Afazer Destruído.`);
-  };
-
   // Character modifications handlers
   const handleApplyCharacterSetupChanges = (name: string, characterClass: 'Mage' | 'Warrior' | 'Ranger') => {
-    const longBreakInput = document.getElementById('long-break-fld') as HTMLInputElement;
-    let longBreakMins = longBreakInput ? parseInt(longBreakInput.value, 10) : (gameState.longBreakMinutes || 15);
-    if (isNaN(longBreakMins) || longBreakMins < 1) longBreakMins = 15;
-    if (longBreakMins > 120) longBreakMins = 120;
-
-    setGameState(prev => ({
-      ...prev,
-      charName: name.trim().length > 0 ? name.trim() : prev.charName,
-      charClass: characterClass,
-      longBreakMinutes: longBreakMins
-    }));
-
-    addSystemLog(`⚙️ Assinatura do herói guardada nas runas templárias: [${name}] como [${characterClass}] | Descanso Longo: ${longBreakMins} min!`);
-    setIsSettingsOpen(false);
+    applyCharacterSetupChanges(name, characterClass);
   };
 
   // Skills Manager actions
   const handleAddCustomSkillWithEmoji = (nameInput: string, emojiInput: string) => {
-    const trimmed = nameInput.trim();
-    if (!trimmed) return;
-
-    if (gameState.skills.some(s => s.name.toLowerCase() === trimmed.toLowerCase())) {
-      addSystemLog('❌ Erro: Alguma de suas Habilidades já possui este nome exato.');
-      return;
-    }
-
-    setGameState(prev => {
-      const addedSkill: Skill = { name: trimmed, level: 1, xp: 0, emoji: emojiInput, prestige: 0 };
-      return {
-        ...prev,
-        skills: [...prev.skills, addedSkill]
-      };
-    });
-
-    addSystemLog(`${emojiInput} Nova habilidade de foco incorporada: "${trimmed}"`, true);
+    addCustomSkill(nameInput, emojiInput);
   };
 
   const handleAddTagToSkill = (skillIdx: number, newTag: string) => {
-    const trimmed = newTag.trim();
-    if (!trimmed) return;
-    setGameState(prev => {
-      const copySk = [...prev.skills];
-      const sk = copySk[skillIdx];
-      if (sk) {
-        const currentTags = sk.tags || [];
-        if (currentTags.some(t => t.toLowerCase() === trimmed.toLowerCase())) {
-          return prev; // already exists
-        }
-        copySk[skillIdx] = {
-          ...sk,
-          tags: [...currentTags, trimmed]
-        };
-      }
-      return { ...prev, skills: copySk };
-    });
-    addSystemLog(`🏷️ Subskill "${trimmed}" adicionada com sucesso!`);
+    addTagToSkill(skillIdx, newTag);
   };
 
   const handleRemoveTagFromSkill = (skillIdx: number, tagIdx: number) => {
-    const skillName = gameState.skills[skillIdx]?.name;
-    const tagName = gameState.skills[skillIdx]?.tags?.[tagIdx];
-    setGameState(prev => {
-      const copySk = [...prev.skills];
-      const sk = copySk[skillIdx];
-      if (sk && sk.tags) {
-        const newTags = [...sk.tags];
-        newTags.splice(tagIdx, 1);
-        copySk[skillIdx] = {
-          ...sk,
-          tags: newTags
-        };
-      }
-      return { ...prev, skills: copySk };
-    });
-    if (tagName) addSystemLog(`🗑️ Subskill "${tagName}" removida de "${skillName}".`);
+    removeTagFromSkill(skillIdx, tagIdx);
   };
 
   const handleRenameSkill = (idx: number, newName: string) => {
-    const trimmed = newName.trim();
-    if (!trimmed) {
-      addSystemLog('❌ Erro: O nome da habilidade não pode estar em branco.');
-      return;
-    }
-    if (gameState.skills.some((s, sIdx) => sIdx !== idx && s.name.toLowerCase() === trimmed.toLowerCase())) {
-      addSystemLog('❌ Erro: Outra habilidade de seu grimório já possui este nome exato.');
-      return;
-    }
-    setGameState(prev => {
-      const copySk = [...prev.skills];
-      if (copySk[idx]) {
-        copySk[idx] = { ...copySk[idx], name: trimmed };
-      }
-      return { ...prev, skills: copySk };
-    });
-    addSystemLog(`✍️ Habilidade renomeada para "${trimmed}" com sucesso!`);
+    renameSkill(idx, newName);
   };
 
   const handleAddCustomSkillRegister = () => {
-    handleAddCustomSkillWithEmoji(newSkillNameInput, selectedNewSkillEmoji);
+    addCustomSkill(newSkillNameInput, selectedNewSkillEmoji);
     setNewSkillNameInput('');
   };
 
   const handleQuickAddSkill = (name: string, emoji: string) => {
-    handleAddCustomSkillWithEmoji(name, emoji);
+    addCustomSkill(name, emoji);
   };
 
-  const handleDeleteSkillIndex = (idx: number) => {
-    if (gameState.skills.length <= 1) {
-      setCustomDialog({
-        isOpen: true,
-        title: 'Falta de Habilidades',
-        message: 'Seu personagem precisa ter pelo menos uma habilidade ativa remanescente!',
-        isConfirm: false,
-        onConfirm: () => setCustomDialog(null)
-      });
-      return;
-    }
-
-    const removedName = gameState.skills[idx]?.name;
-    const removedEmoji = gameState.skills[idx]?.emoji || '🎯';
-    setCustomDialog({
-      isOpen: true,
-      title: 'Esquecer Habilidade?',
-      message: `Tem certeza que deseja esquecer a habilidade "${removedEmoji} ${removedName}"? Todo o seu aprendizado e XP acumulados nela se perderão permanentemente.`,
-      isConfirm: true,
-      onConfirm: () => {
-        setCustomDialog(null);
-        setGameState(prev => {
-          const copySk = [...prev.skills];
-          copySk.splice(idx, 1);
-          return {
-            ...prev,
-            skills: copySk
-          };
-        });
-
-        setSelectedSkillIdx(0);
-        addSystemLog(`🗑️ Esqueceu a Habilidade: "${removedEmoji} ${removedName}"`);
-      }
-    });
+  const handleDeleteSkillIndex = (idx: number): boolean => {
+    return deleteSkill(idx);
   };
 
   const handlePrestigeSkill = (idx: number) => {
-    const sk = gameState.skills[idx];
-    if (!sk) return;
-    if (sk.level < 99) {
-      addSystemLog(`⏳ Requisito Insuficiente: A habilidade "${sk.emoji || '🎯'} ${sk.name}" precisa alcançar o Nível 99 para obter Prestígio.`);
-      return;
-    }
-
-    setCustomDialog({
-      isOpen: true,
-      title: '👑 Prestígio Transcendental',
-      message: `Deseja reiniciar a habilidade "${sk.emoji || '🎯'} ${sk.name}"? Seu Nível voltará para 1 e o XP para 0. Em troca, ela receberá um multiplicador permanente de +25% de XP e um marcador visual exclusivo.`,
-      isConfirm: true,
-      onConfirm: () => {
-        setCustomDialog(null);
-        setGameState(prev => {
-          const copySk = [...prev.skills];
-          const currentPrestige = copySk[idx].prestige || 0;
-          copySk[idx] = {
-            ...copySk[idx],
-            level: 1,
-            xp: 0,
-            prestige: currentPrestige + 1
-          };
-          return {
-            ...prev,
-            skills: copySk
-          };
-        });
-
-        addSystemLog(`👑 PRESTÍGIO ALCANÇADO: Sua habilidade "${sk.emoji || '🎯'} ${sk.name}" alcançou o Prestígio Nível ${(sk.prestige || 0) + 1}! Bônus de XP definitivo ativo para esta habilidade!`, true);
-        if (!muteSfx) sound.playLevelUp();
-      }
-    });
+    prestigeSkill(idx);
   };
 
   // Restart campaign entirely
@@ -3143,13 +1777,15 @@ function App({ userId, signOut }: AppProps) {
             setCustomDialog(null);
             isImportingRef.current = true;
             resetGameState();
-            setSelectedSkillIdx(0);
-            setIsWildernessChecked(false);
-            setSessionNotes('');
-            setTimeLeft(25 * 60);
-            setTimerDuration(25 * 60);
-            setIsRunning(false);
-            setIsPaused(false);
+            cancelSession();
+            setSessionConfig({
+              selectedSkillIdx: 0,
+              isWildernessChecked: false,
+              isDungeonMode: false,
+              dungeonSessions: 0,
+              sessionNotes: '',
+              isFocusMode: false,
+            });
             setIsSettingsOpen(false);
             addSystemLog('🌀 Linha do tempo purgada. Sua jornada reinicia do anonimato.', true);
           }
@@ -3373,24 +2009,18 @@ function App({ userId, signOut }: AppProps) {
     touchAction: isMobileSidebarDragging ? 'none' : 'pan-y',
   } as React.CSSProperties;
 
-  if (isFocusMode) {
+  if (sessionConfig.isFocusMode) {
     return (
       <FocusModeScreen
-        timeLeft={timeLeft}
-        isPaused={isPaused}
-        togglePauseQuest={togglePauseQuest}
-        isFocusCompleted={isFocusCompleted}
-        setIsFocusCompleted={setIsFocusCompleted}
-        setIsFocusMode={setIsFocusMode}
-        completeFocusQuest={completeFocusQuest}
-        selectedSkillIdx={selectedSkillIdx}
-        gameState={gameState}
-        isWildernessChecked={isWildernessChecked}
-        isDungeonMode={isDungeonMode}
-        dungeonSessions={dungeonSessions}
-        pauseCount={pauseCount}
+        focusSession={focusSession}
+        setIsFocusMode={(mode) => setSessionConfig(prev => ({ ...prev, isFocusMode: mode }))}
         muteSfx={muteSfx}
         sound={sound}
+        gameState={gameState}
+        selectedSkillIdx={sessionConfig.selectedSkillIdx}
+        isWildernessChecked={sessionConfig.isWildernessChecked}
+        isDungeonMode={sessionConfig.isDungeonMode}
+        dungeonSessions={sessionConfig.dungeonSessions}
       />
     );
   }
@@ -3404,13 +2034,6 @@ function App({ userId, signOut }: AppProps) {
       {/* HEADER BAR */}
       <header className="sticky top-0 bg-quest-panel/95 border-b-2 border-amber-500/20 px-4 py-3 flex justify-between items-center z-40 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMobileSidebarOpen(true)}
-            className="text-amber-400 hover:text-amber-200 p-1 mr-1.5 lg:hidden cursor-pointer flex items-center justify-center rounded bg-stone-950/25 border border-amber-500/10"
-            title="Menu místico"
-          >
-            <Menu className="w-4 h-4" />
-          </button>
           <span className="text-xl md:text-2xl animate-spin" style={{ animationDuration: '8s' }}>⚔️</span>
           <div>
             <h1 className="font-serif font-black text-amber-400 text-sm md:text-base tracking-widest uppercase">
@@ -3451,7 +2074,7 @@ function App({ userId, signOut }: AppProps) {
       </header>
 
       {/* PHILOSOPHICAL BANNER */}
-      <div className="bg-gradient-to-r from-quest-card via-stone-950/40 to-quest-card border-b border-amber-500/5 py-2 px-4 text-center text-[11px] md:text-xs text-amber-100/50 italic leading-relaxed font-serif tracking-wide">
+      <div className="hidden md:block bg-gradient-to-r from-quest-card via-stone-950/40 to-quest-card border-b border-amber-500/5 py-2 px-4 text-center text-[11px] md:text-xs text-amber-100/50 italic leading-relaxed font-serif tracking-wide">
         {quoteOfTheDay[0]} <span className="text-amber-400/80 font-mono text-[10px] uppercase font-bold tracking-widest scale-90 inline-block ml-1">{quoteOfTheDay[1]}</span>
       </div>
 
@@ -3460,45 +2083,21 @@ function App({ userId, signOut }: AppProps) {
         
         {/* LEFT SIDEBAR - NAVIGATION CABINET */}
         <aside
-          onPointerDown={(event) => beginMobileSidebarDrag(event, true)}
-          onPointerMove={updateMobileSidebarDrag}
-          onPointerUp={endMobileSidebarDrag}
-          onPointerCancel={endMobileSidebarDrag}
-          style={mobileSidebarStyle}
-          className={`fixed inset-y-0 left-0 w-64 bg-stone-950/98 border border-amber-500/15 border-r-amber-500/30 rounded-r-lg py-4 px-3 shadow-[0_12px_45px_rgba(0,0,0,0.65)] z-50 flex flex-col justify-between transform-gpu translate-x-[var(--mobile-sidebar-translate)] lg:col-span-3 lg:relative lg:inset-auto lg:w-auto lg:h-auto lg:translate-x-0 lg:z-30 lg:bg-quest-panel/95 lg:rounded-lg lg:border-r-amber-500/15 ${
-            isMobileSidebarDragging ? 'transition-none' : 'transition-transform duration-200'
-          }`}
+          className="hidden lg:flex lg:col-span-3 lg:relative lg:bg-quest-panel/95 lg:rounded-lg lg:border lg:border-amber-500/15 lg:py-4 lg:px-3 lg:flex-col lg:justify-between lg:w-auto lg:h-auto lg:z-30"
         >
-          <div
-            data-sidebar-drag-handle="true"
-            className="absolute right-0 top-0 h-full w-4 cursor-grab active:cursor-grabbing lg:hidden"
-            aria-hidden="true"
-          />
           <div className="space-y-5">
-            {/* Sidebar header (visible in mobile slide-out) */}
-            <div className="flex items-center justify-between border-b border-amber-500/15 pb-2.5 lg:hidden px-1.5">
-              <span className="font-serif font-black text-amber-400 text-xs uppercase tracking-widest flex items-center gap-1.5">
-                ⚔️ Navegação Mística
-              </span>
-              <button
-                onClick={() => setIsMobileSidebarOpen(false)}
-                className="text-amber-100/60 hover:text-rose-400 p-1 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
             {/* Nav Groups */}
-            <div className="space-y-4">
-              {/* Group 1: Jornada de Foco */}
+            <div className="space-y-6">
+              {/* Group 1: Santuário do Foco */}
               <div className="space-y-1">
-                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">⚔️ Jornada do Foco</p>
+                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">⚔️ Santuário do Foco</p>
                 <button
                   onClick={() => { setActiveTab('focus'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'focus' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Timer className="w-4 h-4 text-amber-500/70" />
@@ -3506,15 +2105,15 @@ function App({ userId, signOut }: AppProps) {
                 </button>
               </div>
 
-              {/* Group 2: Disciplina Diária (Habitica) */}
-              <div className="space-y-1">
-                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">⚡ Disciplina Diária</p>
+              {/* Group 2: Mural de Missões */}
+              <div className="space-y-1 border-t border-stone-800/60 pt-4">
+                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">📜 Mural de Missões</p>
                 <button
                   onClick={() => { setActiveTab('habits'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'habits' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Zap className="w-4 h-4 text-amber-400/80" />
@@ -3525,7 +2124,7 @@ function App({ userId, signOut }: AppProps) {
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'dailies' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Calendar className="w-4 h-4 text-sky-400/80" />
@@ -3536,23 +2135,45 @@ function App({ userId, signOut }: AppProps) {
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'todos' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <CheckCircle className="w-4 h-4 text-emerald-400/80" />
                   TO DO LIST
                 </button>
+                <button
+                  onClick={() => { setActiveTab('quests'); setIsMobileSidebarOpen(false); }}
+                  className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
+                    activeTab === 'quests' 
+                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                  }`}
+                >
+                  <Layers className="w-4 h-4 text-purple-400/80" />
+                  Contratos da Gilda
+                </button>
+                <button
+                  onClick={() => { setActiveTab('history'); setIsMobileSidebarOpen(false); }}
+                  className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
+                    activeTab === 'history' 
+                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 text-yellow-600/70" />
+                  Crônicas Diárias
+                </button>
               </div>
 
-              {/* Group 3: Bazar & Guilda */}
-              <div className="space-y-1">
-                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">🛒 Recompensas</p>
+              {/* Group 3: O Reino */}
+              <div className="space-y-1 border-t border-stone-800/60 pt-4">
+                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">🏰 O Reino</p>
                 <button
                   onClick={() => { setActiveTab('shop'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'shop' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Coins className="w-4 h-4 text-amber-400/80" />
@@ -3563,45 +2184,18 @@ function App({ userId, signOut }: AppProps) {
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'titles' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Award className="w-4 h-4 text-rose-400/80" />
-                  Brasões & Títulos
-                </button>
-                <button
-                  onClick={() => { setActiveTab('quests'); setIsMobileSidebarOpen(false); }}
-                  className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
-                    activeTab === 'quests' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
-                  }`}
-                >
-                  <Layers className="w-4 h-4 text-purple-400/80" />
-                  Contratos da Gilda
-                </button>
-              </div>
-
-              {/* Group 4: Registros Rúnicos */}
-              <div className="space-y-1">
-                <p className="text-[9px] uppercase font-bold text-amber-500/50 px-2 font-mono tracking-widest">📖 Arquivos Crônicos</p>
-                <button
-                  onClick={() => { setActiveTab('history'); setIsMobileSidebarOpen(false); }}
-                  className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
-                    activeTab === 'history' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4 text-yellow-600/70" />
-                  Crônicas Diárias
+                  Mercado de Títulos
                 </button>
                 <button
                   onClick={() => { setActiveTab('heatmap'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'heatmap' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Clock className="w-4 h-4 text-amber-500/50" />
@@ -3612,7 +2206,7 @@ function App({ userId, signOut }: AppProps) {
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'stats' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Shield className="w-4 h-4 text-emerald-550/60" />
@@ -3623,18 +2217,29 @@ function App({ userId, signOut }: AppProps) {
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'achievements' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <Award className="w-4 h-4 text-rose-500/50" />
                   Feitos de Alma
                 </button>
                 <button
+                  onClick={() => { setActiveTab('logs'); setIsMobileSidebarOpen(false); }}
+                  className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
+                    activeTab === 'logs' 
+                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                  }`}
+                >
+                  <Scroll className="w-4 h-4 text-amber-400/60" />
+                  Logs Celestiais
+                </button>
+                <button
                   onClick={() => { setActiveTab('guide'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'guide' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/10'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
                   }`}
                 >
                   <HelpCircle className="w-4 h-4 text-amber-400/40" />
@@ -3661,29 +2266,8 @@ function App({ userId, signOut }: AppProps) {
           </div>
         </aside>
 
-        {/* Mobile sidebar overlay scrim */}
-        {mobileSidebarExposed > 0 && (
-          <div
-            onClick={() => setIsMobileSidebarOpen(false)}
-            className="fixed inset-0 bg-black backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200"
-            style={{ opacity: mobileSidebarScrimOpacity }}
-          />
-        )}
-
-        {!isMobileSidebarOpen && (
-          <div
-            onPointerDown={(event) => beginMobileSidebarDrag(event, false)}
-            onPointerMove={updateMobileSidebarDrag}
-            onPointerUp={endMobileSidebarDrag}
-            onPointerCancel={endMobileSidebarDrag}
-            className="fixed left-0 top-0 h-dvh z-30 lg:hidden"
-            style={{ width: MOBILE_SIDEBAR_EDGE_HITBOX_WIDTH, touchAction: 'pan-y' }}
-            aria-hidden="true"
-          />
-        )}
-
         {/* RIGHT WORKSPACE COLUMN */}
-        <main className="lg:col-span-9 flex flex-col gap-6 w-full">
+        <main className="lg:col-span-9 flex flex-col gap-6 w-full pb-20 lg:pb-0">
           
           <AnimatePresence mode="wait">
             <motion.div
@@ -3697,10 +2281,10 @@ function App({ userId, signOut }: AppProps) {
               {/* TARGET VIEWPORT TABS */}
               
               {activeTab === 'focus' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 w-full md:items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full lg:items-start">
                   
                   {/* LEFT SUB-COLUMN: THE TEMPLE CHAMBER & POMODORO TIMER CORE */}
-                  <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] md:col-span-7 flex flex-col justify-between relative">
+                  <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] lg:col-span-7 flex flex-col justify-between relative">
                     
                     {/* Header Title Section Banner */}
                     <div className="bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 p-3.5 flex justify-center items-center relative">
@@ -3739,7 +2323,7 @@ function App({ userId, signOut }: AppProps) {
                       )}
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col justify-center gap-3 md:gap-4 py-2">
+                    <div className="p-4 flex-1 flex flex-col justify-start md:justify-center gap-3 md:gap-4 py-2">
                       
                       {/* Choose focus skill active dropdown option */}
                       <div className="space-y-1.5">
@@ -3747,23 +2331,29 @@ function App({ userId, signOut }: AppProps) {
                           Foco Ativo na Habilidade:
                         </label>
                         {gameState.skills.length > 0 ? (
-                           <div className="relative">
-                            <select
-                              disabled={isRunning}
-                              value={selectedSkillIdx}
-                              onChange={(e) => setSelectedSkillIdx(parseInt(e.target.value))}
-                              className="w-full bg-stone-950/80 border border-amber-500/20 text-amber-200 px-3 py-2 rounded font-serif text-sm focus:outline-none focus:border-amber-400 transition-all select-none appearance-none pr-10 cursor-pointer disabled:opacity-50"
-                            >
-                              {gameState.skills.map((sk, idx) => (
-                                <option key={idx} value={idx}>
-                                  {sk.emoji || '🎯'} {sk.name} (Nível {sk.level}){sk.prestige ? ` ✨ [Prestígio ${'★'.repeat(sk.prestige)}]` : ''}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-amber-400 opacity-60">
-                              ▼
-                            </div>
-                           </div>
+                           (() => {
+                             const activeSkill = gameState.skills[sessionConfig.selectedSkillIdx] || gameState.skills[0];
+                             return (
+                               <button
+                                 type="button"
+                                 disabled={isRunning}
+                                 onClick={() => setIsSkillSelectorOpen(true)}
+                                 className="w-full bg-stone-950/80 border border-amber-500/20 hover:border-amber-500/40 text-amber-200 px-3 py-2.5 rounded-lg font-serif text-sm transition-all flex items-center justify-between cursor-pointer disabled:opacity-50 select-none group"
+                               >
+                                 <span className="flex items-center gap-2 truncate pr-2">
+                                   <span className="text-lg shrink-0">{activeSkill.emoji || '🎯'}</span>
+                                   <span className="font-bold truncate text-amber-100 group-hover:text-amber-200">{activeSkill.name}</span>
+                                   <span className="text-amber-400/80 text-xs font-mono font-medium shrink-0">· Nível {activeSkill.level}</span>
+                                   {activeSkill.prestige && activeSkill.prestige > 0 ? (
+                                     <span className="text-yellow-400 text-[10px] font-bold shrink-0">👑{'★'.repeat(activeSkill.prestige)}</span>
+                                   ) : null}
+                                 </span>
+                                 <span className="text-amber-400 text-xs opacity-60 shrink-0 group-hover:opacity-100 transition-opacity">
+                                   ▼
+                                 </span>
+                               </button>
+                             );
+                           })()
                         ) : (
                           <button
                             onClick={() => setIsSkillsModalOpen(true)}
@@ -3771,6 +2361,194 @@ function App({ userId, signOut }: AppProps) {
                           >
                             + Adicione sua primeira Habilidade Estudo
                           </button>
+                        )}
+                      </div>
+
+                      {/* Segmented Control for Raid Modes */}
+                      <div className="space-y-2 mt-1">
+                        <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
+                          Modo de Incursão:
+                        </label>
+                        <div className="grid grid-cols-3 gap-1 bg-stone-950/60 p-1 rounded-lg border border-amber-500/10">
+                          <button
+                            type="button"
+                            disabled={isRunning}
+                            onClick={() => {
+                              setSessionConfig(prev => ({
+                                ...prev,
+                                isDungeonMode: false,
+                                isWildernessChecked: false
+                              }));
+                              addSystemLog('⚔️ Modo de Incursão Padrão selecionado.');
+                            }}
+                            className={`py-1.5 px-2 rounded text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none disabled:opacity-50 ${
+                              !sessionConfig.isDungeonMode && !sessionConfig.isWildernessChecked
+                                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]'
+                                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40 border border-transparent'
+                            }`}
+                          >
+                            Padrão
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isRunning}
+                            onClick={() => {
+                              if (Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000) {
+                                const remainingSecs = Math.max(0, Math.ceil((2 * 60 * 60 * 1000 - (Date.now() - lastDungeonClearedTime)) / 1000));
+                                const mins = Math.floor(remainingSecs / 60) % 60;
+                                const hrs = Math.floor(remainingSecs / 3600);
+                                addSystemLog(`⏳ Cooldown Ativo: A masmorra está sob recarga celestial por mais ${hrs}h ${mins}m.`);
+                                return;
+                              }
+                              setSessionConfig(prev => ({
+                                ...prev,
+                                isDungeonMode: true,
+                                isWildernessChecked: false
+                              }));
+                              addSystemLog('⚔️ Incursão por Masmorra Ativada! Comprometa-se a realizar 4 focos seguidos sem abandonar para adquirir GP bônus.');
+                            }}
+                            className={`py-1.5 px-2 rounded text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none disabled:opacity-50 ${
+                              sessionConfig.isDungeonMode
+                                ? 'bg-purple-900 border border-purple-400 text-purple-100 shadow-[0_0_15px_rgba(168,85,247,0.35)]'
+                                : 'text-purple-400/80 hover:text-purple-300 hover:bg-purple-950/30 border border-transparent'
+                            }`}
+                          >
+                            Masmorra ⚔️
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isRunning}
+                            onClick={() => {
+                              setSessionConfig(prev => ({
+                                ...prev,
+                                isWildernessChecked: true,
+                                isDungeonMode: false
+                              }));
+                              addSystemLog('🛡️ Ajuste: Terra Selvagem selecionada para a próxima Missão!');
+                            }}
+                            className={`py-1.5 px-2 rounded text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none disabled:opacity-50 ${
+                              sessionConfig.isWildernessChecked
+                                ? 'bg-red-950 border border-red-500/40 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.25)]'
+                                : 'text-red-400/80 hover:text-red-300 hover:bg-red-950/20 border border-transparent'
+                            }`}
+                          >
+                            Selvagem 💀
+                          </button>
+                        </div>
+
+                        {/* Mode Context Information / Help Button */}
+                        {(sessionConfig.isDungeonMode || sessionConfig.isWildernessChecked) && (
+                          <div className="bg-stone-950/40 p-2.5 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
+                            {sessionConfig.isDungeonMode && (
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-purple-300 font-serif">
+                                  <span>⚔️ Explorando Masmorra </span>
+                                  <span className="font-mono">({sessionConfig.dungeonSessions}/4)</span>
+                                  {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
+                                    <span className="text-[9px] font-mono ml-2 text-purple-400">⏳ Cooldown</span>
+                                  ) : (
+                                    <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowDungeonTooltip(!showDungeonTooltip);
+                                  }}
+                                  className="px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-400 hover:bg-purple-500/10 font-bold transition-all cursor-pointer bg-purple-950/10 text-[9px]"
+                                  title="Ajuda sobre a Masmorra"
+                                >
+                                  ?
+                                </button>
+                              </div>
+                            )}
+
+                            {sessionConfig.isWildernessChecked && (
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-red-400 font-serif">
+                                  <span>💀 Terra Selvagem Ativa </span>
+                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +25% XP & GP</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowWildernessTooltip(!showWildernessTooltip);
+                                  }}
+                                  className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold transition-all cursor-pointer bg-red-950/10 text-[9px]"
+                                  title="Ajuda sobre a Terra Selvagem"
+                                >
+                                  ?
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Dungeon Mode Modal */}
+                            <ModeDescriptionModal
+                              isOpen={showDungeonTooltip}
+                              onClose={() => setShowDungeonTooltip(false)}
+                              title="⚔️ Incursão em Masmorra"
+                              variant="purple"
+                              blocks={[
+                                {
+                                  label: 'Regras da Jornada',
+                                  icon: <Swords className="w-4 h-4" />,
+                                  text: (
+                                    <span>
+                                      Comprometa-se a realizar <strong>4 sessões consecutivas</strong> de foco sem abandonar.
+                                    </span>
+                                  ),
+                                },
+                                {
+                                  label: 'Recompensas Magnas',
+                                  icon: <Flame className="w-4 h-4" />,
+                                  text: (
+                                    <span>
+                                      +50% de XP por minuto em cada sessão, rolos de saque quadruplicados (Quad Loot), 40% de chance de saque Lendário e um bônus monumental de <strong>+2.500 GP</strong> ao concluir as 4 sessões.
+                                    </span>
+                                  ),
+                                },
+                                {
+                                  label: 'Recarga para Masmorra',
+                                  icon: <RotateCcw className="w-4 h-4" />,
+                                  text: (
+                                    <span>
+                                      Tempo de recarga de 2 horas após a conclusão. Não acumulável com o Modo Terra Selvagem.
+                                    </span>
+                                  ),
+                                },
+                              ]}
+                            />
+
+                            {/* Wilderness Mode Modal */}
+                            <ModeDescriptionModal
+                              isOpen={showWildernessTooltip}
+                              onClose={() => setShowWildernessTooltip(false)}
+                              title="💀 Terra Selvagem"
+                              variant="red"
+                              blocks={[
+                                {
+                                  label: 'Regras da Jornada',
+                                  icon: <Skull className="w-4 h-4" />,
+                                  text: (
+                                    <span>
+                                      Voto cognitivo severo. Minimizar a aba convoca a morte e falha de bônus automaticamente.
+                                    </span>
+                                  ),
+                                },
+                                {
+                                  label: 'Recompensas Magnas',
+                                  icon: <Coins className="w-4 h-4" />,
+                                  text: (
+                                    <span>
+                                      Sobreviventes ganham um bônus monumental de <strong>+25% de XP & GP extras</strong> no fechamento do foco.
+                                    </span>
+                                  ),
+                                },
+                              ]}
+                            />
+                          </div>
                         )}
                       </div>
 
@@ -3807,36 +2585,36 @@ function App({ userId, signOut }: AppProps) {
                             </p>
                           </div>
 
-                          {!isDungeonMode && (
+                          {!sessionConfig.isDungeonMode && (
                             <div className="relative z-10 space-y-2 max-w-xs mx-auto">
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                   <button
                                     type="button"
-                                    onClick={() => setSelectedBreakMins(5)}
+                                    onClick={() => setSelectedBreakMins(gameState.pomodoroSettings.shortBreakDuration)}
                                     className={`w-full py-2.5 text-xs text-center border font-serif rounded tracking-widest select-none transition-all cursor-pointer ${
-                                      selectedBreakMins === 5
+                                      selectedBreakMins === gameState.pomodoroSettings.shortBreakDuration
                                         ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 font-bold scale-[1.02]'
                                         : 'border-stone-800 text-stone-100/50 hover:text-stone-200 hover:bg-stone-900/10'
                                     }`}
                                   >
-                                    5 MIN
+                                    {gameState.pomodoroSettings.shortBreakDuration} MIN
                                   </button>
-                                  <span className="text-[10px] text-stone-500 font-serif block text-center">(padrão)</span>
+                                  <span className="text-[10px] text-stone-500 font-serif block text-center">(curto)</span>
                                 </div>
                                 <div className="space-y-1">
                                   <button
                                     type="button"
-                                    onClick={() => setSelectedBreakMins(gameState.longBreakMinutes || 15)}
+                                    onClick={() => setSelectedBreakMins(gameState.pomodoroSettings.longBreakDuration)}
                                     className={`w-full py-2.5 text-xs text-center border font-serif rounded tracking-widest select-none transition-all cursor-pointer ${
-                                      selectedBreakMins === (gameState.longBreakMinutes || 15)
+                                      selectedBreakMins === gameState.pomodoroSettings.longBreakDuration
                                         ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 font-bold scale-[1.02]'
                                         : 'border-stone-800 text-stone-100/50 hover:text-stone-200 hover:bg-stone-900/10'
                                     }`}
                                   >
-                                    {(gameState.longBreakMinutes || 15)} MIN
+                                    {gameState.pomodoroSettings.longBreakDuration} MIN
                                   </button>
-                                  <span className="text-[10px] text-stone-500 font-serif block text-center">(descanso longo)</span>
+                                  <span className="text-[10px] text-stone-500 font-serif block text-center">(longo)</span>
                                 </div>
                               </div>
                             </div>
@@ -3900,9 +2678,9 @@ function App({ userId, signOut }: AppProps) {
                                 : isPaused 
                                   ? 'REPOUSO DA MISSÃO' 
                                   : isRunning 
-                                    ? (isDungeonMode 
-                                      ? `⚔️ EXPLORANDO MASMORRA (${dungeonSessions}/4) ⚔️` 
-                                      : isWildernessChecked 
+                                    ? (sessionConfig.isDungeonMode 
+                                      ? `⚔️ EXPLORANDO MASMORRA (${sessionConfig.dungeonSessions}/4) ⚔️` 
+                                      : sessionConfig.isWildernessChecked 
                                         ? '⚔️ SOBREVIDA WILDERNESS ⚔️' 
                                         : 'MISSÃO DE FOCO ATIVA') 
                                     : 'PRONTO PARA COMEÇAR'}
@@ -3911,75 +2689,283 @@ function App({ userId, signOut }: AppProps) {
                         </div>
                       )}
 
-                      {/* QUICK PRE-SET TIMEOUTCARDS SELECTION */}
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-4 gap-2">
-                          <button
-                            disabled={isRunning || isBreakActive}
-                            onClick={() => changeDuration(25)}
-                            className={`py-1.5 text-xs text-center border font-serif rounded tracking-widest select-none transition-all cursor-pointer ${
-                              !isCustomTime && timerDuration === 25 * 60
-                                ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
-                                : 'border-amber-500/10 text-amber-100/40 hover:text-amber-200 hover:bg-stone-900/50'
-                            }`}
-                          >
-                            25MIN
-                          </button>
-                          <button
-                            disabled={isRunning || isBreakActive}
-                            onClick={() => changeDuration(50)}
-                            className={`py-1.5 text-xs text-center border font-serif rounded tracking-widest select-none transition-all cursor-pointer ${
-                              !isCustomTime && timerDuration === 50 * 60
-                                ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
-                                : 'border-amber-500/10 text-amber-100/40 hover:text-amber-200 hover:bg-stone-900/50'
-                            }`}
-                          >
-                            50MIN
-                          </button>
-                          <button
-                            disabled={isRunning || isBreakActive}
-                            onClick={() => changeDuration(90)}
-                            className={`py-1.5 text-xs text-center border font-serif rounded tracking-widest select-none transition-all cursor-pointer ${
-                              !isCustomTime && timerDuration === 90 * 60
-                                ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
-                                : 'border-amber-500/10 text-amber-100/40 hover:text-amber-200 hover:bg-stone-900/50'
-                            }`}
-                          >
-                            90MIN
-                          </button>
-                          <button
-                            disabled={isRunning || isBreakActive}
-                            onClick={selectCustomTime}
-                            className={`py-1.5 text-xs text-center border font-serif rounded tracking-widest select-none transition-all cursor-pointer ${
-                              isCustomTime
-                                ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
-                                : 'border-amber-500/10 text-amber-100/40 hover:text-amber-200 hover:bg-stone-900/50'
-                            }`}
-                          >
-                            CUSTOM
-                          </button>
-                        </div>
+                      {/* CONTROLS ROW: AMBIENT SOUND & TIMER SETTINGS */}
+                      <div className="grid grid-cols-2 gap-2 relative z-20">
+                        {/* 🎵 Som Ambiente Button */}
+                        <AmbientSoundButton
+                          selectedTrack={ambientSound.selectedTrack}
+                          volume={ambientSound.volume}
+                          selectTrack={ambientSound.selectTrack}
+                          setVolume={ambientSound.setVolume}
+                          tracks={ambientSound.tracks}
+                        />
 
-                        {isCustomTime && !isRunning && !isBreakActive && (
-                          <div className="flex gap-2 items-center bg-stone-950/40 p-2 border border-amber-500/15 rounded">
-                            <input
-                              type="number"
-                              value={customInputMins}
-                              onChange={(e) => setCustomInputMins(e.target.value)}
-                              placeholder="Minutos"
-                              className="flex-1 bg-stone-900 border border-amber-500/10 px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none focus:border-amber-500"
-                              min="1"
-                              max="480"
-                            />
-                            <button
-                              onClick={applyCustomTime}
-                              className="px-4 py-1.5 bg-amber-500/15 border border-amber-400 hover:bg-amber-400 hover:text-black font-serif text-[11px] uppercase tracking-wider rounded transition-all cursor-pointer"
-                            >
-                              Fixar
-                            </button>
-                          </div>
-                        )}
+                        {/* ⚙️ Ajustes Button */}
+                        <button
+                          disabled={isRunning || isBreakActive}
+                          onClick={() => setIsTimerSettingsModalOpen(true)}
+                          className="relative px-3 py-1.5 rounded-lg border border-amber-500/20 bg-stone-900/60 hover:bg-stone-850 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all cursor-pointer select-none flex items-center justify-center gap-1.5 shadow-sm group disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Ajustes de Tempo"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-stone-500 group-hover:text-stone-400 transition-colors" />
+                          <span className="text-[10px] font-serif font-black uppercase tracking-wider text-amber-100/70 group-hover:text-amber-100">
+                            Ajustes · {gameState.pomodoroSettings.focusDuration}min
+                          </span>
+                        </button>
                       </div>
+
+                      {/* Timer Settings Modal */}
+                      {(() => {
+                        const isFocusValid = !isNaN(parseInt(ajustesFocus)) && parseInt(ajustesFocus) >= 1 && parseInt(ajustesFocus) <= 180;
+                        const isShortBreakValid = !isNaN(parseInt(ajustesShortBreak)) && parseInt(ajustesShortBreak) >= 1 && parseInt(ajustesShortBreak) <= 60;
+                        const isLongBreakValid = !isNaN(parseInt(ajustesLongBreak)) && parseInt(ajustesLongBreak) >= 1 && parseInt(ajustesLongBreak) <= 60;
+                        const isFormValid = isFocusValid && isShortBreakValid && isLongBreakValid;
+                        const isCustomActive = isCustomTime || (
+                          gameState.pomodoroSettings.focusDuration !== 25 &&
+                          gameState.pomodoroSettings.focusDuration !== 50 &&
+                          gameState.pomodoroSettings.focusDuration !== 90
+                        );
+
+                        return (
+                          <Modal
+                            isOpen={isTimerSettingsModalOpen}
+                            onClose={() => setIsTimerSettingsModalOpen(false)}
+                            title="⚙️ Ajustes do Foco"
+                            variant="amber"
+                          >
+                            <div className="space-y-4 font-sans text-amber-100">
+                              {/* Section 1: Presets */}
+                              <div className="space-y-2">
+                                <h3 className="text-xs font-serif font-bold uppercase tracking-wider text-amber-500">
+                                  Presets de Duração
+                                </h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {[25, 50, 90].map((duration) => {
+                                    const isActive = !isCustomTime && gameState.pomodoroSettings.focusDuration === duration;
+                                    return (
+                                      <button
+                                        key={duration}
+                                        type="button"
+                                        onClick={() => {
+                                          changeDuration(duration);
+                                          setIsCustomTime(false);
+                                          setIsTimerSettingsModalOpen(false);
+                                        }}
+                                        className={`py-2 text-xs font-serif rounded border tracking-wider select-none transition-all cursor-pointer ${
+                                          isActive
+                                            ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
+                                            : 'border-amber-500/10 bg-stone-900/40 text-amber-100/60 hover:text-amber-200 hover:bg-stone-900/80'
+                                        }`}
+                                      >
+                                        {duration} MIN
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Section 2: Custom Toggles */}
+                              <div className="pt-2 border-t border-amber-500/10 space-y-3">
+                                {/* Duração Personalizada Toggle Row */}
+                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-amber-500/5">
+                                  <div className="max-w-[80%] text-left">
+                                    <span className="text-[11px] font-serif font-bold text-amber-100/90 block">
+                                      Duração Personalizada
+                                    </span>
+                                    <span className="text-[9px] text-amber-100/50 leading-tight block">
+                                      Define tempos customizados para foco e pausas
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (isCustomActive) {
+                                        setIsCustomTime(false);
+                                        changeDuration(25);
+                                      } else {
+                                        setIsCustomTime(true);
+                                      }
+                                    }}
+                                    className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                  >
+                                    {isCustomActive ? (
+                                      <ToggleRight className="w-8 h-8 text-emerald-400" />
+                                    ) : (
+                                      <ToggleLeft className="w-8 h-8 text-stone-600" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Custom Fields Block - ALWAYS VISIBLE */}
+                                <div className={`bg-stone-950/60 border border-amber-500/20 rounded-lg p-3 space-y-4 transition-all duration-300 ${
+                                  isCustomActive ? 'opacity-100' : 'opacity-40'
+                                }`}>
+                                  {/* Grid of 3 numeric controls */}
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {/* Focus Duration */}
+                                    <div className="bg-stone-900/40 border border-stone-800 p-2 rounded flex flex-col justify-between items-center text-center">
+                                      <span className="text-[10px] font-serif text-amber-100/50 uppercase tracking-wider block mb-1">
+                                        Foco
+                                      </span>
+                                      <input
+                                        type="number"
+                                        value={ajustesFocus}
+                                        onChange={(e) => setAjustesFocus(e.target.value)}
+                                        disabled={!isCustomActive}
+                                        className={`w-full bg-stone-900 border ${!isFocusValid ? 'border-red-500/50 focus:border-red-500' : 'border-amber-500/10 focus:border-amber-500'} px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        min="1"
+                                        max="180"
+                                      />
+                                      <span className="text-[8px] text-stone-500 font-mono mt-1">1-180 min</span>
+                                    </div>
+
+                                    {/* Short Break Duration */}
+                                    <div className="bg-stone-900/40 border border-stone-800 p-2 rounded flex flex-col justify-between items-center text-center">
+                                      <span className="text-[10px] font-serif text-amber-100/50 uppercase tracking-wider block mb-1">
+                                        Pausa Curta
+                                      </span>
+                                      <input
+                                        type="number"
+                                        value={ajustesShortBreak}
+                                        onChange={(e) => setAjustesShortBreak(e.target.value)}
+                                        disabled={!isCustomActive}
+                                        className={`w-full bg-stone-900 border ${!isShortBreakValid ? 'border-red-500/50 focus:border-red-500' : 'border-amber-500/10 focus:border-amber-500'} px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        min="1"
+                                        max="60"
+                                      />
+                                      <span className="text-[8px] text-stone-500 font-mono mt-1">1-60 min</span>
+                                    </div>
+
+                                    {/* Long Break Duration */}
+                                    <div className="bg-stone-900/40 border border-stone-800 p-2 rounded flex flex-col justify-between items-center text-center">
+                                      <span className="text-[10px] font-serif text-amber-100/50 uppercase tracking-wider block mb-1">
+                                        Pausa Longa
+                                      </span>
+                                      <input
+                                        type="number"
+                                        value={ajustesLongBreak}
+                                        onChange={(e) => setAjustesLongBreak(e.target.value)}
+                                        disabled={!isCustomActive}
+                                        className={`w-full bg-stone-900 border ${!isLongBreakValid ? 'border-red-500/50 focus:border-red-500' : 'border-amber-500/10 focus:border-amber-500'} px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        min="1"
+                                        max="60"
+                                      />
+                                      <span className="text-[8px] text-stone-500 font-mono mt-1">1-60 min</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Validation Warning if any is invalid */}
+                                  {!isFormValid && isCustomActive && (
+                                    <div className="text-[10px] text-red-400 font-serif text-center">
+                                      Por favor, insira valores dentro dos limites indicados.
+                                    </div>
+                                  )}
+
+                                  {/* Save Button */}
+                                  <button
+                                    type="button"
+                                    disabled={!isFormValid || !isCustomActive}
+                                    onClick={() => {
+                                      const parsedFocus = parseInt(ajustesFocus);
+                                      const parsedShort = parseInt(ajustesShortBreak);
+                                      const parsedLong = parseInt(ajustesLongBreak);
+
+                                      setGameState(prev => ({
+                                        ...prev,
+                                        pomodoroSettings: {
+                                          ...prev.pomodoroSettings,
+                                          focusDuration: parsedFocus,
+                                          shortBreakDuration: parsedShort,
+                                          longBreakDuration: parsedLong,
+                                        }
+                                      }));
+
+                                      if (!isRunning && !isBreakActive) {
+                                        setTimeLeft(parsedFocus * 60);
+                                      }
+
+                                      setIsCustomTime(true);
+                                      setIsTimerSettingsModalOpen(false);
+                                    }}
+                                    className="w-full py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400 text-amber-300 hover:text-amber-200 font-serif text-xs font-bold uppercase tracking-widest rounded transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                  >
+                                    Salvar Personalizado
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Section 3: Autostart preferences - ALWAYS VISIBLE & FUNCTIONAL */}
+                              <div className="pt-2 border-t border-amber-500/10 space-y-2">
+                                <h3 className="text-xs font-serif font-bold uppercase tracking-wider text-amber-500">
+                                  Opções Adicionais
+                                </h3>
+
+                                {/* Auto-Start Break */}
+                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-amber-500/5">
+                                  <div className="max-w-[80%] text-left">
+                                    <span className="text-[11px] font-serif font-bold text-amber-100/90 block">
+                                      Auto-Iniciar Descanso
+                                    </span>
+                                    <span className="text-[9px] text-amber-100/50 leading-tight block">
+                                      Inicia o descanso automaticamente ao fim da sessão de foco
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setGameState(prev => ({
+                                        ...prev,
+                                        pomodoroSettings: {
+                                          ...prev.pomodoroSettings,
+                                          autoStartBreak: !prev.pomodoroSettings.autoStartBreak,
+                                        }
+                                      }));
+                                    }}
+                                    className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                  >
+                                    {gameState.pomodoroSettings.autoStartBreak ? (
+                                      <ToggleRight className="w-8 h-8 text-emerald-400" />
+                                    ) : (
+                                      <ToggleLeft className="w-8 h-8 text-stone-600" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Auto-Start Focus */}
+                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-amber-500/5">
+                                  <div className="max-w-[80%] text-left">
+                                    <span className="text-[11px] font-serif font-bold text-amber-100/90 block">
+                                      Auto-Iniciar Foco
+                                    </span>
+                                    <span className="text-[9px] text-amber-100/50 leading-tight block">
+                                      Inicia a próxima sessão de foco automaticamente ao fim do descanso
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setGameState(prev => ({
+                                        ...prev,
+                                        pomodoroSettings: {
+                                          ...prev.pomodoroSettings,
+                                          autoStartFocus: !prev.pomodoroSettings.autoStartFocus,
+                                        }
+                                      }));
+                                    }}
+                                    className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                  >
+                                    {gameState.pomodoroSettings.autoStartFocus ? (
+                                      <ToggleRight className="w-8 h-8 text-emerald-400" />
+                                    ) : (
+                                      <ToggleLeft className="w-8 h-8 text-stone-600" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </Modal>
+                        );
+                      })()}
 
                       {/* TRANSIT CONTROL PLAYER TRIGGERS */}
                       <div className="space-y-3">
@@ -3999,153 +2985,44 @@ function App({ userId, signOut }: AppProps) {
                               ▶ Iniciar Missão de Foco
                             </button>
                           ) : (
-                            <div className="flex-1 flex gap-2">
-                              <button
-                                onClick={togglePauseQuest}
-                                className={`flex-1 py-3 text-sm font-serif font-black uppercase rounded border tracking-widest transition-all cursor-pointer ${
-                                  isPaused 
-                                    ? 'bg-purple-900/10 border-purple-500 text-purple-300' 
-                                    : 'bg-stone-950/40 border-amber-500/30 text-amber-300'
-                                }`}
-                              >
-                                {isPaused ? '▶ Retomar Missão' : '⏸️ Pausar Missão'}
-                              </button>
-                              <button
-                                onClick={abandonQuest}
-                                className={`px-4 py-3 text-xs rounded transition-all cursor-pointer ${
-                                  isConfirmingAbandon
-                                    ? 'bg-red-600 border border-red-400 text-white font-bold animate-pulse'
-                                    : 'bg-red-950/40 border border-red-500/30 hover:bg-red-950 hover:text-red-300 text-red-400'
-                                }`}
-                              >
-                                {isConfirmingAbandon ? 'Confirmar?' : 'Abandonar'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {isRunning && (
-                          <button
-                            onClick={() => {
-                              document.documentElement.requestFullscreen().catch((err) => {
-                                console.warn("Fullscreen API not supported or blocked:", err);
-                              });
-                              setIsFocusMode(true);
-                            }}
-                            className="w-full py-2.5 px-3 bg-stone-900 hover:bg-stone-850 text-amber-300 hover:text-amber-200 border border-amber-500/20 hover:border-amber-500/40 rounded text-xs font-serif font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[1px_2px_rgba(0,0,0,0.4)]"
-                          >
-                            <span>⛶</span>
-                            <span>Entrar na Câmara do Foco</span>
-                          </button>
-                        )}
-
-                        {/* DUNGEON MODE TRIGGER BUTTON */}
-                        <div className="flex gap-2 items-center relative z-20">
-                          <button
-                            disabled={isRunning}
-                            onClick={() => {
-                              if (Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000) {
-                                const remainingSecs = Math.max(0, Math.ceil((2 * 60 * 60 * 1000 - (Date.now() - lastDungeonClearedTime)) / 1000));
-                                const mins = Math.floor(remainingSecs / 60) % 60;
-                                const hrs = Math.floor(remainingSecs / 3600);
-                                addSystemLog(`⏳ Cooldown Ativo: A masmorra está sob recarga celestial por mais ${hrs}h ${mins}m.`);
-                                return;
-                              }
-                              setIsDungeonMode(!isDungeonMode);
-                              if (!isDungeonMode) {
-                                setIsWildernessChecked(false); // Can't be combined with Wilderness
-                                addSystemLog('⚔️ Incursão por Masmorra Ativada! Comprometa-se a realizar 4 focos seguidos sem abandonar para adquirir GP bônus.');
-                              } else {
-                                addSystemLog('⚔️ Missão em Masmorra Desativada.');
-                              }
-                            }}
-                            className={`flex-1 py-2.5 px-3 rounded text-xs gap-2 font-serif font-bold uppercase transition-all tracking-wider flex items-center justify-between border cursor-pointer select-none disabled:opacity-50 ${
-                              isDungeonMode
-                                ? 'bg-purple-900 border-purple-400 text-purple-100 font-extrabold shadow-[0_0_15px_rgba(168,85,247,0.35)]'
-                                : 'bg-purple-950/20 border-purple-500/20 text-purple-300 hover:bg-purple-950/40 hover:border-purple-500/40'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <span>⚔️</span>
-                              <span>
-                                {isDungeonMode 
-                                  ? `Explorando Masmorra (${dungeonSessions}/4)` 
-                                  : 'Entrar na Masmorra'
-                                }
-                              </span>
-                            </div>
-                            {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
-                              <span className="text-[9px] font-mono opacity-65">⏳ Recarga</span>
-                            ) : isDungeonMode ? (
-                              <span className="text-[9px] bg-purple-700 text-white px-1.5 py-0.2 rounded font-mono animate-pulse">ATIVO</span>
-                            ) : (
-                              <span className="text-[9px] text-purple-400/70 font-mono">Bônus +2.500 GP</span>
-                            )}
-                          </button>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowDungeonTooltip(!showDungeonTooltip);
-                            }}
-                            className="w-10 h-10 rounded border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs hover:bg-purple-500/10 transition-all cursor-pointer bg-purple-950/10"
-                            title="Ajuda sobre a Masmorra"
-                          >
-                            ?
-                          </button>
-
-                          {showDungeonTooltip && (
-                            <div className="absolute left-0 bottom-12 w-full bg-stone-950/95 border border-purple-500/40 p-4 rounded shadow-2xl z-50 text-xs text-purple-100 font-serif leading-relaxed space-y-2">
-                              <div className="flex justify-between items-center pb-1 border-b border-purple-500/10">
-                                <strong className="text-purple-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
-                                  ⚔️ Incursão em Masmorra
-                                </strong>
-                                <button 
-                                  onClick={() => setShowDungeonTooltip(false)}
-                                  className="text-purple-100/40 hover:text-purple-200 font-bold font-mono text-sm cursor-pointer"
+                            <div className="flex-1 flex flex-col gap-2">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={togglePauseQuest}
+                                  className={`flex-1 py-3 text-sm font-serif font-black uppercase rounded border tracking-widest transition-all cursor-pointer ${
+                                    isPaused 
+                                      ? 'bg-purple-900/10 border-purple-500 text-purple-300' 
+                                      : 'bg-stone-950/40 border-amber-500/30 text-amber-300'
+                                  }`}
                                 >
-                                  ×
+                                  {isPaused ? '▶ Retomar Missão' : '⏸️ Pausar Missão'}
+                                </button>
+                                <button
+                                  onClick={abandonQuest}
+                                  className={`px-4 py-3 text-xs rounded transition-all cursor-pointer ${
+                                    isConfirmingAbandon
+                                      ? 'bg-red-600 border border-red-400 text-white font-bold animate-pulse'
+                                      : 'bg-red-950/40 border border-red-500/30 hover:bg-red-950 hover:text-red-300 text-red-400'
+                                  }`}
+                                >
+                                  {isConfirmingAbandon ? 'Confirmar?' : 'Abandonar'}
                                 </button>
                               </div>
-                              <p className="text-[11px] text-purple-200/80 leading-relaxed font-sans normal-case">
-                                <strong>Regras da Jornada:</strong> Comprometa-se a realizar <strong>4 sessões consecutivas</strong> de foco sem abandonar. <br />
-                                <strong>Recompensas Magnas:</strong> +50% de XP por minuto em cada sessão, rolos de saque quadruplicados (Quad Loot), 40% de chance de saque Lendário e um bônus monumental de <strong>+2.500 GP</strong> ao concluir as 4 sessões.<br />
-                                <strong>Recarga:</strong> Tempo de recarga de 2 horas após a conclusão. Não acumulável com o Modo Terra Selvagem.
-                              </p>
+                              <button
+                                onClick={() => {
+                                  document.documentElement.requestFullscreen().catch((err) => {
+                                    console.warn("Fullscreen API not supported or blocked:", err);
+                                  });
+                                  setSessionConfig(prev => ({ ...prev, isFocusMode: true }));
+                                }}
+                                className="w-full py-2.5 text-xs font-serif font-bold uppercase text-amber-100/50 hover:text-amber-100/80 bg-stone-900/20 hover:bg-stone-900/55 border border-amber-500/15 hover:border-amber-500/30 rounded tracking-widest transition-all cursor-pointer select-none text-center flex items-center justify-center gap-1.5"
+                              >
+                                <span>⛶</span>
+                                <span>Tela Cheia</span>
+                              </button>
                             </div>
-                          )}
+                        )}
                         </div>
-                      </div>
-
-                      {/* HARSH WILDERNESS MODE TOGGLE TRIGGER */}
-                      <div className="border-t border-amber-500/10 pt-4 mt-1 flex justify-between items-center bg-stone-950/10 p-3 rounded border border-amber-500/5">
-                        <div className="flex items-start gap-2.5 max-w-[80%]">
-                          <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${isWildernessChecked ? 'text-red-500 animate-pulse' : 'text-amber-100/30'}`} />
-                          <div>
-                            <h4 className="text-xs font-serif font-bold text-amber-100/90 flex items-center gap-1.5">
-                              Modo Terra Selvagem (Wilderness)
-                              {isWildernessChecked && (
-                                <span className="text-[9px] bg-red-950 border border-red-500/40 text-red-500 px-1 rounded uppercase animate-pulse">Ativo</span>
-                              )}
-                            </h4>
-                            <p className="text-[10px] text-amber-100/50 leading-relaxed font-serif">
-                              Voto cognitivo severo. Minimizar a aba convoca a morte e falha de bônus automaticamente. Sobreviventes ganham <strong className="text-amber-400">+25% de XP & GP extras</strong>.
-                            </p>
-                          </div>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            disabled={isRunning}
-                            checked={isWildernessChecked}
-                            onChange={(e) => {
-                              setIsWildernessChecked(e.target.checked);
-                              if (e.target.checked) addSystemLog('🛡️ Ajuste: Terra Selvagem selecionada para a próxima Missão!');
-                            }}
-                            className="sr-only peer"
-                          />
-                          <div className="w-10 h-5 bg-stone-900 border border-amber-500/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-red-500 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-amber-600 peer-checked:after:bg-red-500 after:border-amber-500 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-red-900/30 peer-checked:border-red-500/40" />
-                        </label>
                       </div>
 
                     </div>
@@ -4174,7 +3051,7 @@ function App({ userId, signOut }: AppProps) {
 
                       return (
                         <div className="p-4 bg-stone-950/20 border-t border-amber-500/10 space-y-3">
-                          <div className="flex justify-between items-center bg-stone-950/30 px-2.5 py-1.5 rounded border border-amber-500/5">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-stone-950/30 px-2.5 py-1.5 rounded border border-amber-500/5">
                             <span className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054] flex items-center gap-1.5 leading-none">
                               📜 MURAL DE CONTRATOS ATIVOS
                             </span>
@@ -4184,7 +3061,7 @@ function App({ userId, signOut }: AppProps) {
                                 setActiveTab('quests');
                                 setIsMobileSidebarOpen(false);
                               }}
-                              className="text-[9px] font-serif font-bold uppercase tracking-wider text-amber-500 hover:text-amber-300 transition-colors flex items-center gap-1 hover:underline cursor-pointer"
+                              className="text-[9px] font-serif font-bold uppercase tracking-wider text-amber-500 hover:text-amber-300 transition-colors flex items-center gap-1 hover:underline cursor-pointer sm:self-auto self-end"
                             >
                               Painel de Contratos →
                             </button>
@@ -4277,7 +3154,7 @@ function App({ userId, signOut }: AppProps) {
                   </section>
 
                   {/* RIGHT SUB-COLUMN: HERO PROFILE & ACTIVE SKILLS SHEET */}
-                  <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] md:col-span-5 flex flex-col justify-between">
+                  <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] hidden lg:flex lg:col-span-5 flex-col justify-between">
                     <div className="p-4 bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 flex justify-between items-center">
                       <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
                         <Shield className="w-4 h-4 text-amber-500" />
@@ -4292,344 +3169,53 @@ function App({ userId, signOut }: AppProps) {
                     </div>
 
                     <div className="p-5 flex-1 space-y-5">
-                      {/* REDESIGNED TWO-COLUMN RPG LAYOUT */}
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-stretch">
-                        
-                        {/* LEFT COLUMN: AVATAR & PERSONAL STATS */}
-                        <div className="sm:col-span-5 flex flex-col justify-between bg-stone-950/20 border border-amber-500/10 p-3.5 rounded-lg">
-                          <div className="flex flex-col items-center">
-                            <div className="text-5xl md:text-6xl w-24 h-24 bg-stone-950 rounded-xl border-2 border-amber-500/40 flex items-center justify-center shadow-[0_4px_25px_rgba(226,176,84,0.18)] select-none relative overflow-hidden group self-center">
-                              <div className="absolute inset-0 bg-gradient-to-t from-purple-950/40 via-transparent to-transparent pointer-events-none" />
-                              <span className="relative z-10 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] transform group-hover:scale-110 transition-transform duration-300">
-                                {gameState.charClass === 'Mage' ? '🧙' : gameState.charClass === 'Warrior' ? '⚔️' : '🏹'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Personal Non-Combat Stats */}
-                          <div className="space-y-2 mt-4">
-                            <div className="bg-stone-950/40 border border-amber-500/10 p-2.5 rounded text-center transition-all hover:bg-stone-950/60 shadow-sm">
-                              <div className="text-[9px] text-amber-100/40 uppercase tracking-[0.12em] font-serif flex items-center justify-center gap-1 select-none">
-                                <span>🔥</span> Sequência Atual
-                              </div>
-                              <div className="text-xs font-mono font-black text-amber-400 mt-1">{gameState.streak} {gameState.streak === 1 ? 'dia' : 'dias'}</div>
-                              <div className="text-[8.5px] text-stone-500 font-normal font-sans tracking-wide mt-0.5 select-none">(Recorde: {gameState.bestStreak}d)</div>
-                            </div>
-                            
-                            <div className="bg-stone-950/40 border border-amber-500/10 p-2.5 rounded text-center transition-all hover:bg-stone-950/60 shadow-sm">
-                              <div className="text-[9px] text-amber-100/40 uppercase tracking-[0.12em] font-serif flex items-center justify-center gap-1 select-none">
-                                <span>⏱️</span> Foco Total
-                              </div>
-                              <div className="text-xs font-mono font-black text-amber-400 mt-1">
-                                {Math.floor(gameState.totalMinutes / 60)}h{String(gameState.totalMinutes % 60).padStart(2, '0')}m
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* RIGHT COLUMN: IDENTITY & PROGRESSION BARS */}
-                        <div className="sm:col-span-7 flex flex-col justify-between space-y-4">
-                          
-                          {/* Identity Card */}
-                          <div className="bg-stone-950/20 border border-amber-500/10 p-3.5 rounded-lg flex flex-col justify-center gap-1">
-                            <div className="flex flex-col gap-1 min-w-0">
-                              <div className="flex items-center flex-wrap gap-2">
-                                <h3 className="font-serif font-black text-base md:text-lg text-amber-200 tracking-wide uppercase leading-tight truncate">
-                                  {gameState.charName}
-                                </h3>
-                                {gameState.equippedTitle && (() => {
-                                  const found = TITLE_CATALOG.find(t => t.id === gameState.equippedTitle);
-                                  if (!found) return null;
-                                  return (
-                                    <span className="bg-amber-500/10 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider select-none animate-pulse shrink-0">
-                                      {found.emoji} {found.name}
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                              <p className="text-[10px] md:text-[11px] font-bold text-purple-400 tracking-widest uppercase font-serif">
-                                {gameState.charClass === 'Mage' ? '🧙 Mago d\'Arraia' : gameState.charClass === 'Warrior' ? '🛡️ Guerreiro de Aço' : '🏹 Patrulheiro Silvestre'}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Progression Box - Combat Level & Combat XP */}
-                          <div className="bg-stone-950/25 border border-amber-500/10 p-3.5 rounded-lg shadow-inner space-y-3.5">
-                            {/* RPG Plaque-style Combat Level Display */}
-                            <div className="relative bg-gradient-to-r from-stone-950 via-purple-950/30 to-stone-950 border border-amber-500/25 p-2.5 rounded-md flex items-center justify-between shadow-inner select-none font-serif h-[38px] overflow-hidden group">
-                              <span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-amber-500/35"></span>
-                              <span className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-amber-500/35"></span>
-                              <span className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-amber-500/35"></span>
-                              <span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-amber-500/35"></span>
-                              <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-amber-200/90 font-black tracking-widest">
-                                <span>⚔️</span>
-                                <span>NÍVEL DE COMBATE</span>
-                              </div>
-                              <div className="flex-1 border-b border-dotted border-amber-500/20 mx-2 self-center h-1"></div>
-                              <div className="text-[11px] font-mono font-black text-[#E2B054] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 group-hover:scale-105 transition-transform">
-                                {gameState.combatLevel}
-                              </div>
-                            </div>
-
-                            {/* Combat Experience Progress (XP) */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-baseline text-[8.5px] font-sans font-bold">
-                                <span className="text-amber-100/40 uppercase tracking-widest font-serif flex items-center gap-1">✨ XP (Experiência de Combate)</span>
-                                <span className="text-emerald-400 font-mono text-[8.5px]">
-                                  {gameState.combatXP} / {gameState.combatLevel * 100}
-                                </span>
-                              </div>
-                              <div className="h-2 w-full bg-stone-900 border border-amber-500/5 rounded overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300"
-                                  style={{ width: `${(gameState.combatXP / (gameState.combatLevel * 100)) * 100}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Survival HP Status */}
-                          <div className="bg-stone-950/20 border border-amber-500/10 p-3.5 rounded-lg space-y-1">
-                            <div className="flex justify-between items-baseline text-[8.5px] font-sans font-bold">
-                              <span className="text-rose-400 uppercase tracking-widest font-serif flex items-center gap-1">
-                                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" /> HP (PONTOS DE VIDA)
-                              </span>
-                              <span className="text-rose-400 font-mono text-[8.5px]">
-                                {gameState.hp} / {gameState.maxHp}
-                              </span>
-                            </div>
-                            <div className="h-2 w-full bg-stone-900 border border-amber-500/5 rounded overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-red-600 to-rose-400 transition-all duration-300 fill-rose-500"
-                                style={{ width: `${(gameState.hp / gameState.maxHp) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-
-                        </div>
-                      </div>
+                      <CharacterScreen
+                        character={{
+                          charName: gameState.charName,
+                          charClass: gameState.charClass,
+                          equippedTitle: gameState.equippedTitle,
+                          streak: gameState.streak,
+                          bestStreak: gameState.bestStreak,
+                          totalMinutes: gameState.totalMinutes,
+                          combatLevel: gameState.combatLevel,
+                          combatXP: gameState.combatXP,
+                          hp: gameState.hp,
+                          maxHp: gameState.maxHp,
+                        }}
+                        equippedEquipment={gameState.equippedEquipment || [null, null, null]}
+                        activeBuffs={gameState.inventory.filter(i => ['DoubleLoot', 'FocusElixir', 'CrystalClarity', 'RuneFortune', 'StreakShield'].includes(i.buff))}
+                        onUnequipItem={handleUnequipItem}
+                        ownedTitles={gameState.ownedTitles || []}
+                        onEquipTitle={handleEquipTitle}
+                      />
 
                       {/* QUICK SKILLS STATUS LISTS */}
-                      <div className="space-y-3 relative">
-                        <h4 className="text-[10px] font-serif font-bold tracking-wider uppercase text-amber-100/40 pb-1 border-b border-amber-500/5 flex justify-between items-center">
-                          <div className="flex items-center gap-1.5">
-                            <span>Habilidades</span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowSkillsTooltip(!showSkillsTooltip);
-                              }}
-                              className="w-4 h-4 rounded-full border border-amber-500/25 text-amber-400/70 hover:text-amber-200 flex items-center justify-center text-[9px] font-bold hover:bg-amber-500/10 transition-all cursor-pointer"
-                              title="Ajuda sobre Habilidades"
-                            >
-                              ?
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-1.5 select-none">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsSkillsModalOpen(true);
-                              }}
-                              className="px-2 py-0.5 bg-[#C29544] hover:bg-[#d1a654] text-stone-950 text-[8px] font-black uppercase tracking-wide rounded cursor-pointer transition-all hover:scale-105 active:scale-95"
-                              title="Criar ou Excluir Habilidades"
-                            >
-                              + MANAGE
-                            </button>
-                            <span className="text-[9px] font-mono opacity-60 font-bold">{gameState.skills.length} Ativas</span>
-                          </div>
-                        </h4>
-
-                        {showSkillsTooltip && (
-                          <div className="absolute right-0 top-6 w-full bg-stone-950/98 border border-amber-500/40 p-4 rounded shadow-2xl z-50 text-xs text-amber-200 font-serif leading-relaxed space-y-2">
-                            <div className="flex justify-between items-center pb-1 border-b border-amber-500/10">
-                              <strong className="text-amber-400 uppercase tracking-widest text-[10px] flex items-center gap-1">
-                                🧠 Treino de Habilidades (Skills)
-                              </strong>
-                              <button 
-                                onClick={() => setShowSkillsTooltip(false)}
-                                className="text-amber-100/40 hover:text-amber-200 font-bold font-mono text-sm cursor-pointer"
-                              >
-                                ×
-                              </button>
-                            </div>
-                            <p className="text-[11px] text-amber-100/80 leading-relaxed font-sans normal-case">
-                              Habilidades ganham nível à medida que você estuda e ganha XP. Ao alcançar o <strong>Nível 99</strong>, você pode ativar o <strong>Prestígio</strong> — reiniciando o progresso para o nível de volta para 1 em troca de um multiplicador heróico de <strong>+25% extra de XP permanente</strong> para essa habilidade.
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
-                          {gameState.skills.map((sk, idx) => {
-                            const reqXP = sk.level * 80;
-                            const percent = Math.min((sk.xp / reqXP) * 100, 100);
-                            const isTimerSelected = selectedSkillIdx === idx;
-
-                            return (
-                              <div
-                                key={idx}
-                                onClick={() => {
-                                  if (isRunning || isBreakActive) {
-                                    addSystemLog(`⚠️ Não é possível trocar de habilidade durante uma jornada de foco ou descanso ativo.`);
-                                    return;
-                                  }
-                                  setSelectedSkillIdx(idx);
-                                }}
-                                className={`relative bg-stone-950/40 border-2 rounded p-2.5 flex flex-col items-center justify-between text-center transition-all cursor-pointer h-[115px] select-none group min-w-0 ${
-                                  isTimerSelected 
-                                    ? 'border-[#C29544] bg-amber-500/[0.04] shadow-[0_0_12px_rgba(194,149,68,0.15)] scale-[1.01]' 
-                                    : 'border-amber-500/10 hover:border-amber-500/30'
-                                }`}
-                              >
-                                {/* Top-right edit settings button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setInspectingSkillIdx(idx);
-                                    setEditSkillName(sk.name);
-                                  }}
-                                  className="absolute top-1 right-1 text-amber-500/50 hover:text-[#C29544] transition-all cursor-pointer text-[10px] hover:scale-120 p-0.5"
-                                  title="Editar Habilidade & Subskills"
-                                >
-                                  ⚙️
-                                </button>
-
-                                {/* Central Skill Emoji - Click opens configuration modal */}
-                                <div 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setInspectingSkillIdx(idx);
-                                    setEditSkillName(sk.name);
-                                  }}
-                                  className="text-2xl p-1 bg-stone-900/60 rounded-md border border-amber-500/10 hover:border-[#C29544] hover:bg-stone-900 transition-all active:scale-95 flex items-center justify-center w-10 h-10 cursor-pointer mb-1 select-none"
-                                  title="Clique no ícone para gerenciar ou editar"
-                                >
-                                  {sk.emoji || '🎯'}
-                                </div>
-
-                                {/* Name & Lv */}
-                                <div className="w-full flex flex-col justify-center items-center min-w-0">
-                                  <span className="text-[10px] font-serif font-extrabold text-amber-250 tracking-wide uppercase truncate w-full px-0.5">
-                                    {sk.name}
-                                  </span>
-                                  <div className="text-[10px] font-mono text-[#E2B054] font-black mt-0.5">
-                                    Lv {sk.level} {sk.prestige && sk.prestige > 0 ? '👑'.repeat(sk.prestige) : ''}
-                                  </div>
-                                </div>
-
-                                {/* Progress bar at bottom */}
-                                <div className="w-full mt-1.5">
-                                  <div className="h-1 w-full bg-stone-950 rounded overflow-hidden" title={`XP: ${sk.xp} / ${reqXP}`}>
-                                    <div
-                                      className="h-full bg-[#C29544] transition-all duration-300"
-                                      style={{ width: `${percent}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* ACTIVE EQUIPMENT SLOTS (3 total) */}
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-serif font-bold tracking-wider uppercase text-amber-100/40 pb-0.5 border-b border-amber-500/5">
-                          🛡️ Equipamentos Equipados (3 Slots)
-                        </h4>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[0, 1, 2].map((slotIdx) => {
-                            const eqItem = (gameState.equippedEquipment || [null, null, null])[slotIdx];
-                            return (
-                              <div
-                                key={slotIdx}
-                                className={`aspect-square bg-stone-950/40 border ${
-                                  eqItem ? 'border-amber-500/30 bg-amber-500/[0.04]' : 'border-dashed border-amber-500/10'
-                                } rounded flex flex-col items-center justify-center p-1 relative transition-all`}
-                              >
-                                {eqItem ? (
-                                  <>
-                                    <span className="text-xl select-none" title={eqItem.desc}>{eqItem.emoji}</span>
-                                    <span className="text-[8px] font-bold text-amber-200 truncate max-w-full text-center px-1" title={eqItem.name}>
-                                      {eqItem.name}
-                                    </span>
-                                    <span className="text-[7px] font-mono text-emerald-400 font-bold" title="Cargas Restantes">
-                                      🔋 {eqItem.charges}/{eqItem.maxCharges || 8}
-                                    </span>
-                                    
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleUnequipItem(slotIdx);
-                                      }}
-                                      className="absolute -top-1 -right-1 bg-red-950/80 hover:bg-red-900 border border-red-500/30 text-red-200 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold cursor-pointer transition-all active:scale-95 animate-fade-in"
-                                      title="Desequipar"
-                                    >
-                                      ×
-                                    </button>
-                                  </>
-                                ) : (
-                                  <span className="text-[8px] text-amber-100/20 font-serif italic text-center leading-tight">
-                                    Slot {slotIdx + 1}<br/>Vazio
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* BUFFS AND ACTIVE POTIONS */}
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-serif font-bold tracking-wider uppercase text-amber-100/40 pb-0.5 border-b border-amber-500/5">
-                          Bênçãos & Elixires Ativos
-                        </h4>
-                        <div className="flex flex-wrap gap-1.5">
-                          {gameState.inventory.filter(i => ['DoubleLoot', 'FocusElixir', 'CrystalClarity', 'RuneFortune', 'StreakShield'].includes(i.buff)).length > 0 ? (
-                            gameState.inventory
-                              .filter(i => ['DoubleLoot', 'FocusElixir', 'CrystalClarity', 'RuneFortune', 'StreakShield'].includes(i.buff))
-                              .map((item, idx) => (
-                                <span
-                                  key={idx}
-                                  className="text-[10px] font-serif font-bold bg-purple-950/40 border border-purple-500/30 text-purple-300 px-2.5 py-0.5 rounded flex items-center gap-1 shadow"
-                                  title={item.desc}
-                                >
-                                  <span>{item.emoji}</span>
-                                  <span>{item.name}</span>
-                                </span>
-                              ))
-                          ) : (
-                            <span className="text-[10px] italic text-amber-100/30 font-serif">Não há bençãos ativas. Vá ao Bazar de Mystara</span>
-                          )}
-                        </div>
-                      </div>
+                      <QuickSkillsGrid
+                        skills={gameState.skills}
+                        selectedSkillIdx={sessionConfig.selectedSkillIdx}
+                        onSelectSkill={(idx) => {
+                          setSessionConfig(prev => ({ ...prev, selectedSkillIdx: idx }));
+                        }}
+                        onManageSkills={() => setIsSkillsModalOpen(true)}
+                        onInspectSkill={(idx, name) => {
+                          setInspectingSkillIdx(idx);
+                          setEditSkillName(name);
+                        }}
+                        addSystemLog={addSystemLog}
+                        isRunning={isRunning}
+                        isBreakActive={isBreakActive}
+                      />
 
                       {/* COLLECTED BAG ITEMS VIEWPORT */}
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-serif font-bold tracking-wider uppercase text-amber-100/40 pb-0.5 border-b border-amber-500/5">
-                          Mochila de Relíquias & Itens
-                        </h4>
-                        <div className="grid grid-cols-5 gap-1.5 max-h-[120px] overflow-y-auto pr-0.5">
-                          {gameState.inventory.filter(i => !['DoubleLoot', 'FocusElixir', 'CrystalClarity', 'RuneFortune', 'StreakShield'].includes(i.buff)).length > 0 ? (
-                            gameState.inventory
-                              .filter(i => !['DoubleLoot', 'FocusElixir', 'CrystalClarity', 'RuneFortune', 'StreakShield'].includes(i.buff))
-                              .map((item, idx) => (
-                                <div
-                                  key={item.id || idx}
-                                  onClick={() => setInspectingItem(item)}
-                                  className={`aspect-square bg-stone-900 border ${item.isEquipment ? 'border-amber-500/40 bg-amber-500/[0.03] hover:border-amber-400' : 'border-amber-500/10 hover:border-amber-500/30'} rounded flex items-center justify-center text-xl cursor-pointer transition-all active:scale-95`}
-                                  title={`${item.name} — Clique para interagir`}
-                                >
-                                  {item.emoji}
-                                </div>
-                              ))
-                          ) : (
-                            <div className="col-span-5 text-[10px] italic text-amber-100/35 font-serif py-1 animate-pulse">
-                              Mochila vazia. Drops ocorrem ao concluir focos ou compre no Bazar.
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <InventoryScreen
+                        inventory={gameState.inventory}
+                        inspectingItem={inspectingItem}
+                        onInspectItem={inspectItem}
+                        onCloseInspection={closeInspection}
+                        onEquipItem={handleEquipItem}
+                        onSellItem={handleSellItem}
+                        onDiscardItem={handleDiscardItem}
+                      />
 
                     </div>
 
@@ -4646,35 +3232,139 @@ function App({ userId, signOut }: AppProps) {
                 </div>
               )}
 
+              {activeTab === 'character' && (
+                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-amber-500/10">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-amber-500" /> Ficha de Personagem (Status)
+                    </h3>
+                    <button
+                      onClick={() => setIsSkillsModalOpen(true)}
+                      className="text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer"
+                    >
+                      + Gerenciar Habilidades
+                    </button>
+                  </div>
+                  <CharacterScreen
+                    character={{
+                      charName: gameState.charName,
+                      charClass: gameState.charClass,
+                      equippedTitle: gameState.equippedTitle,
+                      streak: gameState.streak,
+                      bestStreak: gameState.bestStreak,
+                      totalMinutes: gameState.totalMinutes,
+                      combatLevel: gameState.combatLevel,
+                      combatXP: gameState.combatXP,
+                      hp: gameState.hp,
+                      maxHp: gameState.maxHp,
+                    }}
+                    equippedEquipment={gameState.equippedEquipment || [null, null, null]}
+                    activeBuffs={gameState.inventory.filter(i => ['DoubleLoot', 'FocusElixir', 'CrystalClarity', 'RuneFortune', 'StreakShield'].includes(i.buff))}
+                    onUnequipItem={handleUnequipItem}
+                    ownedTitles={gameState.ownedTitles || []}
+                    onEquipTitle={handleEquipTitle}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'inventory' && (
+                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
+                  <div className="pb-2.5 border-b border-amber-500/10">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-amber-500" /> Inventário de Equipamentos & Consumíveis
+                    </h3>
+                  </div>
+                  <InventoryScreen
+                    inventory={gameState.inventory}
+                    inspectingItem={inspectingItem}
+                    onInspectItem={inspectItem}
+                    onCloseInspection={closeInspection}
+                    onEquipItem={handleEquipItem}
+                    onSellItem={handleSellItem}
+                    onDiscardItem={handleDiscardItem}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'skills' && (
+                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
+                  <div className="pb-2.5 border-b border-amber-500/10 flex items-center justify-between">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-amber-400" /> Habilidades Ativas & Subskills
+                      <button
+                        type="button"
+                        onClick={() => setIsPrestigeInfoOpen(true)}
+                        className="w-4.5 h-4.5 rounded-full border border-amber-500/30 text-amber-400/80 hover:text-amber-200 flex items-center justify-center text-[10px] font-bold hover:bg-amber-500/10 transition-all cursor-pointer shrink-0 ml-1"
+                        title="Saiba mais sobre Prestígio"
+                      >
+                        ?
+                      </button>
+                    </h3>
+                  </div>
+                  <div className="max-h-none">
+                    <SkillsScreen
+                      skills={gameState.skills}
+                      onAddTagToSkill={handleAddTagToSkill}
+                      onRemoveTagFromSkill={handleRemoveTagFromSkill}
+                      onAddCustomSkill={handleQuickAddSkill}
+                      onDeleteSkill={handleDeleteSkillIndex}
+                      onPrestigeSkill={handlePrestigeSkill}
+                      onRenameSkill={handleRenameSkill}
+                    />
+                  </div>
+
+                  {/* Prestige Explanation Modal */}
+                  <Modal
+                    isOpen={isPrestigeInfoOpen}
+                    onClose={() => setIsPrestigeInfoOpen(false)}
+                    title="Mecânica de Prestígio"
+                    variant="amber"
+                  >
+                    <div className="space-y-4 font-serif text-amber-100/90 py-1">
+                      <div className="flex items-center gap-2 mb-1 border-b border-amber-500/10 pb-2">
+                        <span className="text-xl">👑</span>
+                        <span className="text-amber-300 font-bold uppercase tracking-wider text-xs">Caminho do Heroísmo Infinito</span>
+                      </div>
+                      <p className="text-xs leading-relaxed font-sans normal-case">
+                        Habilidades evoluem à medida que você ganha XP. Cada foco concluído com sucesso alimenta a habilidade selecionada no cronômetro.
+                      </p>
+                      <p className="text-xs leading-relaxed font-sans normal-case">
+                        Ao alcançar o <strong className="text-amber-300">Nível 99</strong>, você poderá ativar o <strong className="text-amber-300">Prestígio</strong>. Isso reiniciará o progresso de nível dessa habilidade de volta para 1, mas em troca você ganhará um multiplicador permanente e heróico de <strong className="text-amber-300">+25% de XP extra permanente</strong> acumulável para acelerar toda a sua evolução futura nessa habilidade!
+                      </p>
+                    </div>
+                  </Modal>
+                </div>
+              )}
+
               {activeTab === 'habits' && (
                 <HabitsTab
-                  habits={gameState.habits || []}
-                  onTriggerHabit={handleTriggerHabit}
-                  onAddHabit={handleAddHabit}
-                  onEditHabit={handleEditHabit}
-                  onDeleteHabit={handleDeleteHabit}
+                  habits={habitsList}
+                  onTriggerHabit={onTriggerHabit}
+                  onAddHabit={onAddHabit}
+                  onEditHabit={onEditHabit}
+                  onDeleteHabit={onDeleteHabit}
                 />
               )}
 
               {activeTab === 'dailies' && (
                 <DailiesTab
-                  dailies={gameState.dailies || []}
-                  onToggleDaily={handleToggleDaily}
-                  onToggleChecklistItem={handleToggleDailyChecklistItem}
-                  onAddDaily={handleAddDaily}
-                  onEditDaily={handleEditDaily}
-                  onDeleteDaily={handleDeleteDaily}
+                  dailies={dailiesList}
+                  onToggleDaily={onToggleDaily}
+                  onToggleChecklistItem={onToggleDailyChecklistItem}
+                  onAddDaily={onAddDaily}
+                  onEditDaily={onEditDaily}
+                  onDeleteDaily={onDeleteDaily}
                 />
               )}
 
               {activeTab === 'todos' && (
                 <TodosTab
-                  todos={gameState.todos || []}
-                  onToggleTodo={handleToggleTodo}
-                  onToggleChecklistItem={handleToggleTodoChecklistItem}
-                  onAddTodo={handleAddTodo}
-                  onEditTodo={handleEditTodo}
-                  onDeleteTodo={handleDeleteTodo}
+                  todos={todosList}
+                  onToggleTodo={onToggleTodo}
+                  onToggleChecklistItem={onToggleTodoChecklistItem}
+                  onAddTodo={onAddTodo}
+                  onEditTodo={onEditTodo}
+                  onDeleteTodo={onDeleteTodo}
                 />
               )}
 
@@ -4701,16 +3391,55 @@ function App({ userId, signOut }: AppProps) {
                   <h3 className="font-serif font-black text-xs md:text-sm text-purple-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
                     <Layers className="w-4 h-4 text-purple-400" /> Contratos da Guilda Escolar (Quests)
                   </h3>
-                  <QuestsTab state={gameState} onClaimQuestReward={handleClaimQuestRewards} />
+                  <QuestsTab
+                    dailyQuests={dailyQuestsList}
+                    guildQuests={guildQuestsList}
+                    onClaimQuestReward={handleClaimQuestRewards}
+                  />
                 </div>
               )}
 
               {activeTab === 'shop' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Coins className="w-4 h-4 text-amber-500" /> Bazar de Mystara (Loja)
-                  </h3>
-                  <ShopTab gold={gameState.gold} inventory={gameState.inventory} onBuyItem={handleBuyGoblinShopItem} />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-amber-500" /> Bazar de Mystara (Loja)
+                    </h3>
+                    
+                    {/* Retro RPG Sub-Tabs Selector */}
+                    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 font-serif">
+                      <button
+                        onClick={() => setShopSubTab('items')}
+                        className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
+                          shopSubTab === 'items'
+                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            : 'text-stone-500 hover:text-stone-300 border border-transparent'
+                        }`}
+                      >
+                        Consumíveis & Equipamentos
+                      </button>
+                      <button
+                        onClick={() => setShopSubTab('titles')}
+                        className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
+                          shopSubTab === 'titles'
+                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            : 'text-stone-500 hover:text-stone-300 border border-transparent'
+                        }`}
+                      >
+                        Selos & Títulos Reais
+                      </button>
+                    </div>
+                  </div>
+
+                  {shopSubTab === 'items' ? (
+                    <ShopTab gold={gameState.gold} inventory={gameState.inventory} onBuyItem={handleBuyGoblinShopItem} />
+                  ) : (
+                    <TitleShop
+                      state={gameState}
+                      onBuyTitle={handleBuyTitle}
+                      onClaimAchievementTitle={handleClaimAchievementTitle}
+                    />
+                  )}
                 </div>
               )}
 
@@ -4719,11 +3448,10 @@ function App({ userId, signOut }: AppProps) {
                   <h3 className="font-serif font-black text-xs md:text-sm text-[#f43f5e] tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
                     <Award className="w-4 h-4 text-[#f43f5e]" /> Brasões & Títulos de Foco
                   </h3>
-                  <TitlesTab
-                    state={gameState}
+                  <TitleSelector
+                    ownedTitles={gameState.ownedTitles || []}
+                    equippedTitle={gameState.equippedTitle || null}
                     onEquipTitle={handleEquipTitle}
-                    onBuyTitle={handleBuyTitle}
-                    onClaimAchievementTitle={handleClaimAchievementTitle}
                   />
                 </div>
               )}
@@ -4754,26 +3482,31 @@ function App({ userId, signOut }: AppProps) {
                   <GuideTab />
                 </div>
               )}
+
+              {activeTab === 'logs' && (
+                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
+                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
+                    <Scroll className="w-4 h-4 text-amber-400" /> Registros Celestiais (Logs)
+                  </h3>
+                  <div className="bg-stone-950/90 text-amber-100/70 p-4 h-[420px] rounded-lg overflow-y-auto select-text border border-amber-500/10 shadow-inner">
+                    <div className="space-y-2 text-xs font-mono">
+                      {logs.length > 0 ? (
+                        logs.map((log) => (
+                          <div key={log.id} className={log.highlighted ? 'text-amber-200 font-bold' : 'text-amber-100/40'}>
+                            <span className="text-amber-400/50 mr-2">[{log.time}]</span>
+                            <span>{log.text}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-amber-100/30 italic">Nenhum sussurro celestial registrado até o momento...</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               
             </motion.div>
           </AnimatePresence>
-
-          {/* CHRONIC REAL-TIME LOG RECORDS FEED */}
-          <div className="border border-amber-500/15 bg-stone-950/90 text-amber-100/70 p-3.5 h-[130px] rounded-lg overflow-y-auto select-text relative shadow-inner z-10 w-full">
-            <div className="absolute top-1.5 right-3 text-[9px] uppercase font-bold text-amber-400 font-serif select-none">Registros Celestiais (Logs)</div>
-            <div className="space-y-1 text-xs font-mono">
-              {logs.length > 0 ? (
-                logs.map((log) => (
-                  <div key={log.id} className={log.highlighted ? 'text-amber-200 font-bold' : 'text-amber-100/40'}>
-                    <span className="text-amber-400/50 mr-2">[{log.time}]</span>
-                    <span>{log.text}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="text-amber-100/30 italic">Nenhum sussurro celestial registrado até o momento...</div>
-              )}
-            </div>
-          </div>
           
         </main>
       </div>
@@ -5314,209 +4047,17 @@ function App({ userId, signOut }: AppProps) {
                 </button>
               </div>
 
-              <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                
-                {/* TOOLTIP BANNER EXPLAINING SKILLS AND PRESTIGE */}
-                <div className="bg-amber-500/[0.03] border border-amber-500/10 rounded-lg p-3.5 space-y-1.5">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-400 font-bold block">👑 Mecânica de Prestígio</span>
-                  <p className="text-[11px] text-amber-100/70 leading-relaxed font-sans normal-case">
-                    Habilidades evoluem à medida que você ganha XP. Cada foco alimenta a habilidade selecionada. Ao alcançar o <strong>Nível 99</strong>, você pode ativar o <strong>Prestígio</strong> — reiniciando o progresso para o nível de volta para 1 em troca de um multiplicador heróico de <strong>+25% extra de XP permanente</strong> para essa habilidade.
-                  </p>
-                </div>
+              <SkillsScreen
+                skills={gameState.skills}
+                onAddTagToSkill={handleAddTagToSkill}
+                onRemoveTagFromSkill={handleRemoveTagFromSkill}
+                onAddCustomSkill={handleQuickAddSkill}
+                onDeleteSkill={handleDeleteSkillIndex}
+                onPrestigeSkill={handlePrestigeSkill}
+                onRenameSkill={handleRenameSkill}
+              />
 
-                {/* ACTIVE SKILLS LIST */}
-                <div className="space-y-2.5">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">Habilidades Ativas:</span>
-                  <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                    {gameState.skills.map((sk, idx) => {
-                      const reqXP = sk.level * 80;
-                      const percent = Math.min((sk.xp / reqXP) * 100, 100);
-
-                      return (
-                        <div
-                          key={idx}
-                          className="bg-stone-950/40 border border-amber-500/10 p-3 rounded hover:border-amber-500/30 transition-all space-y-2"
-                        >
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2 truncate max-w-[70%]">
-                              <span className="text-lg">{sk.emoji || '🎯'}</span>
-                              <strong className="text-amber-200 font-serif text-sm truncate">{sk.name}</strong>
-                              {sk.prestige && sk.prestige > 0 ? (
-                                <span className="text-yellow-400 text-[10px] font-bold" title={`Prestígio Nível ${sk.prestige}`}>
-                                  👑{'★'.repeat(sk.prestige)}
-                                </span>
-                              ) : null}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-amber-400 font-bold font-mono text-[10px]">Nível {sk.level}</span>
-                              <button
-                                onClick={() => handleDeleteSkillIndex(idx)}
-                                className="text-[10px] uppercase tracking-wider text-red-400/70 hover:text-red-400 font-bold font-serif px-1 py-0.5 cursor-pointer"
-                                title="Esquecer Habilidade"
-                              >
-                                Esquecer
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="h-1.5 w-full bg-stone-950 rounded overflow-hidden">
-                              <div
-                                className="h-full bg-amber-500 transition-all duration-300"
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center text-[9px] text-amber-100/30 font-mono">
-                              <span>Progresso: {sk.xp} / {reqXP} XP</span>
-                              {sk.prestige ? <span className="text-yellow-505 font-semibold font-sans">Bônus: +{sk.prestige * 25}% XP</span> : null}
-                            </div>
-                          </div>
-
-                          {/* Subskills / Tags inline manager under progress bar */}
-                          <div className="pt-1.5 border-t border-amber-500/5 space-y-1.5">
-                            <div className="flex justify-between items-center text-[9px] uppercase font-serif tracking-wider text-amber-100/40">
-                              <span>Subskills (Tags de Foco):</span>
-                            </div>
-                            {(!sk.tags || sk.tags.length === 0) ? (
-                              <div className="text-[9px] text-amber-100/25 italic">Nenhuma subskill cadastrada para esta habilidade.</div>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {sk.tags.map((tg, tIdx) => (
-                                  <span key={tIdx} className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-200 text-[9px] rounded flex items-center gap-1 font-sans">
-                                    {tg}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveTagFromSkill(idx, tIdx)}
-                                      className="text-amber-100/40 hover:text-red-400 font-extrabold ml-0.5 cursor-pointer text-[9px]"
-                                      title={`Remover subskill ${tg}`}
-                                    >
-                                      ×
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="flex gap-1">
-                              <input
-                                type="text"
-                                placeholder="Criar subskill (ex: Direito Processual, React, CSS...)"
-                                id={`new-subskill-tag-input-${idx}`}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const val = (e.target as HTMLInputElement).value.trim();
-                                    if (val) {
-                                      handleAddTagToSkill(idx, val);
-                                      (e.target as HTMLInputElement).value = '';
-                                    }
-                                  }
-                                }}
-                                className="flex-1 bg-stone-950/50 border border-amber-500/10 rounded px-2 py-0.5 text-[10px] text-amber-100 placeholder-amber-100/15 focus:outline-none focus:border-amber-400 font-sans"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const input = document.getElementById(`new-subskill-tag-input-${idx}`) as HTMLInputElement;
-                                  if (input && input.value.trim()) {
-                                    handleAddTagToSkill(idx, input.value.trim());
-                                    input.value = '';
-                                  }
-                                }}
-                                className="px-2 py-0.5 bg-amber-500/15 hover:bg-amber-550 border border-amber-500/20 text-amber-300 hover:text-amber-100 text-[10px] font-bold rounded cursor-pointer transition-all"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          {sk.level >= 99 && (
-                            <button
-                              type="button"
-                              onClick={() => handlePrestigeSkill(idx)}
-                              className="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-400 hover:from-yellow-400 hover:to-amber-300 text-stone-950 text-[10px] font-black uppercase tracking-widest py-1.5 rounded font-serif shadow animate-pulse cursor-pointer text-center"
-                            >
-                              👑 Alcançar Prestígio (Resetar a Nível 1 & Ganhar +25% XP Definitivo)
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ADD NEW CUSTOM SKILL */}
-                <div className="border-t border-amber-500/10 pt-4 space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
-                      Selecione um Ícone/Emoji para a Habilidade:
-                    </label>
-                    <div className="flex flex-wrap gap-1.5 bg-stone-950/30 p-2.5 rounded border border-amber-500/10">
-                      {SKILL_EMOJIS.map((em) => (
-                        <button
-                          key={em}
-                          type="button"
-                          onClick={() => setSelectedNewSkillEmoji(em)}
-                          className={`w-7 h-7 text-sm flex items-center justify-center rounded transition-all cursor-pointer hover:bg-amber-500/15 ${
-                            selectedNewSkillEmoji === em
-                              ? 'bg-amber-500/20 border border-amber-400 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
-                              : 'bg-stone-900/45 border border-transparent text-stone-400'
-                          }`}
-                        >
-                          {em}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
-                      Criar Habilidade de Foco Personalizada:
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newSkillNameInput}
-                        onChange={(e) => setNewSkillNameInput(e.target.value)}
-                        placeholder="Ex: Alquimia de Dados, Exercícios Físicos..."
-                        className="flex-1 bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 placeholder-amber-100/15 focus:outline-none focus:border-amber-400"
-                        maxLength={30}
-                      />
-                      <button
-                        onClick={handleAddCustomSkillRegister}
-                        className="px-4 py-2 bg-amber-500/15 border border-amber-400 text-amber-300 text-xs font-serif uppercase tracking-widest hover:bg-amber-400 hover:text-stone-950 rounded transition-all cursor-pointer"
-                      >
-                        Gravar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* QUICK ADD SUGGESTIONS */}
-                <div className="border-t border-amber-500/10 pt-4 space-y-2.5">
-                  <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
-                    Sugestões Rápidas:
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                    {SKILL_SUGGESTIONS.map((sug, sIdx) => {
-                      const alreadyHas = gameState.skills.some(s => s.name.toLowerCase() === sug.name.toLowerCase());
-                      return (
-                        <button
-                          key={sIdx}
-                          disabled={alreadyHas}
-                          onClick={() => handleQuickAddSkill(sug.name, sug.emoji)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 border text-xs font-serif transition-all rounded leading-tight text-left ${
-                            alreadyHas
-                              ? 'bg-stone-900/25 border-stone-800/40 text-amber-100/25 cursor-not-allowed select-none'
-                              : 'bg-stone-950/50 border-amber-500/5 text-amber-200 hover:bg-amber-500/10 hover:border-amber-400 cursor-pointer'
-                          }`}
-                        >
-                          <span className="text-sm">{sug.emoji}</span>
-                          <span className="truncate">{sug.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
+              <div className="p-6 pt-0">
                 <button
                   onClick={() => setIsSkillsModalOpen(false)}
                   className="w-full py-2.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 font-serif text-xs text-amber-400 uppercase tracking-widest rounded cursor-pointer"
@@ -5528,6 +4069,15 @@ function App({ userId, signOut }: AppProps) {
           </div>
         )}
       </AnimatePresence>
+
+      {/* CHOOSE ACTIVE SKILL MODAL */}
+      <SkillSelectorModal
+        isOpen={isSkillSelectorOpen}
+        onClose={() => setIsSkillSelectorOpen(false)}
+        skills={gameState.skills}
+        selectedSkillIdx={sessionConfig.selectedSkillIdx}
+        onSelectSkill={(idx) => setSessionConfig(prev => ({ ...prev, selectedSkillIdx: idx }))}
+      />
 
       {/* CAMERA SETTINGS AND OPTIONS POPUP */}
       <AnimatePresence>
@@ -5577,7 +4127,7 @@ function App({ userId, signOut }: AppProps) {
                       type="number"
                       min={1}
                       max={120}
-                      defaultValue={gameState.longBreakMinutes ?? 15}
+                      defaultValue={gameState.pomodoroSettings.longBreakDuration ?? 15}
                       className="w-full bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400"
                     />
                   </div>
@@ -5853,101 +4403,6 @@ function App({ userId, signOut }: AppProps) {
         )}
       </AnimatePresence>
 
-      {/* ITEM INSPECTION MODAL */}
-      <AnimatePresence>
-        {inspectingItem && (
-          <div className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-stone-950 border border-amber-500/20 max-w-sm w-full rounded-lg shadow-2xl overflow-hidden font-sans"
-            >
-              <div className="p-4 bg-gradient-to-b from-stone-900 to-stone-950 border-b border-amber-500/10 flex items-center gap-3">
-                <span className="text-3xl select-none">{inspectingItem.emoji}</span>
-                <div>
-                  <h4 className="font-serif font-black text-amber-400 uppercase tracking-widest text-sm">
-                    {inspectingItem.name}
-                  </h4>
-                  <span className="text-[9px] font-mono uppercase text-amber-100/40">
-                    {inspectingItem.isEquipment ? '🛡️ Equipamento Legendário' : '🎒 Relíquia Colecionável'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-4 space-y-4">
-                <p className="text-xs text-amber-100/80 leading-relaxed font-serif">
-                  {inspectingItem.desc}
-                </p>
-
-                {inspectingItem.isEquipment && (
-                  <div className="bg-amber-500/[0.04] border border-amber-500/20 p-2.5 rounded-lg text-center space-y-1">
-                    <span className="text-[10px] uppercase font-serif text-amber-400 block tracking-wider">📦 Informações de Durabilidade</span>
-                    <span className="text-sm font-mono font-bold text-emerald-400 block">
-                      🔋 {inspectingItem.charges} / {inspectingItem.maxCharges || 8} Cargas
-                    </span>
-                    <span className="text-[9px] text-amber-100/50 block font-serif">
-                      Perde 1 de durabilidade toda vez que for ativado ao completar uma sessão de foco.
-                    </span>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {inspectingItem.isEquipment && (
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] uppercase font-mono block text-amber-100/30">Selecione o espaço para equipar:</span>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[0, 1, 2].map((slotIdx) => (
-                          <button
-                            key={slotIdx}
-                            onClick={() => {
-                              handleEquipItem(inspectingItem, slotIdx);
-                              setInspectingItem(null);
-                            }}
-                            className="py-1.5 px-2 bg-stone-900 hover:bg-amber-500 hover:text-stone-950 border border-amber-500/20 rounded text-[10px] font-serif font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
-                          >
-                            Slot {slotIdx + 1}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2 border-t border-amber-500/5">
-                    <button
-                      onClick={() => {
-                        handleSellItem(inspectingItem);
-                        setInspectingItem(null);
-                      }}
-                      className="flex-1 py-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-300 rounded text-xs font-serif font-bold uppercase tracking-wider text-center transition-all cursor-pointer"
-                    >
-                      💰 Vender ({inspectingItem.isEquipment ? Math.floor(inspectingItem.price * 0.5) : 50} GP)
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleDiscardItem(inspectingItem);
-                        setInspectingItem(null);
-                      }}
-                      className="py-2 px-3 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 rounded text-xs font-serif uppercase tracking-wider text-center transition-all cursor-pointer"
-                    >
-                      Descartar
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-stone-900/40 border-t border-amber-500/10 flex justify-end">
-                <button
-                  onClick={() => setInspectingItem(null)}
-                  className="py-1.5 px-4 bg-stone-900 hover:bg-stone-850 border border-amber-500/20 text-amber-100/70 rounded text-xs font-serif uppercase tracking-wider cursor-pointer"
-                >
-                  Voltar
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* RELATÓRIO DIÁRIO POPUP SYSTEM */}
       <AnimatePresence>
@@ -6095,9 +4550,9 @@ function App({ userId, signOut }: AppProps) {
 
       {/* EPIC LEVEL UP & SKILL EVOLUTION POPUP SYSTEM */}
       <AnimatePresence>
-        {levelUpQueue.length > 0 && (() => {
-          const activeLevelUp = levelUpQueue[0];
-          if (activeLevelUp.type === 'combat') {
+        {activeLevelUp !== null && (() => {
+          const active = activeLevelUp;
+          if (active.type === 'combat') {
             return (
               <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
                 <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 via-transparent to-transparent pointer-events-none" />
@@ -6155,22 +4610,22 @@ function App({ userId, signOut }: AppProps) {
                         LEVEL UP!
                       </h2>
                       <p className="text-sm sm:text-base font-serif font-semibold text-amber-100/90 tracking-wide leading-relaxed">
-                        {activeLevelUp.charName.toUpperCase()} ALCANÇOU O <span className="text-[#E2B054] text-lg sm:text-xl font-bold block sm:inline mt-1 sm:mt-0">NÍVEL {activeLevelUp.newLevel}</span>
+                        {active.charName.toUpperCase()} ALCANÇOU O <span className="text-[#E2B054] text-lg sm:text-xl font-bold block sm:inline mt-1 sm:mt-0">NÍVEL {active.newLevel}</span>
                       </p>
                       <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mx-auto my-3" />
                       <div className="space-y-2 mt-3">
                         <p className="text-xs text-amber-100/60 font-serif italic max-w-xs mx-auto leading-relaxed">
-                          O conhecimento fortalece o guerreiro.
+                           O conhecimento fortalece o guerreiro.
                         </p>
                         <p className="text-xs text-amber-100/65 font-serif italic max-w-xs mx-auto leading-relaxed">
-                          Continue avançando.
+                           Continue avançando.
                         </p>
                       </div>
                     </div>
 
                     <div className="pt-2">
                       <button
-                        onClick={handleDismissLevelUp}
+                        onClick={dismissCurrentLevelUp}
                         className="w-full px-8 py-3 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-300 text-stone-950 font-serif font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
                       >
                         Continuar
@@ -6225,7 +4680,7 @@ function App({ userId, signOut }: AppProps) {
                   <div className="relative z-10 p-6 sm:p-8 text-center space-y-6">
                     <div className="flex justify-center">
                       <div className="w-20 h-20 bg-stone-900 border-2 border-emerald-500 rounded-full flex items-center justify-center shadow-lg relative bg-gradient-to-b from-stone-800 to-stone-950">
-                        <span className="text-4xl animate-bounce">{activeLevelUp.emoji}</span>
+                        <span className="text-4xl animate-bounce">{active.emoji}</span>
                         <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping" />
                       </div>
                     </div>
@@ -6238,10 +4693,10 @@ function App({ userId, signOut }: AppProps) {
                         MAESTRIA APRIMORADA
                       </h2>
                       <p className="text-base sm:text-lg font-serif font-black text-[#34D399] leading-tight mt-1">
-                        {activeLevelUp.skillName}
+                        {active.skillName}
                       </p>
                       <p className="text-sm sm:text-base font-serif font-semibold text-amber-200 mt-2">
-                        alcançou o <span className="text-emerald-400 text-lg sm:text-xl font-black block sm:inline mt-1 sm:mt-0">Nível {activeLevelUp.newLevel}</span>
+                        alcançou o <span className="text-emerald-400 text-lg sm:text-xl font-black block sm:inline mt-1 sm:mt-0">Nível {active.newLevel}</span>
                       </p>
                       <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent mx-auto my-3" />
                       <p className="text-[11px] text-amber-100/50 font-serif italic max-w-xs mx-auto leading-normal">
@@ -6251,7 +4706,7 @@ function App({ userId, signOut }: AppProps) {
 
                     <div className="pt-2">
                       <button
-                        onClick={handleDismissLevelUp}
+                        onClick={dismissCurrentLevelUp}
                         className="w-full px-8 py-3 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-500 hover:to-emerald-300 text-stone-950 font-serif font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
                       >
                         Continuar
@@ -6267,6 +4722,40 @@ function App({ userId, signOut }: AppProps) {
 
       {/* Indicador de sincronização com Supabase */}
       <SyncIndicator status={syncStatus} />
+
+      {/* Toast Container */}
+      <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 50, y: -10, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 50, scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className={`pointer-events-auto p-4 rounded-lg shadow-xl border flex items-start gap-3 backdrop-blur-md ${
+                toast.type === 'error'
+                  ? 'bg-red-950/90 border-red-500/40 text-red-100'
+                  : toast.type === 'success'
+                  ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-100'
+                  : 'bg-stone-900/90 border-amber-500/30 text-amber-100'
+              }`}
+            >
+              <div className="flex-1 text-xs font-serif font-semibold leading-relaxed">
+                {toast.message}
+              </div>
+              <button
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                className="text-amber-100/40 hover:text-amber-100/80 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      <BottomNav activeTab={activeTab} onChangeTab={setActiveTab} />
 
     </div>
   );

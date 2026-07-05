@@ -114,7 +114,15 @@ export interface CharacterState {
   equippedTitle?: string | null;
   ownedTitles?: string[];
   equippedEquipment?: (InventoryItem | null)[];
-  longBreakMinutes: number;
+  pomodoroSettings: PomodoroSettings;
+}
+
+export interface PomodoroSettings {
+  focusDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  autoStartBreak: boolean;
+  autoStartFocus: boolean;
 }
 
 export interface Achievement {
@@ -124,4 +132,34 @@ export interface Achievement {
   icon: string;
   check: (state: CharacterState) => boolean;
 }
+
+export interface ActiveSession {
+  isActive: boolean;
+  skillIdx: number;
+  duration: number;    // duração total em ms
+  endTime: number;     // Date.now() + duration
+  startTime: number;
+  isDungeon: boolean;
+  dungeonStep: number;
+  isWilderness?: boolean;
+}
+
+export interface CombatLevelUpType {
+  type: 'combat';
+  oldLevel: number;
+  newLevel: number;
+  charName: string;
+  charClass: string;
+}
+
+export interface SkillLevelUpType {
+  type: 'skill';
+  skillName: string;
+  emoji: string;
+  oldLevel: number;
+  newLevel: number;
+}
+
+export type LevelUpModalType = CombatLevelUpType | SkillLevelUpType;
+
 
