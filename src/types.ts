@@ -99,6 +99,8 @@ export interface CharacterState {
   wildernessWins: number;
   combo: number;
   dungeonProgress: number; // index of unlocked floor
+  isDungeonMode: boolean;
+  dungeonSessions: number;
   achievements: string[]; // achievement ids
   charName: string;
   charClass: 'Mage' | 'Warrior' | 'Ranger';

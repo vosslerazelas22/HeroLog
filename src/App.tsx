@@ -209,8 +209,8 @@ function App({ userId, signOut }: AppProps) {
   const [sessionConfig, setSessionConfig] = useState<SessionConfig>(() => {
     let initialSkillIdx = 0;
     let initialIsWilderness = false;
-    let initialIsDungeon = false;
-    let initialDungeonStep = 0;
+    let initialIsDungeon = gameState.isDungeonMode || false;
+    let initialDungeonStep = gameState.dungeonSessions || 0;
 
     try {
       const data = localStorage.getItem('herolog_active_session');
@@ -234,6 +234,22 @@ function App({ userId, signOut }: AppProps) {
       isFocusMode: false,
     };
   });
+
+  useEffect(() => {
+    setGameState(prev => {
+      if (
+        prev.isDungeonMode === sessionConfig.isDungeonMode &&
+        prev.dungeonSessions === sessionConfig.dungeonSessions
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        isDungeonMode: sessionConfig.isDungeonMode,
+        dungeonSessions: sessionConfig.dungeonSessions,
+      };
+    });
+  }, [sessionConfig.isDungeonMode, sessionConfig.dungeonSessions]);
 
   const isFocusModeRef = useRef<boolean>(false);
   useEffect(() => {
