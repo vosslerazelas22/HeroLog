@@ -29,6 +29,8 @@ export const INITIAL_STATE: CharacterState = {
   wildernessWins: 0,
   combo: 0,
   dungeonProgress: 0,
+  isDungeonMode: false,
+  dungeonSessions: 0,
   achievements: [],
   charName: 'Aventureiro do Foco',
   charClass: 'Mage',
