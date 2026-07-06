@@ -7,7 +7,7 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
-## [1.0.xx] - Planejado
+## [1.1.X] - Planejado
 
 ### Planejado
 
@@ -15,7 +15,58 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
-## [1.0.13] - 2026-06-29
+## [1.1.0] - 2026-07-06
+
+### Adicionado
+
+- **Seletor de Modo de Incursão (segmented control)** — novo controle `Padrão | Masmorra ⚔️ | Selvagem 💀` reposicionado entre o seletor de habilidade ativa e o timer central, sobre a mesma lógica de estado já existente (`isDungeonMode` / `isWildernessChecked`).
+- **`ModeDescriptionModal.tsx`** — modal único e reutilizável para as descrições de Masmorra e Selvagem, substituindo dois popovers duplicados que sofriam corte visual (clipping) no mobile.
+- **Modal de Ajustes do Foco** — painel de Ajustes migrado para modal (`Modal.tsx` genérico), agora também responsável pelos Presets de Duração (25/50/90min), com seção de Duração Personalizada sempre visível (habilitada/desabilitada por toggle) e toggles independentes de Auto-Iniciar Descanso/Foco.
+- **`SkillSelectorModal.tsx`** — seletor de habilidade ativa migrado do `<select>` nativo para modal em cartas, exibindo emoji, nome, nível, prestígio, tags e barra de progresso (`xp / (level * 80) * 100`).
+- **Modal de criação de habilidade** — formulário de criação de nova habilidade (grid de ícones, nome customizado, sugestões rápidas) extraído da tela de Skills para modal dedicado, acessado por um único botão "+ Nova Habilidade".
+- **Tooltip da Mecânica de Prestígio** — texto explicativo (antes fixo no topo da tela de Skills) convertido em ícone "?" com modal, no mesmo padrão visual do "?" da Trompeta de Foco.
+- **Nova seção em Tutoriais** — `GuideTab.tsx` ganhou seção "Modos de Incursão de Foco", com regras/recompensas espelhando fielmente os modais de Masmorra/Selvagem, tabela comparativa de risco vs. recompensa e diretrizes de escolha.
+- **`TitleEquipModal.tsx`** — segundo ponto de acesso para equipar título honorífico, diretamente na Ficha de Personagem (badge do título clicável), com títulos organizados por categoria (Lendários, Épicos, Raros, Comuns, Conquistas). A aba "Títulos" original permanece intacta como via alternativa.
+- **Lista suspensa de sub-abas no Bottom Nav** — módulos com sub-navegação (Personagem, Missões, Reino) passam a abrir uma lista flutuante ancorada ao próprio botão do Bottom Nav, sempre que tocados (mesmo já ativos), com a sub-aba atual destacada.
+- **Aba "Logs" dedicada no submenu Reino** — Registros Celestiais migrados de painel fixo (presente em todas as telas) para sub-aba própria em Reino (📜), com atalho equivalente na sidebar do desktop.
+- **Sistema de toast** — notificações temporárias (canto superior direito, ~4s, não bloqueantes) para os três eventos que não possuíam nenhum feedback visual fora do log: equipamento quebrado por esgotamento de cargas, erro de nome de habilidade duplicado, e bloqueio de remoção de habilidade durante foco ativo.
+
+### Alterado
+
+- **Sinfonia Mística** — botão de som ambiente saiu da posição isolada (bloco "SINFONIA MÍSTICA") e passou a integrar uma fileira de dois botões junto do gatilho de Ajustes; ícone reflete dinamicamente o estado (🔇 parado / ícone de som + "Sintonizado" ativo).
+- **Rótulos de ajuda dos Modos de Incursão** — simplificados de "Descrever ?" para apenas "?".
+- **Mural de Contratos Ativos** — header ajustado para `flex-col md:flex-row` no mobile, eliminando colisão entre o título e o link "Painel de Contratos →".
+- **Navegação de sub-abas** — pílulas horizontais (`SubNavPills`) removidas por completo de Personagem, Missões e Reino, substituídas pela lista suspensa do Bottom Nav.
+- **Botão "Tela Cheia"** (ex-"Entrar na Câmara do Foco") — renomeado, reposicionado para abaixo dos controles de Pausar/Retomar e Abandonar Missão, e estilo visual rebaixado para outline/ghost discreto, reservando destaque sólido às ações primárias da sessão.
+- **Citação filosófica do topo** — oculta apenas em viewports abaixo de `md` (768px), liberando espaço vertical no mobile; mantida sem alteração no desktop.
+- **Cards de habilidade (Skills)** — nome com prioridade de espaço (quebra em até 2 linhas em vez de truncar), badge de nível reposicionado abaixo do nome, botão "Esquecer" isolado no canto superior direito.
+- **Grid de seleção de ícone/emoji (Skills)** — convertido para grid fluido de 8 colunas, eliminando overflow horizontal.
+- **Botões de Sugestões Rápidas (Skills)** — ajuste de padding/fonte e `break-words`, eliminando truncamento inconsistente entre termos curtos e longos.
+- **Largura da lista de habilidades ativas** — removido padding lateral duplicado (`p-6` do container root somado ao `p-5` do painel externo), lista e cards agora ocupam a largura total disponível no mobile.
+
+### Corrigido
+
+- **Clipping do popover de Masmorra** — popover cortado no mobile (incluindo o título) devido a `overflow-hidden` da `<section>` pai; resolvido pela migração a modal (`ModeDescriptionModal.tsx`).
+- **Modal comprimido ao abrir Sinfonia Mística** — causado por ancestral com `transform`/`animate-spin`/`scale-110` ativo quebrando o contexto de empilhamento de elementos `position: fixed`; corrigido reposicionando o gatilho para fora da árvore de elementos transformados.
+- **Truncamento severo de nomes de habilidade** — nomes exibidos como uma única letra + reticências (ex.: "P...") por disputa de espaço com badge de nível e ícone de editar.
+- **Botão duplicado de criação de habilidade** — consolidado em um único ponto de entrada.
+- **Cor e posicionamento incorretos do ícone "?" de Mecânica de Prestígio** — corrigido para amarelo/dourado, ancorado ao título já existente (sem título duplicado).
+
+### Arquivos alterados
+
+- `/src/App.tsx` — Seletor de Modo de Incursão, remoção das pílulas de sub-navegação, remoção do painel fixo de logs, nova sub-aba "Logs" em Reino, ajustes de layout do Mural de Contratos e da tela de Foco.
+- `/src/components/ModeDescriptionModal.tsx` — criado; modal unificado de descrição de Masmorra/Selvagem.
+- `/src/components/navigation/BottomNav.tsx` — diferenciação de comportamento por módulo (navegação direta vs. lista suspensa de sub-abas), atalho de Logs na sidebar desktop.
+- `/src/modules/skills/SkillsScreen.tsx` — correções de truncamento, grid de ícones, sugestões rápidas, tooltip de Prestígio, modal de criação de habilidade, largura da lista.
+- `/src/components/SkillSelectorModal.tsx` — criado; seletor de habilidade em cartas.
+- `/src/modules/character/CharacterScreen.tsx` — badge de título clicável, integração com `TitleEquipModal`.
+- `/src/components/TitleEquipModal.tsx` — criado; equipar título diretamente na Ficha de Personagem.
+- `/src/modules/kingdom/GuideTab.tsx` — nova seção sobre os 3 Modos de Incursão.
+- `/src/modules/skills/useSkills.ts` — disparo de toast em erro de nome duplicado e bloqueio de remoção durante foco.
+- Componente de toast (novo) — sistema de notificação temporária reutilizável.
+
+---
+
 
 ### Adicionado
 
