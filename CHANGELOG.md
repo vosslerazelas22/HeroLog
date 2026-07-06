@@ -14,6 +14,22 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 - **Catálogo ampliado de Guild Quests** — expandir as Teses de Campanha com novos objetivos permanentes, mantendo reivindicação única por save e integração com o Mural de Contratos Ativos.
 
 ---
+ 
+## [1.1.1] - 2026-07-06
+ 
+### Corrigido
+ 
+- **Perda de progresso da Masmorra (dungeon mode)** — corrigido bug em que o contador de sessões consecutivas (`dungeonSessions`) e o estado de incursão ativa (`isDungeonMode`) podiam ser zerados silenciosamente ao pausar a sessão, abandoná-la, completá-la normalmente, ou reidratar após queda de conexão/encerramento do processo da aba (comum no Android, que libera abas em segundo plano). Causa raiz: os dois campos existiam apenas em estado efêmero (`sessionConfig`, React state) e na chave `herolog_active_session` do `localStorage` — que é deletada em 4 pontos distintos do fluxo (pausar, cancelar, completar, completar via reload) — sem nenhuma cópia durável sobrevivendo a esses eventos.
+### Alterado
+ 
+- **Persistência do progresso de Masmorra** — `isDungeonMode` e `dungeonSessions` passam a ser espelhados automaticamente para `gameState` (`CharacterState`) a cada alteração, herdando a persistência já existente via `localStorage` + sincronização debounced com Supabase. Comportamento de UI e regras de jogo permanecem inalterados; a mudança é inteiramente de camada de persistência.
+### Arquivos alterados
+ 
+- `/src/types.ts` — adicionados os campos `isDungeonMode: boolean` e `dungeonSessions: number` à interface `CharacterState`.
+- `/src/hooks/useGameState.ts` — adicionados os valores padrão correspondentes ao `INITIAL_STATE` (`false` / `0`); saves antigos herdam os defaults automaticamente via `normalizeGameState`.
+- `/src/App.tsx` — inicializador de `sessionConfig` passa a usar `gameState.isDungeonMode` / `gameState.dungeonSessions` como fallback (em vez de `false` / `0` fixos); novo `useEffect` de espelhamento sincroniza `sessionConfig` → `gameState` a cada alteração dos dois campos.
+
+---
 
 ## [1.1.0] - 2026-07-06
 
