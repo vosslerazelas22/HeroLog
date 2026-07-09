@@ -70,6 +70,8 @@ export interface Daily {
   every: number;
   tags: string[];
   checklist: { id: string; text: string; completed: boolean }[];
+  value?: number;
+  createdAt?: string;
 }
 
 export interface Todo {
@@ -80,6 +82,8 @@ export interface Todo {
   completed: boolean;
   tags: string[];
   checklist: { id: string; text: string; completed: boolean }[];
+  createdAt?: string;
+  completedAt?: string;
 }
 
 export interface CharacterState {

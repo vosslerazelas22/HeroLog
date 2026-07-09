@@ -14,6 +14,7 @@ import { sound } from './utils/audio';
 import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth';
 import { AuthGate, SyncIndicator } from './components/AuthGate';
+import { wasDailyScheduledForDate } from './utils/dailyScheduling';
 
 interface CombatLevelUpType {
   type: 'combat';
@@ -1020,10 +1021,11 @@ function App({ userId, signOut }: AppProps) {
         // Se nunca estudou antes, a sequência inicia ou se mantém em 0, mas não há "perda"
       }
       
+      const dayThatPassed = new Date(gameState.todayDate);
       let dailyNeglectDamage = 0;
       let missedCount = 0;
       (gameState.dailies || []).forEach(d => {
-        if (!d.completed) {
+        if (!d.completed && wasDailyScheduledForDate(d, dayThatPassed)) {
           const { damage } = getDifficultyRewards(d.difficulty);
           dailyNeglectDamage += damage;
           missedCount += 1;
@@ -1079,12 +1081,18 @@ function App({ userId, signOut }: AppProps) {
         // --- HABITICA DAILY NEGLECT DAMAGE SECTION ---
         let dailyNeglectDamage = 0;
         let missedCount = 0;
+        const dayThatPassed = new Date(prev.todayDate);
         const updatedDailies = (prev.dailies || []).map(d => {
+          const isScheduled = wasDailyScheduledForDate(d, dayThatPassed);
+          
           if (!d.completed) {
-            const { damage } = getDifficultyRewards(d.difficulty);
-            dailyNeglectDamage += damage;
-            missedCount += 1;
-            return { ...d, streak: 0 };
+            if (isScheduled) {
+              const { damage } = getDifficultyRewards(d.difficulty);
+              dailyNeglectDamage += damage;
+              missedCount += 1;
+              return { ...d, streak: 0, value: (d.value ?? 0) - 1 };
+            }
+            return d;
           }
           return { ...d, completed: false };
         });
@@ -3381,6 +3389,7 @@ function App({ userId, signOut }: AppProps) {
                   onAddTodo={onAddTodo}
                   onEditTodo={onEditTodo}
                   onDeleteTodo={onDeleteTodo}
+                  todayDate={gameState.todayDate}
                 />
               )}
 
