@@ -21,7 +21,7 @@ const SUB_TABS: Record<string, SubTabOption[]> = {
   missions: [
     { value: 'habits', label: 'Capela de Hábitos', emoji: '⚡' },
     { value: 'dailies', label: 'Tarefas Diárias', emoji: '📅' },
-    { value: 'todos', label: 'To Do List', emoji: '✅' },
+    { value: 'todos', label: 'Missões Avulsas', emoji: '🗒️' },
     { value: 'quests', label: 'Contratos da Gilda', emoji: '📜' },
     { value: 'history', label: 'Crônicas Diárias', emoji: '📖' },
   ],
