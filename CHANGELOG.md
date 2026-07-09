@@ -14,6 +14,32 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 - **Catálogo ampliado de Guild Quests** — expandir as Teses de Campanha com novos objetivos permanentes, mantendo reivindicação única por save e integração com o Mural de Contratos Ativos.
 
 ---
+
+## [1.1.2] - 2026-07-08
+
+### Adicionado
+- Cor dinâmica de fundo nos cards de hábitos, tarefas diárias e afazeres, refletindo a pontuação atual em 7 faixas de intensidade (do vermelho escuro ao azul brilhante).
+- Decaimento temporal de pontuação em afazeres pendentes há muito tempo, incentivando a conclusão de tarefas mais antigas.
+- Confirmação de descarte ao cancelar a criação ou edição de hábitos, tarefas diárias e afazeres, evitando perda acidental de alterações não salvas ao fechar o formulário de qualquer forma (botão de fechar, clique fora, tecla Esc ou botão Cancelar).
+
+### Alterado
+- Layout dos cards de hábitos, tarefas diárias e afazeres ajustado para um padrão visual mais compacto e consistente, com redução de espaçamento interno desnecessário.
+- Metadados dos cards (sequência, status do dia, estatísticas) reorganizados em uma linha única e mais compacta, separados por marcadores visuais.
+- Fluxo de exclusão de itens simplificado: confirmação passou a ser feita diretamente no card, sem menus adicionais.
+- Formulários de criação e edição de hábitos, tarefas diárias e afazeres migrados para janelas modais, com visual mais consistente entre os três módulos.
+- Padronização dos rótulos dos formulários ("Título", "Notas", "Dificuldade", "Checklist") entre os três módulos.
+- Padronização dos títulos e textos de botão dos formulários conforme o modo ativo ("Nova Tarefa" / "Editar Tarefa", "Criar" / "Salvar").
+- Botão de criação de nova tarefa simplificado para "Novo" nos três módulos.
+
+### Corrigido
+- Bug de agendamento de tarefas diárias que podia considerar dias incorretamente como "programados" antes da data real de criação da tarefa.
+
+### Removido
+- Menu de opções (⋮) nos cards de hábitos, tarefas diárias e afazeres, substituído pela confirmação de exclusão inline.
+- Indicador numérico de saldo (medalha) e exibição de categorias (tags) na visualização em lista de hábitos, tarefas diárias e afazeres — ambos continuam disponíveis na tela de edição.
+- Linguagem narrativa e emojis dos títulos dos formulários de criação e edição.
+
+---
  
 ## [1.1.1] - 2026-07-06
  
