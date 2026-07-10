@@ -260,11 +260,8 @@ export function FocusModeScreen(props: FocusModeScreenProps) {
 
           {/* Typography headers */}
           <div className="space-y-2">
-            <h3 className="text-xs uppercase font-serif tracking-widest text-[#E2B054] font-black">
-              Missão Concluída
-            </h3>
             <h2 className="text-4xl sm:text-5xl font-serif font-black tracking-wider text-amber-300 drop-shadow-[0_2px_15px_rgba(226,176,84,0.35)] uppercase">
-              Vitória Mental!
+              Foco Concluído
             </h2>
           </div>
 
@@ -285,14 +282,19 @@ export function FocusModeScreen(props: FocusModeScreenProps) {
                   {rating.desc}
                 </h4>
                 <p className="text-[11px] text-amber-100/50">
-                  {pauseCount === 0 ? 'Sua determinação foi absoluta!' : `Sessão concluída com ${pauseCount} ${pauseCount === 1 ? 'pausa' : 'pausas'}.`}
+                  {pauseCount === 0 ? 'Nenhuma pausa.' : `${pauseCount} ${pauseCount === 1 ? 'pausa registrada' : 'pausas registradas'}.`}
                 </p>
+                {isDungeonMode && (
+                  <p className="text-[11px] text-amber-100/50">
+                    {dungeonSessions < 4 ? `⚔️ Sala ${dungeonSessions}/4 concluída` : '⚔️ Masmorra Completa'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           <p className="text-xs text-amber-100/60 leading-relaxed max-w-sm">
-            Seu tempo de canalização foi absorvido com glória pelo santuário. Colete seus merecidos espólios de guerra.
+            Recompensas liberadas para coleta.
           </p>
 
           {/* Large CTA Golden Button */}
