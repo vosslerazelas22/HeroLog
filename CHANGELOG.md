@@ -15,6 +15,22 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.3] - 2026-07-09
+
+### Adicionado
+- Indicador de progresso de Masmorra na tela de conclusão de foco em tela cheia (`⚔️ Sala X/4 concluída` / `⚔️ Masmorra Completa`), espelhando o tratamento que o modo Selvagem já recebia na classificação.
+
+### Alterado
+- Copy da tela de conclusão de foco simplificada: título principal ("Foco Concluído"), legenda de pausas ("Nenhuma pausa." / "X pausa(s) registrada(s).") e texto de apoio ("Recompensas liberadas para coleta."), com tom mais direto.
+
+### Removido
+- Cabeçalho secundário ("Missão Concluída") da tela de conclusão de foco, eliminando redundância com o título principal logo abaixo.
+
+### Arquivos alterados
+- `/src/modules/focus/FocusModeScreen.tsx`
+
+---
+
 ## [1.1.2] - 2026-07-08
 
 ### Adicionado
