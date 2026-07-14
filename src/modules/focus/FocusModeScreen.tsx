@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Play, Pause, LogOut } from 'lucide-react';
 import { CharacterState } from '../../types';
 import { UseFocusSessionReturn } from './useFocusSession';
+import { FocusOrb } from './FocusOrb';
 
 interface FocusModeScreenProps {
   focusSession: UseFocusSessionReturn;
@@ -179,7 +180,7 @@ export function FocusModeScreen(props: FocusModeScreenProps) {
               )}
               {isWildernessChecked && (
                 <span className="px-2.5 py-1 text-[10px] font-mono tracking-wider text-red-300 border border-red-500/30 bg-red-950/20 rounded-md uppercase font-bold">
-                  💀 Wilderness
+                  💀 Terra Selvagem
                 </span>
               )}
             </div>
@@ -187,28 +188,13 @@ export function FocusModeScreen(props: FocusModeScreenProps) {
 
           {/* Center Column: Big Counter */}
           <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center">
-            {/* Glowing circle framing the timer */}
-            <div className="absolute w-72 h-72 sm:w-[24rem] sm:h-[24rem] rounded-full border border-amber-500/10 shadow-[0_0_80px_rgba(226,176,84,0.03)] flex items-center justify-center animate-spin pointer-events-none" style={{ animationDuration: '40s' }} />
-            
-            <div className="relative">
-              {/* Massive digital display */}
-              <span
-                className={`text-8xl sm:text-[11rem] md:text-[14rem] font-mono font-black tracking-widest leading-none select-none transition-all duration-500 ${
-                  isPaused
-                    ? 'text-purple-400/40 drop-shadow-[0_0_30px_rgba(168,85,247,0.15)]'
-                    : timeLeft <= 60
-                      ? 'text-red-500 drop-shadow-[0_0_50px_rgba(239,68,68,0.45)] animate-pulse'
-                      : 'text-amber-300 drop-shadow-[0_0_60px_rgba(226,176,84,0.25)]'
-                }`}
-              >
-                {formatTime(timeLeft)}
-              </span>
-
-              {/* Current Sub-state caption */}
-              <p className="text-[11px] sm:text-xs tracking-[0.2em] uppercase font-serif mt-6 font-black text-amber-500/60">
-                {isPaused ? '⏸️ SESSÃO PAUSADA' : '⏳ SESSÃO EM ANDAMENTO'}
-              </p>
-            </div>
+            <FocusOrb
+              timeLeft={timeLeft}
+              totalSeconds={gameState.pomodoroSettings.focusDuration * 60}
+              isRunning={focusSession.isRunning}
+              isPaused={isPaused}
+              size="fullscreen"
+            />
           </div>
 
           {/* Bottom Bar: Action Controls */}

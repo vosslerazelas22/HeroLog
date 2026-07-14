@@ -1,4 +1,6 @@
+export { QuestFab } from './QuestFab';
 export { FocusModeScreen } from './FocusModeScreen';
+export { FocusOrb } from './FocusOrb';
 export { useFocusSession } from './useFocusSession';
 export { useTimerControls } from './useTimerControls';
 export { useBreakTimer } from './useBreakTimer';
