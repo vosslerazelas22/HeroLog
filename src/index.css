@@ -97,3 +97,26 @@ body {
   animation: riseFast var(--duration) infinite linear;
 }
 
+@media (max-width: 1023px) {
+  /* .mobile-temple-min-height is deprecated in favor of .mobile-focus-container */
+  .mobile-focus-container {
+    min-height: calc(100vh - 182px);
+    min-height: calc(100dvh - 182px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+/* Timer container responsive padding for small screen heights to prevent button cutoff */
+.timer-container-responsive {
+  padding-top: 1.25rem; /* py-5 */
+  padding-bottom: 1.25rem;
+}
+@media (max-height: 700px) {
+  .timer-container-responsive {
+    padding-top: 0.5rem; /* py-2 */
+    padding-bottom: 0.5rem;
+  }
+}
+

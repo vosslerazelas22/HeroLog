@@ -87,7 +87,9 @@ import {
 import { useSkills, SkillsScreen, QuickSkillsGrid } from './modules/skills';
 
 import {
+  QuestFab,
   FocusModeScreen,
+  FocusOrb,
   useFocusSession,
   useTimerControls,
   useBreakTimer,
@@ -121,7 +123,6 @@ import {
   X,
   PlusCircle,
   Clock,
-  Sparkle,
   Shield,
   HelpCircle,
   Menu,
@@ -281,6 +282,33 @@ function App({ userId, signOut }: AppProps) {
   }, [sessionConfig.selectedSkillIdx]);
 
   const [lastDungeonClearedTime, setLastDungeonClearedTime] = useState<number>(0);
+  const [dungeonCooldownRemaining, setDungeonCooldownRemaining] = useState<number>(0);
+
+  useEffect(() => {
+    const checkCooldown = () => {
+      const elapsed = Date.now() - lastDungeonClearedTime;
+      const cooldownTotal = 2 * 60 * 60 * 1000; // 2 horas
+      if (elapsed < cooldownTotal) {
+        setDungeonCooldownRemaining(cooldownTotal - elapsed);
+      } else {
+        setDungeonCooldownRemaining(0);
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [lastDungeonClearedTime]);
+
+  const formatDungeonCooldown = (ms: number) => {
+    const totalSecs = Math.max(0, Math.ceil(ms / 1000));
+    const secs = totalSecs % 60;
+    const mins = Math.floor(totalSecs / 60) % 60;
+    const hrs = Math.floor(totalSecs / 3600);
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  };
+
   const [showActionWindowTooltip, setShowActionWindowTooltip] = useState<boolean>(false);
   const [showDungeonTooltip, setShowDungeonTooltip] = useState<boolean>(false);
   const [showWildernessTooltip, setShowWildernessTooltip] = useState<boolean>(false);
@@ -2071,9 +2099,13 @@ function App({ userId, signOut }: AppProps) {
 
         {/* Global indicators pills */}
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold shadow-inner" title="Combo de Consistência (Streak)">
+            <span>🔥 {gameState.streak}</span>
+          </div>
+
           <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold font-serif shadow-inner">
             <Coins className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-            <span>{gameState.gold} GP</span>
+            <span>{gameState.gold}</span>
           </div>
 
           <div className="hidden sm:flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-300/80 font-serif shadow-inner">
@@ -2291,7 +2323,7 @@ function App({ userId, signOut }: AppProps) {
         </aside>
 
         {/* RIGHT WORKSPACE COLUMN */}
-        <main className="lg:col-span-9 flex flex-col gap-6 w-full pb-20 lg:pb-0">
+        <main className="lg:col-span-9 flex flex-col gap-6 w-full pb-14 lg:pb-0">
           
           <AnimatePresence mode="wait">
             <motion.div
@@ -2305,10 +2337,11 @@ function App({ userId, signOut }: AppProps) {
               {/* TARGET VIEWPORT TABS */}
               
               {activeTab === 'focus' && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full lg:items-start">
-                  
-                  {/* LEFT SUB-COLUMN: THE TEMPLE CHAMBER & POMODORO TIMER CORE */}
-                  <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] lg:col-span-7 flex flex-col justify-between relative">
+                <div className="mobile-focus-container w-full">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full lg:items-start">
+                    
+                    {/* LEFT SUB-COLUMN: THE TEMPLE CHAMBER & POMODORO TIMER CORE */}
+                    <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] lg:col-span-7 flex flex-col justify-between relative">
                     
                     {/* Header Title Section Banner */}
                     <div className="bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 p-3.5 flex justify-center items-center relative">
@@ -2347,13 +2380,10 @@ function App({ userId, signOut }: AppProps) {
                       )}
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col justify-start md:justify-center gap-3 md:gap-4 py-2">
+                    <div className="p-4 flex-1 flex flex-col justify-center gap-2 md:gap-4 py-2">
                       
                       {/* Choose focus skill active dropdown option */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
-                          Foco Ativo na Habilidade:
-                        </label>
+                      <div>
                         {gameState.skills.length > 0 ? (
                            (() => {
                              const activeSkill = gameState.skills[sessionConfig.selectedSkillIdx] || gameState.skills[0];
@@ -2367,7 +2397,7 @@ function App({ userId, signOut }: AppProps) {
                                  <span className="flex items-center gap-2 truncate pr-2">
                                    <span className="text-lg shrink-0">{activeSkill.emoji || '🎯'}</span>
                                    <span className="font-bold truncate text-amber-100 group-hover:text-amber-200">{activeSkill.name}</span>
-                                   <span className="text-amber-400/80 text-xs font-mono font-medium shrink-0">· Nível {activeSkill.level}</span>
+                                   <span className="text-amber-400/80 text-xs font-mono font-medium shrink-0">· Nv. {activeSkill.level}</span>
                                    {activeSkill.prestige && activeSkill.prestige > 0 ? (
                                      <span className="text-yellow-400 text-[10px] font-bold shrink-0">👑{'★'.repeat(activeSkill.prestige)}</span>
                                    ) : null}
@@ -2393,7 +2423,7 @@ function App({ userId, signOut }: AppProps) {
                         <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
                           Modo de Incursão:
                         </label>
-                        <div className="grid grid-cols-3 gap-1 bg-stone-950/60 p-1 rounded-lg border border-amber-500/10">
+                        <div className="flex w-full bg-stone-950/60 p-0.5 rounded-lg border border-amber-500/15 overflow-hidden">
                           <button
                             type="button"
                             disabled={isRunning}
@@ -2405,25 +2435,18 @@ function App({ userId, signOut }: AppProps) {
                               }));
                               addSystemLog('⚔️ Modo de Incursão Padrão selecionado.');
                             }}
-                            className={`py-1.5 px-2 rounded text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none disabled:opacity-50 ${
+                            className={`flex-1 py-1 px-1.5 rounded-l-md text-[10px] md:text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none flex items-center justify-center min-h-[38px] ${
                               !sessionConfig.isDungeonMode && !sessionConfig.isWildernessChecked
-                                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]'
-                                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40 border border-transparent'
+                                ? 'bg-amber-500/15 text-amber-300 shadow-[inset_0_1px_1px_rgba(251,191,36,0.15)]'
+                                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'
                             }`}
                           >
                             Padrão
                           </button>
                           <button
                             type="button"
-                            disabled={isRunning}
+                            disabled={isRunning || dungeonCooldownRemaining > 0}
                             onClick={() => {
-                              if (Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000) {
-                                const remainingSecs = Math.max(0, Math.ceil((2 * 60 * 60 * 1000 - (Date.now() - lastDungeonClearedTime)) / 1000));
-                                const mins = Math.floor(remainingSecs / 60) % 60;
-                                const hrs = Math.floor(remainingSecs / 3600);
-                                addSystemLog(`⏳ Cooldown Ativo: A masmorra está sob recarga celestial por mais ${hrs}h ${mins}m.`);
-                                return;
-                              }
                               setSessionConfig(prev => ({
                                 ...prev,
                                 isDungeonMode: true,
@@ -2431,13 +2454,20 @@ function App({ userId, signOut }: AppProps) {
                               }));
                               addSystemLog('⚔️ Incursão por Masmorra Ativada! Comprometa-se a realizar 4 focos seguidos sem abandonar para adquirir GP bônus.');
                             }}
-                            className={`py-1.5 px-2 rounded text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none disabled:opacity-50 ${
+                            className={`flex-1 py-1 px-1.5 transition-all tracking-wider text-center cursor-pointer select-none border-l border-r border-amber-500/10 flex flex-col items-center justify-center min-h-[38px] ${
                               sessionConfig.isDungeonMode
-                                ? 'bg-purple-900 border border-purple-400 text-purple-100 shadow-[0_0_15px_rgba(168,85,247,0.35)]'
-                                : 'text-purple-400/80 hover:text-purple-300 hover:bg-purple-950/30 border border-transparent'
+                                ? 'bg-purple-950/90 text-purple-200 font-bold shadow-[inset_0_1px_1px_rgba(168,85,247,0.15)]'
+                                : dungeonCooldownRemaining > 0
+                                  ? 'opacity-40 cursor-not-allowed text-purple-400/50 bg-stone-950/40'
+                                  : 'text-purple-400/80 hover:text-purple-300 hover:bg-purple-950/20'
                             }`}
                           >
-                            Masmorra ⚔️
+                            <span className="text-[10px] md:text-[11px] font-serif uppercase font-bold leading-none whitespace-nowrap">Masmorra ⚔️</span>
+                            {dungeonCooldownRemaining > 0 && (
+                              <span className="text-[8px] font-mono font-medium tracking-normal mt-0.5 text-purple-300/90 bg-purple-950/60 px-1 py-0.5 rounded border border-purple-500/20 leading-none">
+                                ⏳ {formatDungeonCooldown(dungeonCooldownRemaining)}
+                              </span>
+                            )}
                           </button>
                           <button
                             type="button"
@@ -2450,10 +2480,10 @@ function App({ userId, signOut }: AppProps) {
                               }));
                               addSystemLog('🛡️ Ajuste: Terra Selvagem selecionada para a próxima Missão!');
                             }}
-                            className={`py-1.5 px-2 rounded text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none disabled:opacity-50 ${
+                            className={`flex-1 py-1 px-1.5 rounded-r-md text-[10px] md:text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none flex items-center justify-center min-h-[38px] ${
                               sessionConfig.isWildernessChecked
-                                ? 'bg-red-950 border border-red-500/40 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.25)]'
-                                : 'text-red-400/80 hover:text-red-300 hover:bg-red-950/20 border border-transparent'
+                                ? 'bg-red-950 border border-red-500/40 text-red-500 shadow-[inset_0_1px_1px_rgba(239,68,68,0.15)]'
+                                : 'text-red-400/80 hover:text-red-300 hover:bg-red-950/20'
                             }`}
                           >
                             Selvagem 💀
@@ -2462,7 +2492,7 @@ function App({ userId, signOut }: AppProps) {
 
                         {/* Mode Context Information / Help Button */}
                         {(sessionConfig.isDungeonMode || sessionConfig.isWildernessChecked) && (
-                          <div className="bg-stone-950/40 p-2.5 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
+                          <div className="bg-stone-950/40 py-1.5 px-2.5 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
                             {sessionConfig.isDungeonMode && (
                               <div className="flex items-center justify-between gap-2">
                                 <div className="text-purple-300 font-serif">
@@ -2661,82 +2691,21 @@ function App({ userId, signOut }: AppProps) {
                           </div>
                         </div>
                       ) : (
-                        <div className="text-center py-5 relative flex flex-col items-center justify-center">
-                          {/* Rotating glowing sun backdrop */}
-                          <div
-                            className={`absolute w-44 h-44 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full border border-dashed transition-all duration-1000 ${
+                        <div className="text-center timer-container-responsive relative flex flex-col items-center justify-center">
+                          <FocusOrb
+                            timeLeft={timeLeft}
+                            totalSeconds={
                               isBreakActive
-                                ? 'border-emerald-500/20 animate-spin scale-110'
-                                : isRunning
-                                  ? timeLeft <= 60
-                                    ? 'border-red-500/25 animate-spin scale-110 shadow-[0_0_20px_rgba(239,68,68,0.25)]'
-                                    : 'border-amber-400/20 animate-spin scale-110'
-                                  : 'border-amber-500/5 animate-none'
-                            }`}
-                            style={{ animationDuration: '25s' }}
+                                ? selectedBreakMins * 60
+                                : gameState.pomodoroSettings.focusDuration * 60
+                            }
+                            isRunning={isRunning}
+                            isPaused={isPaused}
+                            isBreakActive={isBreakActive}
+                            size="standard"
                           />
-
-                          <div className="relative z-10">
-                            {/* Digit Displays */}
-                            <span className={`text-6xl md:text-7xl lg:text-8xl font-mono font-bold tracking-widest select-none transition-colors duration-300 ${
-                                isPaused 
-                                  ? 'text-amber-500/70' 
-                                  : isBreakActive
-                                    ? 'text-emerald-400 font-extrabold shadow-[2px_2px_25px_rgba(16,185,129,0.3)] scale-105'
-                                    : isRunning 
-                                      ? timeLeft <= 60
-                                        ? 'text-red-500 font-extrabold shadow-[2px_2px_25px_rgba(239,68,68,0.45)] animate-pulse scale-105'
-                                        : 'text-amber-300 font-extrabold shadow-[2px_2px_20px_rgba(245,217,122,0.15)] scale-105'
-                                      : 'text-amber-200/75'
-                              }`}
-                            >
-                              {String(Math.floor(timeLeft / 60)).padStart(2, '0')}
-                              <span className={timeLeft <= 60 && isRunning && !isPaused ? "text-red-500" : isBreakActive ? "text-emerald-400" : "animate-pulse"}>:</span>
-                              {String(timeLeft % 60).padStart(2, '0')}
-                            </span>
-
-                            <p className={`text-xs md:text-sm tracking-[0.12em] uppercase font-serif mt-3 flex items-center justify-center gap-2 font-black leading-tight ${isBreakActive ? 'text-emerald-400' : 'text-amber-300'}`}>
-                              <Sparkle className={`w-3.5 h-3.5 ${isRunning || isBreakActive ? 'animate-spin' : ''}`} />
-                              {isBreakActive 
-                                ? '🌿 RECUPERANDO AS ENERGIAS' 
-                                : isPaused 
-                                  ? 'REPOUSO DA MISSÃO' 
-                                  : isRunning 
-                                    ? (sessionConfig.isDungeonMode 
-                                      ? `⚔️ EXPLORANDO MASMORRA (${sessionConfig.dungeonSessions}/4) ⚔️` 
-                                      : sessionConfig.isWildernessChecked 
-                                        ? '⚔️ SOBREVIDA WILDERNESS ⚔️' 
-                                        : 'MISSÃO DE FOCO ATIVA') 
-                                    : 'PRONTO PARA COMEÇAR'}
-                            </p>
-                          </div>
                         </div>
                       )}
-
-                      {/* CONTROLS ROW: AMBIENT SOUND & TIMER SETTINGS */}
-                      <div className="grid grid-cols-2 gap-2 relative z-20">
-                        {/* 🎵 Som Ambiente Button */}
-                        <AmbientSoundButton
-                          selectedTrack={ambientSound.selectedTrack}
-                          volume={ambientSound.volume}
-                          selectTrack={ambientSound.selectTrack}
-                          setVolume={ambientSound.setVolume}
-                          tracks={ambientSound.tracks}
-                        />
-
-                        {/* ⚙️ Ajustes Button */}
-                        <button
-                          disabled={isRunning || isBreakActive}
-                          onClick={() => setIsTimerSettingsModalOpen(true)}
-                          className="relative px-3 py-1.5 rounded-lg border border-amber-500/20 bg-stone-900/60 hover:bg-stone-850 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all cursor-pointer select-none flex items-center justify-center gap-1.5 shadow-sm group disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Ajustes de Tempo"
-                        >
-                          <Settings className="w-3.5 h-3.5 text-stone-500 group-hover:text-stone-400 transition-colors" />
-                          <span className="text-[10px] font-serif font-black uppercase tracking-wider text-amber-100/70 group-hover:text-amber-100">
-                            Ajustes · {gameState.pomodoroSettings.focusDuration}min
-                          </span>
-                        </button>
-                      </div>
 
                       {/* Timer Settings Modal */}
                       {(() => {
@@ -2754,7 +2723,7 @@ function App({ userId, signOut }: AppProps) {
                           <Modal
                             isOpen={isTimerSettingsModalOpen}
                             onClose={() => setIsTimerSettingsModalOpen(false)}
-                            title="⚙️ Ajustes do Foco"
+                            title="⚙️ Ajustes do Timer"
                             variant="amber"
                           >
                             <div className="space-y-4 font-sans text-amber-100">
@@ -2993,187 +2962,110 @@ function App({ userId, signOut }: AppProps) {
 
                       {/* TRANSIT CONTROL PLAYER TRIGGERS */}
                       <div className="space-y-3">
-                        <div className="flex gap-3">
-                          {isBreakActive ? (
+                        {isBreakActive ? (
+                          <button
+                            onClick={skipBreak}
+                            className="w-full py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300 hover:from-green-400 hover:to-emerald-200 border border-emerald-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(16,185,129,0.3)] transition-all shadow-lg text-center font-bold animate-pulse"
+                          >
+                            Encerrar Pausa
+                          </button>
+                        ) : !isRunning ? (
+                          <button
+                            onClick={startQuestTimer}
+                            className="w-full py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 hover:from-yellow-400 hover:to-amber-200 border border-amber-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(200,162,60,0.3)] transition-all shadow-lg text-center font-bold"
+                          >
+                            ▶ Iniciar Missão de Foco
+                          </button>
+                        ) : (
+                          <div className="flex gap-2 w-full">
                             <button
-                              onClick={skipBreak}
-                              className="flex-1 py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300 hover:from-green-400 hover:to-emerald-200 border border-emerald-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(16,185,129,0.3)] transition-all shadow-lg text-center font-bold animate-pulse"
+                              onClick={togglePauseQuest}
+                              className={`flex-1 py-3 text-sm font-serif font-black uppercase rounded border tracking-widest transition-all cursor-pointer ${
+                                isPaused 
+                                  ? 'bg-purple-900/10 border-purple-500 text-purple-300' 
+                                  : 'bg-stone-950/40 border-amber-500/30 text-amber-300'
+                              }`}
                             >
-                              Encerrar Pausa
+                              {isPaused ? '▶ Retomar Missão' : '⏸️ Pausar Missão'}
                             </button>
-                          ) : !isRunning ? (
                             <button
-                              onClick={startQuestTimer}
-                              className="flex-1 py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 hover:from-yellow-400 hover:to-amber-200 border border-amber-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(200,162,60,0.3)] transition-all shadow-lg text-center"
+                              onClick={abandonQuest}
+                              className={`px-4 py-3 text-xs rounded transition-all cursor-pointer ${
+                                isConfirmingAbandon
+                                  ? 'bg-red-600 border border-red-400 text-white font-bold animate-pulse'
+                                  : 'bg-red-950/40 border-red-500/30 hover:bg-red-950 hover:text-red-300 text-red-400'
+                              }`}
                             >
-                              ▶ Iniciar Missão de Foco
+                              {isConfirmingAbandon ? 'Confirmar?' : 'Abandonar'}
                             </button>
-                          ) : (
-                            <div className="flex-1 flex flex-col gap-2">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={togglePauseQuest}
-                                  className={`flex-1 py-3 text-sm font-serif font-black uppercase rounded border tracking-widest transition-all cursor-pointer ${
-                                    isPaused 
-                                      ? 'bg-purple-900/10 border-purple-500 text-purple-300' 
-                                      : 'bg-stone-950/40 border-amber-500/30 text-amber-300'
-                                  }`}
-                                >
-                                  {isPaused ? '▶ Retomar Missão' : '⏸️ Pausar Missão'}
-                                </button>
-                                <button
-                                  onClick={abandonQuest}
-                                  className={`px-4 py-3 text-xs rounded transition-all cursor-pointer ${
-                                    isConfirmingAbandon
-                                      ? 'bg-red-600 border border-red-400 text-white font-bold animate-pulse'
-                                      : 'bg-red-950/40 border border-red-500/30 hover:bg-red-950 hover:text-red-300 text-red-400'
-                                  }`}
-                                >
-                                  {isConfirmingAbandon ? 'Confirmar?' : 'Abandonar'}
-                                </button>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  document.documentElement.requestFullscreen().catch((err) => {
-                                    console.warn("Fullscreen API not supported or blocked:", err);
-                                  });
-                                  setSessionConfig(prev => ({ ...prev, isFocusMode: true }));
-                                }}
-                                className="w-full py-2.5 text-xs font-serif font-bold uppercase text-amber-100/50 hover:text-amber-100/80 bg-stone-900/20 hover:bg-stone-900/55 border border-amber-500/15 hover:border-amber-500/30 rounded tracking-widest transition-all cursor-pointer select-none text-center flex items-center justify-center gap-1.5"
-                              >
-                                <span>⛶</span>
-                                <span>Tela Cheia</span>
-                              </button>
-                            </div>
+                          </div>
                         )}
+
+                        {/* Fullscreen Button / Placeholder */}
+                        {isRunning && !isBreakActive ? (
+                          <button
+                            onClick={() => {
+                              document.documentElement.requestFullscreen().catch((err) => {
+                                console.warn("Fullscreen API not supported or blocked:", err);
+                              });
+                              setSessionConfig(prev => ({ ...prev, isFocusMode: true }));
+                            }}
+                            className="w-full py-2.5 text-xs font-serif font-bold uppercase text-amber-100/50 hover:text-amber-100/80 bg-stone-900/20 hover:bg-stone-900/55 border border-amber-500/15 hover:border-amber-500/30 rounded tracking-widest transition-all cursor-pointer select-none text-center flex items-center justify-center gap-1.5"
+                          >
+                            <span>⛶</span>
+                            <span>Tela Cheia</span>
+                          </button>
+                        ) : (
+                          <div
+                            className="w-full py-2.5 text-xs font-serif font-bold uppercase border border-transparent rounded tracking-widest text-center flex items-center justify-center gap-1.5 opacity-0 pointer-events-none select-none"
+                            aria-hidden="true"
+                          >
+                            <span>⛶</span>
+                            <span>Tela Cheia</span>
+                          </div>
+                        )}
+
+                        {/* CONTROLS ROW: AMBIENT SOUND & TIMER SETTINGS */}
+                        <div className="grid grid-cols-2 gap-2 relative z-20">
+                          {/* 🎵 Som Ambiente Button */}
+                          <AmbientSoundButton
+                            selectedTrack={ambientSound.selectedTrack}
+                            volume={ambientSound.volume}
+                            selectTrack={ambientSound.selectTrack}
+                            setVolume={ambientSound.setVolume}
+                            tracks={ambientSound.tracks}
+                          />
+
+                          {/* ⚙️ Ajustes Button */}
+                          <button
+                            disabled={isRunning || isBreakActive}
+                            onClick={() => setIsTimerSettingsModalOpen(true)}
+                            className="relative flex items-center justify-start p-3 rounded-lg border-2 border-amber-500/20 bg-stone-900/60 hover:bg-stone-850 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all cursor-pointer select-none shadow-sm group disabled:opacity-40 disabled:cursor-not-allowed min-h-[64px] w-full"
+                          >
+                            <div className="flex items-center gap-2 text-left">
+                              <Settings className="w-5 h-5 text-amber-400/80 group-hover:text-amber-300 transition-colors shrink-0" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-serif font-black uppercase tracking-wider text-amber-100 group-hover:text-amber-200 truncate">
+                                  Ajustes
+                                </span>
+                                <span className="text-[9px] font-medium text-amber-200/70">
+                                  Timer
+                                </span>
+                              </div>
+                            </div>
+                          </button>
                         </div>
                       </div>
 
                     </div>
 
-                    {/* ACTIVE CONTRATS / QUESTS OVERVIEW */}
-                    {(() => {
-                      const state = gameState;
-                      const dailies = getRotatingDailyQuests(3).map((quest) => ({
-                        ...quest,
-                        progress: quest.getProgress(state),
-                      }));
-                      const guilds = guildQuests.map((quest) => ({
-                        ...quest,
-                        progress: quest.getProgress(state),
-                      }));
-
-                      const unclaimedGuilds = guilds.filter(g => !isQuestClaimed(state, g.id));
-                      let closestGuildQuest = null;
-                      if (unclaimedGuilds.length > 0) {
-                        closestGuildQuest = unclaimedGuilds.reduce((prev, current) => {
-                          const prevPct = prev.progress / prev.target;
-                          const currPct = current.progress / current.target;
-                          return currPct > prevPct ? current : prev;
-                        });
-                      }
-
-                      return (
-                        <div className="p-4 bg-stone-950/20 border-t border-amber-500/10 space-y-3">
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-stone-950/30 px-2.5 py-1.5 rounded border border-amber-500/5">
-                            <span className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054] flex items-center gap-1.5 leading-none">
-                              📜 MURAL DE CONTRATOS ATIVOS
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveTab('quests');
-                                setIsMobileSidebarOpen(false);
-                              }}
-                              className="text-[9px] font-serif font-bold uppercase tracking-wider text-amber-500 hover:text-amber-300 transition-colors flex items-center gap-1 hover:underline cursor-pointer sm:self-auto self-end"
-                            >
-                              Painel de Contratos →
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5">
-                            {/* Column 1: Daily Quests Summary */}
-                            <div className="space-y-2 bg-stone-950/40 p-2.5 rounded-lg border border-amber-500/10">
-                              <span className="text-[9px] uppercase font-serif tracking-widest text-[#E2B054]/60 font-semibold block mb-1">
-                                🎯 Proclamações do Dia
-                              </span>
-                              <div className="space-y-1.5 text-xs">
-                                {dailies.map((q) => {
-                                  const isCompleted = q.progress >= q.target;
-                                  const isClaimed = isQuestClaimed(state, q.id);
-                                  return (
-                                    <div key={q.id} className="flex items-center justify-between gap-2">
-                                      <div className="flex items-center gap-2 min-w-0" title={q.desc}>
-                                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                          isClaimed 
-                                            ? 'bg-stone-600' 
-                                            : isCompleted 
-                                              ? 'bg-amber-400 animate-pulse' 
-                                              : 'bg-amber-500/30'
-                                        }`} />
-                                        <span className={`truncate font-serif font-medium text-[11px] ${
-                                          isClaimed 
-                                            ? 'text-amber-100/30 line-through' 
-                                            : isCompleted 
-                                              ? 'text-[#E2B054]' 
-                                              : 'text-amber-100/60'
-                                        }`}>
-                                          {q.summary || q.name}
-                                        </span>
-                                      </div>
-                                      <span className={`font-mono text-[10px] flex-shrink-0 ${
-                                        isCompleted ? 'text-amber-400 font-bold' : 'text-amber-100/30'
-                                      }`}>
-                                        {q.progress}/{q.target}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Column 2: Closest Guild Quest */}
-                            <div className="bg-stone-950/40 p-2.5 rounded-lg border border-amber-500/10 flex flex-col justify-between">
-                              <div>
-                                <span className="text-[9px] uppercase font-serif tracking-widest text-[#E2B054]/60 font-semibold block mb-1">
-                                  🛡️ Tese de Campanha de Guilda
-                                </span>
-                                {closestGuildQuest ? (
-                                  <div className="space-y-1.5 text-xs">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="min-w-0">
-                                        <h5 className="font-serif font-bold text-[#E2B054] text-[11px] truncate select-none" title={closestGuildQuest.desc}>
-                                          {closestGuildQuest.name}
-                                        </h5>
-                                        <p className="text-[10px] text-amber-100/65 font-sans leading-tight mt-0.5 select-none whitespace-normal">
-                                          {closestGuildQuest.desc}
-                                        </p>
-                                      </div>
-                                      <span className="font-mono text-[10px] text-amber-400 font-bold flex-shrink-0">
-                                        {closestGuildQuest.progress}/{closestGuildQuest.target}
-                                      </span>
-                                    </div>
-                                    <div className="space-y-1 pt-1.5">
-                                      <div className="h-1.5 w-full bg-stone-900 border border-amber-500/5 rounded-full overflow-hidden">
-                                        <div
-                                          className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-500"
-                                          style={{ width: `${(closestGuildQuest.progress / closestGuildQuest.target) * 100}%` }}
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="py-2 text-center flex flex-col justify-center items-center h-full">
-                                    <span className="text-[10px] text-emerald-400 font-serif font-semibold">🏆 Todas as teses conquistadas!</span>
-                                    <span className="text-[8px] text-amber-100/30 font-serif mt-0.5">Glória eterna para a sua dinastia!</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {/* ACTIVE CONTRATS / QUESTS FAB & MODAL */}
+                    <QuestFab
+                      gameState={gameState}
+                      setActiveTab={setActiveTab}
+                      setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                      isRunning={isRunning}
+                    />
 
                   </section>
 
@@ -3253,6 +3145,7 @@ function App({ userId, signOut }: AppProps) {
                     </div>
                   </section>
                   
+                  </div>
                 </div>
               )}
 
@@ -3537,7 +3430,7 @@ function App({ userId, signOut }: AppProps) {
       </div>
 
       {/* FOOTER */}
-      <footer className="text-center py-6 text-[10px] text-amber-100/25 tracking-widest font-serif uppercase relative z-10 max-w-4xl mx-auto border-t border-amber-500/5 mt-5">
+      <footer className="hidden md:block text-center py-6 text-[10px] text-amber-100/25 tracking-widest font-serif uppercase relative z-10 max-w-4xl mx-auto border-t border-amber-500/5 mt-5">
         HeroLog © 2026 — Um santuário meditativo do aventureiro cognitivo.
       </footer>
 
