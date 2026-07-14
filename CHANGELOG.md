@@ -15,6 +15,42 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.4] - 2026-07-14
+
+### Adicionado
+
+- **Contador regressivo de recarga da Masmorra** — o segmento "Masmorra" no seletor de Modo de Incursão agora exibe um cronômetro em tempo real (`HH:MM:SS`) enquanto o modo estiver em recarga, substituindo o aviso silencioso anterior que só aparecia no log de sistema.
+- **Botão flutuante de Contratos (QuestFab)** — novo botão fixo com badge de contagem, substituindo o antigo Mural de Contratos inline e eliminando corte visual em qualquer celular moderno.
+
+### Alterado
+
+- **Seletor de Modo de Incursão redesenhado** — os três botões independentes (Padrão, Masmorra, Selvagem) foram unificados visualmente em um único controle segmentado, mantendo as cores temáticas de cada modo.
+- **Contraste dos textos de suporte** — a segunda linha dos botões "Som Ambiente" e "Ajustes" (ex.: "Sintonizado", "Desativado", "Timer") ganhou uma cor sólida e mais legível, substituindo o esmaecimento duplo anterior.
+- **Textos de status da sessão removidos** — os avisos textuais abaixo do cronômetro central (ex.: "Pronto para Começar", "Missão de Foco Ativa") foram removidos em todos os estados, já que o próprio cronômetro e os controles já comunicam claramente a situação atual.
+- **Nomenclatura padronizada** — "Wilderness" foi renomeado para "Terra Selvagem" no modo de tela cheia, alinhando com o restante do app.
+- **Layout mais compacto na aba Foco (mobile)** — espaçamentos internos reduzidos e rodapé ocultado em telas pequenas, diminuindo a necessidade de rolagem vertical.
+- **Timer central (FocusOrb)** — cronômetro central redesenhado em formato de orbe/poção com animação fluida de líquido, substituindo o display textual anterior.
+
+### Corrigido
+
+- **Quebra de linha no botão "Masmorra"** — corrigido um problema visual em que o emoji ⚔️ podia cair para uma segunda linha, separado do texto "Masmorra", dependendo do modo selecionado.
+- **Espaço reservado em excesso para o menu inferior** — ajustado o espaçamento abaixo do conteúdo principal, que reservava mais espaço do que o necessário para o menu de navegação inferior no mobile.
+
+### Removido
+
+- **Mural de Contratos inline** — componente antigo removido por completo, substituído pelo novo botão flutuante de Contratos (QuestFab).
+
+### Arquivos alterados
+
+- `/src/App.tsx`
+- `/src/index.css`
+- `/src/modules/focus/AmbientSoundButton.tsx`
+- `/src/modules/focus/FocusModeScreen.tsx`
+- `/src/modules/focus/index.ts`
+- `/src/modules/focus/QuestFab.tsx` (novo)
+
+---
+
 ## [1.1.3] - 2026-07-09
 
 ### Adicionado
