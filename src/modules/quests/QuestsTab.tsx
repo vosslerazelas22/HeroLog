@@ -7,12 +7,14 @@ interface QuestsTabProps {
   dailyQuests: ProcessedQuest[];
   guildQuests: ProcessedQuest[];
   onClaimQuestReward: (gold: number, xp: number, questId: string) => void;
+  activeSubTab?: 'daily' | 'journey';
 }
 
 export const QuestsTab: React.FC<QuestsTabProps> = ({
   dailyQuests,
   guildQuests,
   onClaimQuestReward,
+  activeSubTab = 'daily',
 }) => {
   const handleClaim = (questId: string, gold: number, xp: number) => {
     sound.playCoins();
@@ -97,31 +99,32 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
   return (
     <div className="p-4 max-w-xl mx-auto space-y-5">
       {/* Daily Quests */}
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-serif text-lg text-amber-400 border-b border-amber-500/20 pb-2 mb-1 tracking-wider uppercase flex items-center gap-2">
-            <Target className="w-5 h-5 text-amber-500" />
-            Proclamações do Dia (Diárias)
-          </h3>
-          <p className="text-[10px] text-amber-100/30 italic font-serif mb-4">
-            Sorteio rotativo — 3 missões por dia. Renova à meia-noite.
-          </p>
+      {activeSubTab === 'daily' && (
+        <div className="space-y-4">
+          <div>
+            <p className="text-[9px] font-medium text-amber-200/70 mb-4">
+              Sorteio rotativo — 3 missões por dia. Renova à meia-noite.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {dailyQuests.map(q => renderQuestCard(q))}
+          </div>
         </div>
-        <div className="space-y-3">
-          {dailyQuests.map(q => renderQuestCard(q))}
-        </div>
-      </div>
+      )}
 
       {/* Guild Quests */}
-      <div className="space-y-4 pt-4">
-        <h3 className="font-serif text-lg text-amber-400 border-b border-amber-500/20 pb-2 mb-4 tracking-wider uppercase flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-500" />
-          Teses de Campanha (Guilda)
-        </h3>
-        <div className="space-y-3">
-          {guildQuests.map(q => renderQuestCard(q))}
+      {activeSubTab === 'journey' && (
+        <div className="space-y-4">
+          <div>
+            <p className="text-[9px] font-medium text-amber-200/70 mb-4">
+              Marcos de progresso do herói e conquistas de longo prazo.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {guildQuests.map(q => renderQuestCard(q))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
