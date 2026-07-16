@@ -15,6 +15,20 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.6] - 2026-07-16
+
+### Alterado
+- **Nomes e cabeçalhos padronizados em todo o módulo Reino** — eliminados cabeçalhos duplicados que se repetiam dentro de várias sub-abas (ex.: "Atributos Totais & Análise Avançada" seguido de "Santuário das Crônicas"), consolidando cada seção em um único título. Nomes simplificados: Ficha Corporal → "Estatísticas do Herói", Feitos de Alma → "Conquistas", Bazar de Mystara (Loja) → "Bazar de Mystara", Mercado de Títulos → "Títulos", Ficha de Personagem (Status) → "Ficha de Personagem", Habilidades Ativas & Subskills → "Habilidades", Calendário de Constância (Heatmap) → "Heatmap", Logs Celestiais → "Registro de Atividades".
+- **Cores dos cabeçalhos internos unificadas** — todos os títulos de seção do módulo Reino agora seguem a mesma paleta âmbar, eliminando a inconsistência visual entre abas (antes em tons de roxo, vermelho e verde).
+- **"Contratos da Gilda" renomeado para "Contratos"** — grafia inconsistente de "Gilda/Guilda" eliminada. A aba agora conta com duas sub-seções dedicadas, no mesmo padrão visual da Loja: "Contratos Diários" (missões do dia) e "Marcos da Jornada" (progresso de longo prazo do herói). O painel flutuante de Contratos na aba Foco foi atualizado para refletir a mesma nomenclatura.
+- **Legibilidade dos textos de orientação em Contratos** — textos explicativos das sub-seções "Contratos Diários" e "Marcos da Jornada" ganharam contraste adequado, antes quase ilegíveis por baixa opacidade.
+- **Textos do Heatmap revisados** — "Consistência do Guerreiro (Últimos 30 Dias)" tornou-se "Consistência nos Últimos 30 Dias"; "Conservação do Dever" tornou-se "Visão Geral do Período".
+
+### Removido
+- **Painel "Bolsa de Espólios de Ouro"** removido do Bazar de Mystara, por ser redundante com o saldo de ouro já visível permanentemente no cabeçalho do aplicativo.
+
+---
+
 ## [1.1.5] - 2026-07-15
 ### Corrigido
 - **Espaço em branco/preto no painel de Hábitos, Tarefas Diárias e Afazeres (mobile)** — o ajuste de compactação visual do 1.1.2 não havia corrigido o problema em sua raiz. Identificada e corrigida uma quebra na cadeia de herança de altura entre o container principal e o painel das abas, que impedia o fundo de preencher corretamente o espaço disponível da tela em dispositivos com poucos itens cadastrados.
