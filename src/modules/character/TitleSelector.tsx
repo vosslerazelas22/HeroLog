@@ -21,7 +21,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
       {/* Intro Header Section */}
       <div className="flex flex-col gap-1 border-b border-amber-500/10 pb-4">
         <p className="text-xs uppercase font-serif tracking-[0.14em] text-amber-400 font-bold">
-          Sua Coleção de Brasões & Títulos Nobres. Escolha seu título honorário ativo para projetar sua presença heróica e desfrutar de seus benefícios místicos.
+          Escolha o título que deseja exibir no seu perfil e ative os benefícios vinculados a ele.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b border-amber-500/10 pb-1.5">
             <Shield className="w-4 h-4 text-amber-400" />
-            <h4 className="text-xs uppercase font-bold tracking-widest text-amber-300">Seus Brasões Desbloqueados ({unlockedTitles.length})</h4>
+            <span className="text-xs uppercase font-bold tracking-widest text-amber-300">Seus Títulos Desbloqueados ({unlockedTitles.length})</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
