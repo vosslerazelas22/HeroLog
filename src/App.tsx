@@ -2135,7 +2135,7 @@ function App({ userId, signOut }: AppProps) {
       </div>
 
       {/* PRIMARY TWO-COLUMN INTEGRATED GRID */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-4 py-0 sm:py-5 grid grid-cols-1 lg:grid-cols-12 lg:gap-6 relative">
         
         {/* LEFT SIDEBAR - NAVIGATION CABINET */}
         <aside
@@ -2323,7 +2323,7 @@ function App({ userId, signOut }: AppProps) {
         </aside>
 
         {/* RIGHT WORKSPACE COLUMN */}
-        <main className="lg:col-span-9 flex flex-col gap-6 w-full pb-14 lg:pb-0">
+        <main className="lg:col-span-9 flex flex-col gap-6 w-full pb-14 lg:pb-0 flex-1">
           
           <AnimatePresence mode="wait">
             <motion.div
@@ -2332,7 +2332,7 @@ function App({ userId, signOut }: AppProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.15 }}
-              className="w-full"
+              className="w-full h-full flex flex-col flex-1"
             >
               {/* TARGET VIEWPORT TABS */}
               
@@ -3204,8 +3204,8 @@ function App({ userId, signOut }: AppProps) {
               )}
 
               {activeTab === 'skills' && (
-                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
-                  <div className="pb-2.5 border-b border-amber-500/10 flex items-center justify-between">
+                <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-5 sm:p-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
+                  <div className="pb-2.5 border-b border-amber-500/10 flex items-center justify-between px-4 sm:px-0">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-amber-400" /> Habilidades Ativas & Subskills
                       <button
