@@ -100,7 +100,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
   };
 
   return (
-    <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden px-0 py-4 sm:px-5 sm:py-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-4 font-serif text-amber-100/95 max-w-2xl mx-auto flex flex-col min-h-[500px] w-full">
+    <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-4 sm:px-5 sm:py-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-4 font-serif text-amber-100/95 max-w-none sm:max-w-2xl mx-0 sm:mx-auto flex flex-col min-h-[500px] w-full flex-1">
       <div className="flex justify-between items-center border-b border-amber-500/15 pb-2 shrink-0 px-4 sm:px-0">
         <h3 className="text-sm md:text-base text-amber-400 font-bold tracking-wider uppercase flex items-center gap-2">
           <span>⚡</span> Capela de Hábitos
