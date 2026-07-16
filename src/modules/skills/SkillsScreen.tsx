@@ -80,9 +80,9 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
   };
 
   return (
-    <div className="px-0 py-4 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar w-full">
+    <div className="px-0 pt-0 pb-4 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar w-full">
       {/* ACTIVE SKILLS LIST */}
-      <div className="space-y-4 w-full">
+      <div className="space-y-4 w-full px-4 sm:px-0">
         <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar w-full">
           {skills.map((sk, idx) => {
             const reqXP = sk.level * 80;
