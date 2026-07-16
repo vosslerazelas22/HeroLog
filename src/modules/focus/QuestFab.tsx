@@ -83,7 +83,7 @@ export const QuestFab: React.FC<QuestFabProps> = ({
           {/* Daily Quests Block */}
           <div className="space-y-3 bg-stone-950/40 p-4 rounded-xl border border-amber-500/10">
             <span className="text-[10px] uppercase font-serif tracking-widest text-[#E2B054]/60 font-black block mb-1">
-              🎯 Proclamações do Dia
+              🎯 Contratos Diários
             </span>
             <div className="space-y-2.5">
               {dailies.map((q) => {
@@ -128,7 +128,7 @@ export const QuestFab: React.FC<QuestFabProps> = ({
           {/* Guild Quest Block */}
           <div className="bg-stone-950/40 p-4 rounded-xl border border-amber-500/10">
             <span className="text-[10px] uppercase font-serif tracking-widest text-[#E2B054]/60 font-black block mb-2">
-              🛡️ Tese de Campanha de Guilda
+              🛡️ Marcos da Jornada
             </span>
             {closestGuildQuest ? (
               <div className="space-y-3">
