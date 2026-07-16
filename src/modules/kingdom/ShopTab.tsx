@@ -100,14 +100,6 @@ export const ShopTab: React.FC<ShopTabProps> = ({ gold, inventory, onBuyItem }) 
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-5">
-      <div className="bg-stone-900/40 p-3 rounded-lg border border-amber-500/10 flex justify-between items-center text-sm md:text-base font-serif">
-        <span className="text-amber-100/60 font-medium">Bolsa de Espólios de Ouro:</span>
-        <div className="flex items-center gap-1.5 text-amber-400 font-bold font-mono">
-          <Coins className="w-5 h-5 animate-bounce text-amber-500" />
-          <span>{gold} GP</span>
-        </div>
-      </div>
-
       <div className="space-y-3">
         {SHOP_CATALOG.map((item, idx) => {
           const canAfford = gold >= item.price;

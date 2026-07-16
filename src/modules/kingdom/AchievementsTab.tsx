@@ -68,11 +68,6 @@ interface AchievementsTabProps {
 export const AchievementsTab: React.FC<AchievementsTabProps> = ({ state }) => {
   return (
     <div className="p-4 max-w-xl mx-auto space-y-5">
-      <h3 className="font-serif text-lg text-amber-400 border-b border-amber-500/20 pb-2 mb-4 tracking-wider uppercase flex items-center gap-2">
-        <Award className="w-5 h-5 text-amber-500" />
-        Feitos Gloriosos (Conquistas)
-      </h3>
-
       <div className="space-y-2.5">
         {ACHIEVEMENTS_LIST.map((ach) => {
           const isUnlocked = state.achievements.includes(ach.id) || ach.check(state);

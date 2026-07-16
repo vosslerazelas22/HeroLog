@@ -60,11 +60,6 @@ export const StatsTab: React.FC<StatsTabProps> = ({ state }) => {
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-5">
-      <h3 className="font-serif text-lg text-amber-400 border-b border-amber-500/20 pb-2 mb-4 tracking-wider uppercase flex items-center gap-2">
-        <BarChart3 className="w-5 h-5 text-amber-500" />
-        Santuário das Crônicas (Análise)
-      </h3>
-
       <div className="grid grid-cols-2 gap-3.5">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;

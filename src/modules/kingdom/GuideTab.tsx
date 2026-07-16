@@ -4,11 +4,6 @@ import { BookMarked, Swords, Skull, Flame, Sparkles, Compass, Shield, Coins, Rot
 export const GuideTab: React.FC = () => {
   return (
     <div className="p-4 max-w-xl mx-auto space-y-5 leading-relaxed font-serif text-amber-100/80">
-      <h3 className="text-lg text-amber-400 border-b border-amber-500/20 pb-2 mb-4 tracking-wider uppercase flex items-center gap-2">
-        <BookMarked className="w-5 h-5 text-amber-500" />
-        Tutorial
-      </h3>
-
       <div className="space-y-4 text-xs md:text-sm">
         <section className="bg-amber-500/[0.02] border border-amber-500/10 rounded-lg p-4">
           <h4 className="text-amber-300 font-bold mb-1.5 flex items-center gap-2">

@@ -198,7 +198,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-[#E2B054] font-black text-xs md:text-sm tracking-widest font-serif">
               <span>🛡️</span>
-              <span>CONSISTÊNCIA DO GUERREIRO (ÚLTIMOS 30 DIAS)</span>
+              <span>CONSISTÊNCIA NOS ÚLTIMOS 30 DIAS</span>
             </div>
             <p className="text-[10px] md:text-xs text-amber-100/50 italic leading-snug">
               Seu comprometimento diário molda o seu heroísmo. Cada dia de foco é um golpe contra a estagnação.
@@ -243,7 +243,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-amber-500/10 pb-3 mb-1 gap-3 select-none">
           <div>
             <h4 className="text-[10px] sm:text-xs uppercase tracking-widest text-[#E2B054] font-bold font-serif flex items-center gap-1.5">
-              <span>📜</span> CONSERVAÇÃO DO DEVER — {monthsLimit === 3 ? 'ÚLTIMOS 3 MESES' : 'ÚLTIMOS 6 MESES'}
+              <span>📜</span> VISÃO GERAL DO PERÍODO — {monthsLimit === 3 ? 'ÚLTIMOS 3 MESES' : 'ÚLTIMOS 6 MESES'}
             </h4>
             <p className="text-[9px] text-amber-100/35 font-serif italic mt-0.5">Sua consagração é medida em horas e minutos focados</p>
           </div>
