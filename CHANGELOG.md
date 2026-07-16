@@ -15,6 +15,16 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.5] - 2026-07-15
+### Corrigido
+- **Espaço em branco/preto no painel de Hábitos, Tarefas Diárias e Afazeres (mobile)** — o ajuste de compactação visual do 1.1.2 não havia corrigido o problema em sua raiz. Identificada e corrigida uma quebra na cadeia de herança de altura entre o container principal e o painel das abas, que impedia o fundo de preencher corretamente o espaço disponível da tela em dispositivos com poucos itens cadastrados.
+### Alterado
+- **Painéis de Hábitos, Tarefas Diárias, Afazeres e Habilidades agora ocupam toda a largura da tela no mobile ("edge-to-edge")** — removida a moldura flutuante (bordas, cantos arredondados, sombra e margens laterais) característica do layout desktop, adotando um visual de tela cheia mais alinhado aos padrões de aplicativos mobile modernos. O visual de painel flutuante é mantido em telas maiores (tablet/desktop).
+### Conhecido
+- **Ausência de tratamento de safe-area em dispositivos com tela sem borda física** (ex.: iPhones recentes, Androids com navegação por gestos) — o espaçamento reservado para o menu de navegação inferior atualmente usa um valor fixo, sem considerar a área de segurança do sistema. Avaliação prevista para um ciclo futuro.
+
+---
+
 ## [1.1.4] - 2026-07-14
 
 ### Adicionado
