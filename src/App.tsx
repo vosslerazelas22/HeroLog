@@ -195,6 +195,7 @@ function App({ userId, signOut }: AppProps) {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<string>('focus');
   const [shopSubTab, setShopSubTab] = useState<'items' | 'titles'>('items');
+  const [questsSubTab, setQuestsSubTab] = useState<'daily' | 'journey'>('daily');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [mobileSidebarDragX, setMobileSidebarDragX] = useState<number>(0);
   const [isMobileSidebarDragging, setIsMobileSidebarDragging] = useState<boolean>(false);
@@ -2206,7 +2207,7 @@ function App({ userId, signOut }: AppProps) {
                   }`}
                 >
                   <Layers className="w-4 h-4 text-purple-400/80" />
-                  Contratos da Gilda
+                  CONTRATOS
                 </button>
                 <button
                   onClick={() => { setActiveTab('history'); setIsMobileSidebarOpen(false); }}
@@ -2233,7 +2234,7 @@ function App({ userId, signOut }: AppProps) {
                   }`}
                 >
                   <Coins className="w-4 h-4 text-amber-400/80" />
-                  Bazar de Mystara (Loja)
+                  BAZAR DE MYSTARA
                 </button>
                 <button
                   onClick={() => { setActiveTab('titles'); setIsMobileSidebarOpen(false); }}
@@ -2244,7 +2245,7 @@ function App({ userId, signOut }: AppProps) {
                   }`}
                 >
                   <Award className="w-4 h-4 text-rose-400/80" />
-                  Mercado de Títulos
+                  TÍTULOS
                 </button>
                 <button
                   onClick={() => { setActiveTab('heatmap'); setIsMobileSidebarOpen(false); }}
@@ -2262,11 +2263,11 @@ function App({ userId, signOut }: AppProps) {
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'stats' 
                       ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02] font-serif'
                   }`}
                 >
-                  <Shield className="w-4 h-4 text-emerald-550/60" />
-                  Ficha Corporal
+                  <Shield className="w-4 h-4 text-emerald-555/60" />
+                  ESTATÍSTICAS DO HERÓI
                 </button>
                 <button
                   onClick={() => { setActiveTab('achievements'); setIsMobileSidebarOpen(false); }}
@@ -2277,7 +2278,7 @@ function App({ userId, signOut }: AppProps) {
                   }`}
                 >
                   <Award className="w-4 h-4 text-rose-500/50" />
-                  Feitos de Alma
+                  CONQUISTAS
                 </button>
                 <button
                   onClick={() => { setActiveTab('logs'); setIsMobileSidebarOpen(false); }}
@@ -2288,7 +2289,7 @@ function App({ userId, signOut }: AppProps) {
                   }`}
                 >
                   <Scroll className="w-4 h-4 text-amber-400/60" />
-                  Logs Celestiais
+                  REGISTROS
                 </button>
                 <button
                   onClick={() => { setActiveTab('guide'); setIsMobileSidebarOpen(false); }}
@@ -3153,7 +3154,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
                   <div className="flex justify-between items-center pb-2.5 border-b border-amber-500/10">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-amber-500" /> Ficha de Personagem (Status)
+                      <Shield className="w-4 h-4 text-amber-500" /> FICHA DE PERSONAGEM
                     </h3>
                     <button
                       onClick={() => setIsSkillsModalOpen(true)}
@@ -3207,7 +3208,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-5 sm:p-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
                   <div className="pb-2.5 border-b border-amber-500/10 flex items-center justify-between px-4 sm:px-0">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-amber-400" /> Habilidades Ativas & Subskills
+                      <BookOpen className="w-4 h-4 text-amber-400" /> HABILIDADES
                       <button
                         type="button"
                         onClick={() => setIsPrestigeInfoOpen(true)}
@@ -3298,7 +3299,7 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'heatmap' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Calendar className="w-4 h-4 text-amber-450" /> Calendário de Constância (Heatmap)
+                    <Calendar className="w-4 h-4 text-amber-450" /> HEATMAP
                   </h3>
                   <HeatmapTab history={gameState.history} streak={gameState.streak} />
                 </div>
@@ -3306,13 +3307,41 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'quests' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-purple-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Layers className="w-4 h-4 text-purple-400" /> Contratos da Guilda Escolar (Quests)
-                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-amber-500" /> CONTRATOS
+                    </h3>
+                    
+                    {/* Retro RPG Sub-Tabs Selector */}
+                    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 font-serif">
+                      <button
+                        onClick={() => setQuestsSubTab('daily')}
+                        className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
+                          questsSubTab === 'daily'
+                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            : 'text-stone-500 hover:text-stone-300 border border-transparent'
+                        }`}
+                      >
+                        Contratos Diários
+                      </button>
+                      <button
+                        onClick={() => setQuestsSubTab('journey')}
+                        className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
+                          questsSubTab === 'journey'
+                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            : 'text-stone-500 hover:text-stone-300 border border-transparent'
+                        }`}
+                      >
+                        Marcos da Jornada
+                      </button>
+                    </div>
+                  </div>
+
                   <QuestsTab
                     dailyQuests={dailyQuestsList}
                     guildQuests={guildQuestsList}
                     onClaimQuestReward={handleClaimQuestRewards}
+                    activeSubTab={questsSubTab}
                   />
                 </div>
               )}
@@ -3321,7 +3350,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <Coins className="w-4 h-4 text-amber-500" /> Bazar de Mystara (Loja)
+                      <Coins className="w-4 h-4 text-amber-500" /> BAZAR DE MYSTARA
                     </h3>
                     
                     {/* Retro RPG Sub-Tabs Selector */}
@@ -3363,8 +3392,8 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'titles' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-[#f43f5e] tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Award className="w-4 h-4 text-[#f43f5e]" /> Brasões & Títulos de Foco
+                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
+                    <Award className="w-4 h-4 text-amber-500" /> TÍTULOS
                   </h3>
                   <TitleSelector
                     ownedTitles={gameState.ownedTitles || []}
@@ -3376,8 +3405,8 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'stats' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-emerald-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Shield className="w-4 h-4 text-emerald-400" /> Atributos Totais & Análise Avançada
+                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
+                    <Shield className="w-4 h-4 text-amber-500" /> ESTATÍSTICAS DO HERÓI
                   </h3>
                   <StatsTab state={gameState} />
                 </div>
@@ -3385,8 +3414,8 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'achievements' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-rose-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Award className="w-4 h-4 text-rose-500" /> Rol de Feitos Lendários (Badges)
+                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
+                    <Award className="w-4 h-4 text-amber-500" /> CONQUISTAS
                   </h3>
                   <AchievementsTab state={gameState} />
                 </div>
@@ -3395,7 +3424,7 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'guide' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <HelpCircle className="w-4 h-4 text-amber-400" /> Pergaminho Ancestral de Regras & Instruções
+                    <HelpCircle className="w-4 h-4 text-amber-400" /> TUTORIAL
                   </h3>
                   <GuideTab />
                 </div>
@@ -3404,7 +3433,7 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'logs' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Scroll className="w-4 h-4 text-amber-400" /> Registros Celestiais (Logs)
+                    <Scroll className="w-4 h-4 text-amber-500" /> REGISTRO DE ATIVIDADES
                   </h3>
                   <div className="bg-stone-950/90 text-amber-100/70 p-4 h-[420px] rounded-lg overflow-y-auto select-text border border-amber-500/10 shadow-inner">
                     <div className="space-y-2 text-xs font-mono">
