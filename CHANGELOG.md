@@ -15,6 +15,28 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.7] - 2026-07-17
+
+### Corrigido
+- **Fundo preto vazando atrás dos painéis (Foco, Habilidades, Inventário, Ficha de Personagem)** — corrigido vazamento do fundo escuro do body por trás dos painéis em telas altas ou com pouco conteúdo cadastrado, fazendo a cor obsidian se estender continuamente até o fim da rolagem, como já ocorria em Hábitos, Tarefas Diárias e Afazeres.
+- **Divergência entre Sequência (Streak) e Consistência no Heatmap** — corrigido cálculo que penalizava indevidamente o dia em andamento antes de haver atividade registrada, fazendo a Consistência exibir 29/30 mesmo com uma sequência ativa de 30 dias.
+
+### Alterado
+- **Cabeçalhos internos padronizados** — título e ícone de ajuda "?" com posicionamento consistente entre as abas Habilidades, Hábitos, Tarefas Diárias e Afazeres (título à esquerda, ação/ajuda à direita).
+- **Botão de nova habilidade reposicionado e renomeado** — "+ Nova Habilidade" (barra separada abaixo dos cards) foi substituído por "NOVA", agora integrado ao cabeçalho da aba Habilidades, no mesmo padrão das demais abas de listas.
+- **Tooltip de Mecânica de Prestígio (Habilidades)** unificado visualmente com o popover de ajuda já usado na Trompeta de Foco.
+- **Botão "Gerenciar Habilidades" oculto em mobile** na Ficha de Personagem, por ser redundante nesse contexto.
+- **Aproveitamento de espaço horizontal em Habilidades** — removido padding duplicado e limite de altura desnecessário da lista; campo de criação de subskills reestruturado para layout horizontal (input expansível + botão de ação com largura fixa), eliminando empilhamento vertical denso.
+- **Copy revisado**: "Inventário de Equipamentos & Consumíveis" → "Equipamentos & Itens"; "Subskills (Tags de Foco):" → "Subskills:".
+
+### Investigado
+- **Assimetria visual no arredondamento do header global** — identificada como artefato do frame de preview do ambiente de desenvolvimento (AI Studio), sem correspondência no código-fonte. Nenhuma alteração aplicada.
+
+### Conhecido
+- **Quebra de layout no header em viewport estreito** com valores numéricos altos de sequência/moedas — não reproduzida em condições normais de uso; candidato a revisão futura.
+
+---
+
 ## [1.1.6] - 2026-07-16
 
 ### Alterado
