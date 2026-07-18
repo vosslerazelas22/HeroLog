@@ -11,6 +11,8 @@ export interface SkillsScreenProps {
   onDeleteSkill: (idx: number) => boolean | void;
   onPrestigeSkill: (idx: number) => void;
   onRenameSkill: (idx: number, newName: string) => void;
+  isCreateModalOpen?: boolean;
+  setIsCreateModalOpen?: (open: boolean) => void;
 }
 
 const SKILL_SUGGESTIONS = [
@@ -42,6 +44,8 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
   onDeleteSkill,
   onPrestigeSkill,
   onRenameSkill,
+  isCreateModalOpen: propIsCreateModalOpen,
+  setIsCreateModalOpen: propSetIsCreateModalOpen,
 }) => {
   const [newSkillNameInput, setNewSkillNameInput] = useState<string>('');
   const [selectedNewSkillEmoji, setSelectedNewSkillEmoji] = useState<string>('📚');
@@ -50,7 +54,9 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editNameValue, setEditNameValue] = useState<string>('');
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [localIsCreateModalOpen, setLocalIsCreateModalOpen] = useState<boolean>(false);
+  const isCreateModalOpen = propIsCreateModalOpen !== undefined ? propIsCreateModalOpen : localIsCreateModalOpen;
+  const setIsCreateModalOpen = propSetIsCreateModalOpen !== undefined ? propSetIsCreateModalOpen : setLocalIsCreateModalOpen;
 
   const handleStartRename = (idx: number, currentName: string) => {
     setEditingIdx(idx);
@@ -80,10 +86,10 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
   };
 
   return (
-    <div className="px-0 pt-0 pb-4 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar w-full">
+    <div className="px-0 pt-0 pb-4 sm:p-6 space-y-5 w-full">
       {/* ACTIVE SKILLS LIST */}
-      <div className="space-y-4 w-full px-4 sm:px-0">
-        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar w-full">
+      <div className="space-y-4 w-full px-0">
+        <div className="space-y-3 w-full">
           {skills.map((sk, idx) => {
             const reqXP = sk.level * 80;
             const percent = Math.min((sk.xp / reqXP) * 100, 100);
@@ -182,7 +188,7 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
                 {/* Subskills / Tags inline manager under progress bar */}
                 <div className="pt-1.5 border-t border-amber-500/5 space-y-1.5">
                   <div className="flex justify-between items-center text-[9px] uppercase font-serif tracking-wider text-amber-100/40">
-                    <span>Subskills (Tags de Foco):</span>
+                    <span>Subskills:</span>
                   </div>
                   {(!sk.tags || sk.tags.length === 0) ? (
                     <div className="text-[9px] text-amber-100/25 italic">Nenhuma subskill cadastrada para esta habilidade.</div>
@@ -248,15 +254,6 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
             );
           })}
         </div>
-
-        {/* Create Skill Button */}
-        <button
-          type="button"
-          onClick={() => setIsCreateModalOpen(true)}
-          className="w-full py-3 bg-amber-500/[0.04] hover:bg-amber-500/[0.08] border border-dashed border-amber-500/30 hover:border-amber-500/50 text-amber-300 hover:text-amber-200 text-xs font-serif uppercase tracking-widest rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Nova Habilidade
-        </button>
       </div>
 
 
