@@ -104,7 +104,6 @@ body {
     min-height: calc(100dvh - 182px);
     display: flex;
     flex-direction: column;
-    justify-content: center;
   }
 }
 

@@ -328,6 +328,7 @@ function App({ userId, signOut }: AppProps) {
   const [inspectingSkillIdx, setInspectingSkillIdx] = useState<number | null>(null);
   const [editSkillName, setEditSkillName] = useState<string>('');
   const [isPrestigeInfoOpen, setIsPrestigeInfoOpen] = useState<boolean>(false);
+  const [isCreateSkillModalOpen, setIsCreateSkillModalOpen] = useState<boolean>(false);
   
   // Game events states
   interface Toast {
@@ -2338,11 +2339,11 @@ function App({ userId, signOut }: AppProps) {
               {/* TARGET VIEWPORT TABS */}
               
               {activeTab === 'focus' && (
-                <div className="mobile-focus-container w-full">
+                <div className="mobile-focus-container w-full flex flex-col min-h-[500px] flex-1 bg-quest-panel lg:bg-transparent">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full lg:items-start">
                     
                     {/* LEFT SUB-COLUMN: THE TEMPLE CHAMBER & POMODORO TIMER CORE */}
-                    <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] lg:col-span-7 flex flex-col justify-between relative">
+                    <section className="bg-quest-panel border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] lg:col-span-7 flex flex-col justify-between relative">
                     
                     {/* Header Title Section Banner */}
                     <div className="bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 p-3.5 flex justify-center items-center relative">
@@ -3071,15 +3072,15 @@ function App({ userId, signOut }: AppProps) {
                   </section>
 
                   {/* RIGHT SUB-COLUMN: HERO PROFILE & ACTIVE SKILLS SHEET */}
-                  <section className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] hidden lg:flex lg:col-span-5 flex-col justify-between">
-                    <div className="p-4 bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 flex justify-between items-center">
-                      <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                  <section className="bg-quest-panel border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] hidden lg:flex lg:col-span-5 flex-col justify-between">
+                    <div className="p-4 bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 flex justify-center items-center relative min-h-[49px]">
+                      <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
                         <Shield className="w-4 h-4 text-amber-500" />
                         Ficha de Personagem
                       </h2>
                       <button
                         onClick={() => setIsSkillsModalOpen(true)}
-                        className="text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer"
+                        className="absolute right-4 text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer"
                       >
                         + Gerenciar
                       </button>
@@ -3151,14 +3152,14 @@ function App({ userId, signOut }: AppProps) {
               )}
 
               {activeTab === 'character' && (
-                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
-                  <div className="flex justify-between items-center pb-2.5 border-b border-amber-500/10">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
+                  <div className="flex justify-center items-center pb-2.5 border-b border-amber-500/10 relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
                       <Shield className="w-4 h-4 text-amber-500" /> FICHA DE PERSONAGEM
                     </h3>
                     <button
                       onClick={() => setIsSkillsModalOpen(true)}
-                      className="text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer"
+                      className="absolute right-0 text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer hidden sm:inline-block"
                     >
                       + Gerenciar Habilidades
                     </button>
@@ -3186,10 +3187,10 @@ function App({ userId, signOut }: AppProps) {
               )}
 
               {activeTab === 'inventory' && (
-                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
-                  <div className="pb-2.5 border-b border-amber-500/10">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <Coins className="w-4 h-4 text-amber-500" /> Inventário de Equipamentos & Consumíveis
+                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
+                  <div className="pb-2.5 border-b border-amber-500/10 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Coins className="w-4 h-4 text-amber-500" /> EQUIPAMENTOS & ITENS
                     </h3>
                   </div>
                   <InventoryScreen
@@ -3205,19 +3206,54 @@ function App({ userId, signOut }: AppProps) {
               )}
 
               {activeTab === 'skills' && (
-                <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-5 sm:p-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6">
-                  <div className="pb-2.5 border-b border-amber-500/10 flex items-center justify-between px-4 sm:px-0">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-amber-400" /> HABILIDADES
+                <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-5 sm:p-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
+                  <div className="pb-2.5 border-b border-amber-500/10 flex justify-between items-center px-4 sm:px-0 min-h-[35px] relative">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif font-black text-sm md:text-base text-amber-400 tracking-wider uppercase flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-amber-400" /> HABILIDADES
+                      </h3>
                       <button
                         type="button"
-                        onClick={() => setIsPrestigeInfoOpen(true)}
-                        className="w-4.5 h-4.5 rounded-full border border-amber-500/30 text-amber-400/80 hover:text-amber-200 flex items-center justify-center text-[10px] font-bold hover:bg-amber-500/10 transition-all cursor-pointer shrink-0 ml-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsPrestigeInfoOpen(!isPrestigeInfoOpen);
+                        }}
+                        className="w-4.5 h-4.5 rounded-full border border-amber-500/30 text-amber-400/80 hover:text-amber-200 flex items-center justify-center text-[10px] font-bold hover:bg-amber-500/10 transition-all cursor-pointer shrink-0"
                         title="Saiba mais sobre Prestígio"
                       >
                         ?
                       </button>
-                    </h3>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateSkillModalOpen(true)}
+                      className="text-xs font-bold text-amber-400 hover:text-amber-200 border border-amber-500/30 px-3 py-1 rounded bg-amber-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" /> NOVA
+                    </button>
+
+                    {isPrestigeInfoOpen && (
+                      <div className="absolute right-4 top-12 bg-stone-950/95 border border-amber-500/40 p-4 rounded shadow-2xl z-50 text-xs text-amber-200 font-serif max-w-sm leading-relaxed space-y-2 text-left">
+                        <div className="flex justify-between items-center pb-1 border-b border-amber-500/10">
+                          <strong className="text-amber-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
+                            👑 MECÂNICA DE PRESTÍGIO
+                          </strong>
+                          <button 
+                            onClick={() => setIsPrestigeInfoOpen(false)}
+                            className="text-amber-100/40 hover:text-amber-200 font-bold font-mono text-sm cursor-pointer"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-amber-100/80 leading-relaxed font-sans normal-case">
+                          Habilidades evoluem à medida que você ganha XP. Cada foco concluído com sucesso alimenta a habilidade selecionada no cronômetro.
+                        </p>
+                        <p className="text-[11px] text-amber-100/80 leading-relaxed font-sans normal-case">
+                          Ao alcançar o <strong className="text-amber-300">Nível 99</strong>, você poderá ativar o <strong className="text-amber-300">Prestígio</strong>. Isso reiniciará o progresso de nível dessa habilidade de volta para 1, mas em troca você ganhará um multiplicador permanente e heróico de <strong className="text-amber-300">+25% de XP extra permanente</strong> acumulável para acelerar toda a sua evolução futura nessa habilidade!
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="max-h-none">
                     <SkillsScreen
@@ -3228,29 +3264,10 @@ function App({ userId, signOut }: AppProps) {
                       onDeleteSkill={handleDeleteSkillIndex}
                       onPrestigeSkill={handlePrestigeSkill}
                       onRenameSkill={handleRenameSkill}
+                      isCreateModalOpen={isCreateSkillModalOpen}
+                      setIsCreateModalOpen={setIsCreateSkillModalOpen}
                     />
                   </div>
-
-                  {/* Prestige Explanation Modal */}
-                  <Modal
-                    isOpen={isPrestigeInfoOpen}
-                    onClose={() => setIsPrestigeInfoOpen(false)}
-                    title="Mecânica de Prestígio"
-                    variant="amber"
-                  >
-                    <div className="space-y-4 font-serif text-amber-100/90 py-1">
-                      <div className="flex items-center gap-2 mb-1 border-b border-amber-500/10 pb-2">
-                        <span className="text-xl">👑</span>
-                        <span className="text-amber-300 font-bold uppercase tracking-wider text-xs">Caminho do Heroísmo Infinito</span>
-                      </div>
-                      <p className="text-xs leading-relaxed font-sans normal-case">
-                        Habilidades evoluem à medida que você ganha XP. Cada foco concluído com sucesso alimenta a habilidade selecionada no cronômetro.
-                      </p>
-                      <p className="text-xs leading-relaxed font-sans normal-case">
-                        Ao alcançar o <strong className="text-amber-300">Nível 99</strong>, você poderá ativar o <strong className="text-amber-300">Prestígio</strong>. Isso reiniciará o progresso de nível dessa habilidade de volta para 1, mas em troca você ganhará um multiplicador permanente e heróico de <strong className="text-amber-300">+25% de XP extra permanente</strong> acumulável para acelerar toda a sua evolução futura nessa habilidade!
-                      </p>
-                    </div>
-                  </Modal>
                 </div>
               )}
 
@@ -3289,31 +3306,37 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'history' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <BookOpen className="w-4 h-4 text-amber-400" /> Diário de Bordo (Crônicas e Histórico)
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <BookOpen className="w-4 h-4 text-amber-400" /> Diário de Bordo (Crônicas e Histórico)
+                    </h3>
+                  </div>
                   <HistoryTab history={gameState.history} />
                 </div>
               )}
 
               {activeTab === 'heatmap' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Calendar className="w-4 h-4 text-amber-450" /> HEATMAP
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Calendar className="w-4 h-4 text-amber-450" /> HEATMAP
+                    </h3>
+                  </div>
                   <HeatmapTab history={gameState.history} streak={gameState.streak} />
                 </div>
               )}
 
               {activeTab === 'quests' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-amber-500" /> CONTRATOS
-                    </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4 relative min-h-[45px]">
+                    <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex justify-center w-full sm:w-auto">
+                      <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                        <Layers className="w-4 h-4 text-amber-500" /> CONTRATOS
+                      </h3>
+                    </div>
                     
                     {/* Retro RPG Sub-Tabs Selector */}
-                    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 font-serif">
+                    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 font-serif flex-1 sm:flex-initial justify-center sm:ml-auto z-10">
                       <button
                         onClick={() => setQuestsSubTab('daily')}
                         className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
@@ -3348,13 +3371,15 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'shop' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                      <Coins className="w-4 h-4 text-amber-500" /> BAZAR DE MYSTARA
-                    </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4 relative min-h-[45px]">
+                    <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex justify-center w-full sm:w-auto">
+                      <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                        <Coins className="w-4 h-4 text-amber-500" /> BAZAR DE MYSTARA
+                      </h3>
+                    </div>
                     
                     {/* Retro RPG Sub-Tabs Selector */}
-                    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 font-serif">
+                    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 font-serif flex-1 sm:flex-initial justify-center sm:ml-auto z-10">
                       <button
                         onClick={() => setShopSubTab('items')}
                         className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
@@ -3392,9 +3417,11 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'titles' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Award className="w-4 h-4 text-amber-500" /> TÍTULOS
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Award className="w-4 h-4 text-amber-500" /> TÍTULOS
+                    </h3>
+                  </div>
                   <TitleSelector
                     ownedTitles={gameState.ownedTitles || []}
                     equippedTitle={gameState.equippedTitle || null}
@@ -3405,36 +3432,44 @@ function App({ userId, signOut }: AppProps) {
 
               {activeTab === 'stats' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Shield className="w-4 h-4 text-amber-500" /> ESTATÍSTICAS DO HERÓI
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Shield className="w-4 h-4 text-amber-500" /> ESTATÍSTICAS DO HERÓI
+                    </h3>
+                  </div>
                   <StatsTab state={gameState} />
                 </div>
               )}
 
               {activeTab === 'achievements' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Award className="w-4 h-4 text-amber-500" /> CONQUISTAS
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Award className="w-4 h-4 text-amber-500" /> CONQUISTAS
+                    </h3>
+                  </div>
                   <AchievementsTab state={gameState} />
                 </div>
               )}
 
               {activeTab === 'guide' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <HelpCircle className="w-4 h-4 text-amber-400" /> TUTORIAL
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <HelpCircle className="w-4 h-4 text-amber-400" /> TUTORIAL
+                    </h3>
+                  </div>
                   <GuideTab />
                 </div>
               )}
 
               {activeTab === 'logs' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
-                  <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase mb-4 flex items-center gap-2 pb-2.5 border-b border-amber-500/10">
-                    <Scroll className="w-4 h-4 text-amber-500" /> REGISTRO DE ATIVIDADES
-                  </h3>
+                  <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Scroll className="w-4 h-4 text-amber-500" /> REGISTRO DE ATIVIDADES
+                    </h3>
+                  </div>
                   <div className="bg-stone-950/90 text-amber-100/70 p-4 h-[420px] rounded-lg overflow-y-auto select-text border border-amber-500/10 shadow-inner">
                     <div className="space-y-2 text-xs font-mono">
                       {logs.length > 0 ? (
