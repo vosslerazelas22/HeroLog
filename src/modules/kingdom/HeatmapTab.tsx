@@ -80,8 +80,14 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
   });
 
   // CÁLCULO DE CONSISTÊNCIA DE ÚLTIMOS 30 DIAS
+  // Se hoje ainda não possui atividade (mins === 0), deslocamos a janela de 30 dias em +1 
+  // para desconsiderar o dia de hoje (em andamento) e incluir o dia 30 dias atrás, preservando o streak.
+  const todayKey = todayMidnight.toLocaleDateString('pt-BR');
+  const todayMins = minutesByDay[todayKey] || 0;
+  const startI = todayMins > 0 ? 0 : 1;
+
   let studyDaysInLast30 = 0;
-  for (let i = 0; i < 30; i++) {
+  for (let i = startI; i < startI + 30; i++) {
     const checkDate = new Date(todayMidnight);
     checkDate.setDate(todayMidnight.getDate() - i);
     const dateKey = checkDate.toLocaleDateString('pt-BR');
