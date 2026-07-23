@@ -15,6 +15,30 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.9] - 2026-07-23
+
+### Adicionado
+
+- **Avatar exclusivo por classe na Ficha de Personagem** — o emoji genérico (🧙/⚔️/🏹) foi substituído por arte própria de cada classe (Guerreiro, Mago, Patrulheiro) no avatar principal, com sistema de mapeamento seguro por classe e imagem de fallback.
+
+### Alterado
+
+- **Reestruturação da Ficha de Personagem no mobile** — layout consolidado em um único card: Sequência e Nível de Combate ganham destaque visual maior (tiles em posição de igual prioridade), Foco Total e HP reorganizados em linhas compactas, eliminando a necessidade de rolagem para ver as informações principais da ficha. O layout desktop permanece inalterado.
+- **Avatar da Ficha de Personagem (mobile) ampliado** — aumentado progressivamente até 115px, com a coluna de identidade (nome, título, classe) centralizada e com tipografia maior para melhor legibilidade.
+- **Copy revisado na Ficha de Personagem (mobile)** — label do tile de nível simplificado para "Nível"; label de classe deixou de ser truncado com reticências e agora quebra em até duas linhas quando necessário.
+
+### Arquivos alterados
+
+- `/src/modules/character/CharacterScreen.tsx`
+
+### Arquivos criados
+
+- `/public/avatars/warrior-idle.png`
+- `/public/avatars/mage-idle.png`
+- `/public/avatars/ranger-idle.png`
+
+---
+
 ## [1.1.8] - 2026-07-22
 
 ### Adicionado
