@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
+import { incrementModalCount, decrementModalCount } from '../utils/modalHelper';
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,13 +9,35 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   variant?: 'amber' | 'purple' | 'red';
+  hideHeader?: boolean;
+  allowBackdropClose?: boolean;
+  disableEscClose?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, variant = 'amber' }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  variant = 'amber',
+  hideHeader = false,
+  allowBackdropClose = true,
+  disableEscClose = false,
+}: ModalProps) {
+  // Register modal open state globally on document.body using a counter
+  useEffect(() => {
+    if (isOpen) {
+      incrementModalCount();
+      return () => {
+        decrementModalCount();
+      };
+    }
+  }, [isOpen]);
+
   // Handle ESC key press to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !disableEscClose) {
         onClose();
       }
     };
@@ -24,7 +47,7 @@ export function Modal({ isOpen, onClose, title, children, variant = 'amber' }: M
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, disableEscClose]);
 
   // Variant classes mapping
   const variantStyles = {
@@ -62,8 +85,8 @@ export function Modal({ isOpen, onClose, title, children, variant = 'amber' }: M
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.6 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-stone-950/80 backdrop-blur-sm"
+            onClick={allowBackdropClose ? onClose : undefined}
+            className={`absolute inset-0 bg-stone-950/80 backdrop-blur-[2px] ${allowBackdropClose ? 'cursor-pointer' : ''}`}
           />
 
           {/* Modal Container */}
@@ -71,26 +94,28 @@ export function Modal({ isOpen, onClose, title, children, variant = 'amber' }: M
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: 'spring', duration: 0.4 }}
-            className={`relative w-full max-w-md bg-stone-900 border ${currentStyles.border} rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-10 flex flex-col font-sans select-none`}
+            transition={{ type: 'tween', ease: 'easeOut', duration: 0.22 }}
+            className={`relative w-full max-w-md bg-stone-900 border ${currentStyles.border} rounded-2xl shadow-xl overflow-hidden z-10 flex flex-col font-sans select-none`}
           >
             {/* Ambient themed top border and inner shadow */}
             <div className={`absolute top-0 inset-x-0 h-1 ${currentStyles.topBorder}`} />
             <div className={`absolute inset-0 ${currentStyles.glow} to-transparent pointer-events-none`} />
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-stone-800 p-4 sm:p-5">
-              <h2 className={`text-base sm:text-lg font-serif font-black uppercase tracking-wider ${currentStyles.title}`}>
-                {title}
-              </h2>
-              <button
-                onClick={onClose}
-                className={`p-1 text-stone-400 ${currentStyles.closeHover} hover:bg-stone-800 rounded-lg transition-all cursor-pointer`}
-                aria-label="Fechar"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            {!hideHeader && (
+              <div className="flex items-center justify-between border-b border-stone-800 p-4 sm:p-5">
+                <h2 className={`text-base sm:text-lg font-serif font-black uppercase tracking-wider ${currentStyles.title}`}>
+                  {title}
+                </h2>
+                <button
+                  onClick={onClose}
+                  className={`p-1 text-stone-400 ${currentStyles.closeHover} hover:bg-stone-800 rounded-lg transition-all cursor-pointer`}
+                  aria-label="Fechar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
 
             {/* Content Slot */}
             <div className="p-5 sm:p-6 overflow-y-auto max-h-[80vh] text-stone-200">
