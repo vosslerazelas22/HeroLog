@@ -3,6 +3,7 @@ import { Shield, Heart } from 'lucide-react';
 import { InventoryItem } from '../../types';
 import { TITLE_CATALOG } from './titleCatalog';
 import { TitleEquipModal } from '../../components/TitleEquipModal';
+import { ItemInspectModal } from '../../components/ItemInspectModal';
 
 export interface CharacterSummary {
   charName: string;
@@ -48,6 +49,26 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
   } = character;
 
   const [isTitleModalOpen, setIsTitleModalOpen] = React.useState(false);
+  const [inspectingItem, setInspectingItem] = React.useState<InventoryItem | null>(null);
+  const [inspectingSlotIdx, setInspectingSlotIdx] = React.useState<number | null>(null);
+
+  const modalActions = React.useMemo(() => {
+    if (!inspectingItem) return [];
+    if (inspectingSlotIdx !== null) {
+      return [
+        {
+          label: 'Desequipar',
+          onClick: () => {
+            onUnequipItem(inspectingSlotIdx);
+            setInspectingItem(null);
+            setInspectingSlotIdx(null);
+          },
+          variant: 'danger' as const,
+        },
+      ];
+    }
+    return [];
+  }, [inspectingItem, inspectingSlotIdx, onUnequipItem]);
 
   return (
     <div className="space-y-5">
@@ -199,13 +220,19 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
             return (
               <div
                 key={slotIdx}
+                onClick={() => {
+                  if (eqItem) {
+                    setInspectingItem(eqItem);
+                    setInspectingSlotIdx(slotIdx);
+                  }
+                }}
                 className={`aspect-square bg-stone-950/40 border ${
-                  eqItem ? 'border-amber-500/30 bg-amber-500/[0.04]' : 'border-dashed border-amber-500/10'
+                  eqItem ? 'border-amber-500/30 bg-amber-500/[0.04] hover:border-amber-500/50 cursor-pointer active:scale-95' : 'border-dashed border-amber-500/10'
                 } rounded flex flex-col items-center justify-center p-1 relative transition-all`}
               >
                 {eqItem ? (
                   <>
-                    <span className="text-xl select-none" title={eqItem.desc}>{eqItem.emoji}</span>
+                    <span className="text-xl select-none">{eqItem.emoji}</span>
                     <span className="text-[8px] font-bold text-amber-200 truncate max-w-full text-center px-1" title={eqItem.name}>
                       {eqItem.name}
                     </span>
@@ -218,7 +245,7 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
                         e.stopPropagation();
                         onUnequipItem(slotIdx);
                       }}
-                      className="absolute -top-1 -right-1 bg-red-950/80 hover:bg-red-900 border border-red-500/30 text-red-200 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold cursor-pointer transition-all active:scale-95 animate-fade-in"
+                      className="absolute -top-1 -right-1 bg-red-950/80 hover:bg-red-900 border border-red-500/30 text-red-200 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold cursor-pointer transition-all active:scale-95 z-10 animate-fade-in"
                       title="Desequipar"
                     >
                       ×
@@ -245,8 +272,11 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
             activeBuffs.map((item, idx) => (
               <span
                 key={idx}
-                className="text-[10px] font-serif font-bold bg-purple-950/40 border border-purple-500/30 text-purple-300 px-2.5 py-0.5 rounded flex items-center gap-1 shadow"
-                title={item.desc}
+                onClick={() => {
+                  setInspectingItem(item);
+                  setInspectingSlotIdx(null);
+                }}
+                className="text-[10px] font-serif font-bold bg-purple-950/40 border border-purple-500/30 text-purple-300 px-2.5 py-0.5 rounded flex items-center gap-1 shadow cursor-pointer hover:bg-purple-900/40 hover:border-purple-400 active:scale-95 transition-all"
               >
                 <span>{item.emoji}</span>
                 <span>{item.name}</span>
@@ -266,6 +296,16 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
         ownedTitles={ownedTitles}
         equippedTitle={equippedTitle}
         onEquipTitle={onEquipTitle}
+      />
+
+      <ItemInspectModal
+        item={inspectingItem}
+        onClose={() => {
+          setInspectingItem(null);
+          setInspectingSlotIdx(null);
+        }}
+        showSlotSelector={false}
+        actions={modalActions}
       />
     </div>
   );
