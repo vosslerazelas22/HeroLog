@@ -1,4 +1,4 @@
-export type BuffType = 'DoubleLoot' | 'FocusElixir' | 'CrystalClarity' | 'RuneFortune' | 'StreakShield' | 'PixelOwl' | 'DragonQuill' | 'CrystalBall' | 'AncientTome';
+export type BuffType = 'DoubleLoot' | 'FocusElixir' | 'CrystalClarity' | 'RuneFortune' | 'StreakShield' | 'PixelOwl' | 'DragonQuill' | 'CrystalBall' | 'AncientTome' | 'SilverGrimoire' | 'AncientScroll' | 'CelestinePotion' | 'StarPowder' | 'GoldBrooch' | 'ChaosGrimoire' | 'UnwaveringSword' | 'SacredChalice' | 'ArcaneRelic' | 'RunicStone';
 
 export interface InventoryItem {
   id: string;

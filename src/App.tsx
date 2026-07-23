@@ -15,6 +15,13 @@ import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth';
 import { AuthGate, SyncIndicator } from './components/AuthGate';
 import { wasDailyScheduledForDate } from './utils/dailyScheduling';
+import { LOOT_TABLE } from './modules/focus/lootTable';
+import {
+  calculateLootChance,
+  BASE_LOOT_CHANCE,
+  TITLE_LOOT_MULTIPLIERS,
+  MAX_LOOT_CHANCE_CAP,
+} from './modules/focus/lootConfig';
 
 interface CombatLevelUpType {
   type: 'combat';
@@ -136,6 +143,7 @@ import {
   ToggleRight,
   Skull,
   Scroll,
+  Crown,
 } from 'lucide-react';
 
 const STATIC_QUOTES = [
@@ -313,6 +321,7 @@ function App({ userId, signOut }: AppProps) {
   const [showActionWindowTooltip, setShowActionWindowTooltip] = useState<boolean>(false);
   const [showDungeonTooltip, setShowDungeonTooltip] = useState<boolean>(false);
   const [showWildernessTooltip, setShowWildernessTooltip] = useState<boolean>(false);
+  const [showStandardLootTooltip, setShowStandardLootTooltip] = useState<boolean>(false);
   const [muteSfx, setMuteSfx] = useState<boolean>(false);
 
   // Modals Toggles
@@ -577,10 +586,50 @@ function App({ userId, signOut }: AppProps) {
               xpMultiplier += 0.15;
               activated = true;
             }
+          } else if (item.buff === 'SilverGrimoire') {
+            xpMultiplier += 0.01;
+            activated = true;
+          } else if (item.buff === 'AncientScroll') {
+            goldMultiplier += 0.01;
+            activated = true;
+          } else if (item.buff === 'CelestinePotion') {
+            if (studiedMinutes >= 30) {
+              xpMultiplier += 0.02;
+              activated = true;
+            }
+          } else if (item.buff === 'StarPowder') {
+            if (studiedMinutes >= 30) {
+              goldMultiplier += 0.02;
+              activated = true;
+            }
+          } else if (item.buff === 'GoldBrooch') {
+            xpMultiplier += 0.01;
+            goldMultiplier += 0.01;
+            activated = true;
+          } else if (item.buff === 'ChaosGrimoire') {
+            xpMultiplier += 0.02;
+            activated = true;
+          } else if (item.buff === 'UnwaveringSword') {
+            goldMultiplier += 0.02;
+            activated = true;
+          } else if (item.buff === 'SacredChalice') {
+            xpMultiplier += 0.01;
+            goldMultiplier += 0.01;
+            activated = true;
+          } else if (item.buff === 'ArcaneRelic') {
+            if (studiedMinutes >= 45) {
+              xpMultiplier += 0.03;
+              activated = true;
+            }
+          } else if (item.buff === 'RunicStone') {
+            if (studiedMinutes >= 45) {
+              goldMultiplier += 0.03;
+              activated = true;
+            }
           }
 
           if (activated) {
-            const currentCharges = item.charges ?? 8;
+            const currentCharges = item.charges ?? item.maxCharges ?? 5;
             usedEquipmentIndicesAndCharges.push({ index, charges: currentCharges - 1 });
           }
         }
@@ -589,39 +638,29 @@ function App({ userId, signOut }: AppProps) {
       const finalXP = Math.floor(baseXP * xpMultiplier);
       const finalGold = Math.floor(baseGold * goldMultiplier);
 
-      // Loot rates custom multiplier based on title
-      let lootRateMultiplier = 1.0;
-      if (eqTitleId === 'VOIDWALKER') lootRateMultiplier += 0.50;
-      if (eqTitleId === 'TRANSCENDENT' || eqTitleId === 'CELESTIAL') lootRateMultiplier += 1.00;
-      if (eqTitleId === 'IMMORTAL_SCHOLAR') lootRateMultiplier += 0.50;
-      if (eqTitleId === 'NOCTURNAL') lootRateMultiplier += 0.30;
-      if (eqTitleId === 'SHADOW') lootRateMultiplier += 0.75;
+      const lootChanceInfo = calculateLootChance(studiedMinutes, !!session.isDungeon, eqTitleId);
 
-      // Random Loot drops
-      const landedLoots: { name: string; emoji: string }[] = [];
+      // Random Loot drops (independent roll resolution)
+      const landedLoots: any[] = [];
       const rollCount = session.isDungeon ? 4 : 1;
 
       for (let r = 0; r < rollCount; r++) {
-        let thresholdChance = session.isDungeon ? 0.40 : (studiedMinutes >= 90 ? 0.70 : studiedMinutes >= 50 ? 0.45 : 0.25);
-        thresholdChance = Math.min(0.95, thresholdChance * lootRateMultiplier);
+        const thresholdChance = lootChanceInfo.finalChance;
         if (Math.random() < thresholdChance) {
-          const lootCatalog = session.isDungeon 
-            ? [
-                { name: 'Grimório Lendário do Caos 🔮', emoji: '🔮' },
-                { name: 'Espada do Foco Inabalável 🗡️', emoji: '🗡️' },
-                { name: 'Cálice Sagrado da Sabedoria 🏆', emoji: '🏆' },
-                { name: 'Relíquia Secreta Arcana 🔱', emoji: '🔱' },
-                { name: 'Pedra Filosofal Rúnica 💎', emoji: '💎' }
-              ]
-            : [
-                { name: 'Grimório de Prata', emoji: '📚' },
-                { name: 'Pergaminho Antigo', emoji: '📜' },
-                { name: 'Poção Celestina', emoji: '🧪' },
-                { name: 'Fécula de Estrelas', emoji: '✨' },
-                { name: 'Broche de Ouro', emoji: '🏅' }
-              ];
-          const lootItem = lootCatalog[Math.floor(Math.random() * lootCatalog.length)];
-          landedLoots.push(lootItem);
+          // Roll rarity
+          let chosenRarity: 'comum' | 'especial';
+          if (session.isDungeon) {
+            chosenRarity = Math.random() < 0.40 ? 'especial' : 'comum';
+          } else {
+            chosenRarity = Math.random() < 0.12 ? 'especial' : 'comum';
+          }
+          
+          // Filter candidates by rarity and select one with equal weights
+          const candidates = LOOT_TABLE.filter(item => item.rarity === chosenRarity);
+          if (candidates.length > 0) {
+            const chosenItem = candidates[Math.floor(Math.random() * candidates.length)];
+            landedLoots.push(chosenItem);
+          }
         }
       }
 
@@ -771,72 +810,26 @@ function App({ userId, signOut }: AppProps) {
         }
       });
 
-      // Add looted item directly
-      if (lootedItem) {
-        const randVal = Math.random();
-        if (randVal < 0.40) {
-          const equipments = [
-            {
-              name: 'Coruja Pixelada',
-              emoji: '🦉',
-              desc: 'Equipável: +5% de XP em todas as sessões. (8 Cargas)',
-              price: 250,
-              buff: 'PixelOwl' as BuffType,
-              isEquipment: true,
-              charges: 8,
-              maxCharges: 8
-            },
-            {
-              name: 'Pena de Dragão',
-              emoji: '🪶',
-              desc: 'Equipável: +8% de XP em sessões de 45 min+. (8 Cargas)',
-              price: 300,
-              buff: 'DragonQuill' as BuffType,
-              isEquipment: true,
-              charges: 8,
-              maxCharges: 8
-            },
-            {
-              name: 'Bola de Cristal',
-              emoji: '🔮',
-              desc: 'Equipável: +10% de XP em todas as sessões. (10 Cargas)',
-              price: 400,
-              buff: 'CrystalBall' as BuffType,
-              isEquipment: true,
-              charges: 10,
-              maxCharges: 10
-            },
-            {
-              name: 'Tomo Antigo',
-              emoji: '📖',
-              desc: 'Equipável: +15% de XP em sessões de 60 min+. (8 Cargas)',
-              price: 500,
-              buff: 'AncientTome' as BuffType,
-              isEquipment: true,
-              charges: 8,
-              maxCharges: 8
-            }
-          ];
+      // Add looted items directly (pre-resolved at drop time)
+      if (landedLoots.length > 0) {
+        landedLoots.forEach((item, index) => {
+          const uniqueId = `loot_${Date.now()}_${index}_${Math.floor(Math.random() * 1000)}`;
+          updatedInv.push({
+            id: uniqueId,
+            name: item.name,
+            emoji: item.emoji,
+            desc: item.desc,
+            buff: item.buff,
+            price: item.price,
+            isEquipment: item.isEquipment,
+            charges: item.charges,
+            maxCharges: item.maxCharges
+          });
 
-          const eqDrop = equipments[Math.floor(Math.random() * equipments.length)];
-          updatedInv.push({
-            id: `eq_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            ...eqDrop
-          });
-          
           setTimeout(() => {
-            addSystemLog(`✨ ESPÓLIO LENDÁRIO ENCONTRADO: Você localizou o equipamento "${eqDrop.emoji} ${eqDrop.name}"! Vá à Ficha para equipá-lo.`, true);
-          }, 200);
-        } else {
-          updatedInv.push({
-            id: `loot_${Date.now()}`,
-            name: lootedItem.name,
-            emoji: lootedItem.emoji,
-            buff: 'DoubleLoot',
-            price: 50,
-            desc: 'Espólio colecionável de foco heróico.'
-          });
-        }
+            addSystemLog(`✨ ESPÓLIO ENCONTRADO: Você localizou o item "${item.emoji} ${item.name}"! Vá ao Inventário para visualizá-lo ou equipá-lo.`, true);
+          }, 200 + index * 50);
+        });
       }
 
       // Combat level progression
@@ -1474,12 +1467,14 @@ function App({ userId, signOut }: AppProps) {
       hasUsedCrystalClarity,
       usedEquipmentIndicesAndCharges,
       lootedItem,
+      lootedItems,
       droppedTitle,
       isWildernessChecked,
       isDungeonMode,
     } = rewardsModalData;
 
     const activeSkillName = gameState.skills[skillIdx]?.name || 'Código Sagrado';
+    const totalGoldGained = goldEarned + (dungeonClearGoldBonus || 0);
 
     // 1. If dungeon run milestones progression calculation is active
     if (isDungeonMode) {
@@ -1579,74 +1574,26 @@ function App({ userId, signOut }: AppProps) {
         }
       });
 
-      // Add looted item directly if any drop occurs
-      if (lootedItem) {
-        const randVal = Math.random();
-        if (randVal < 0.40) {
-          // Special equippable item drop
-          const equipments = [
-            {
-              name: 'Coruja Pixelada',
-              emoji: '🦉',
-              desc: 'Equipável: +5% de XP em todas as sessões. (8 Cargas)',
-              price: 250,
-              buff: 'PixelOwl' as BuffType,
-              isEquipment: true,
-              charges: 8,
-              maxCharges: 8
-            },
-            {
-              name: 'Pena de Dragão',
-              emoji: '🪶',
-              desc: 'Equipável: +8% de XP em sessões de 45 min+. (8 Cargas)',
-              price: 300,
-              buff: 'DragonQuill' as BuffType,
-              isEquipment: true,
-              charges: 8,
-              maxCharges: 8
-            },
-            {
-              name: 'Bola de Cristal',
-              emoji: '🔮',
-              desc: 'Equipável: +10% de XP em todas as sessões. (10 Cargas)',
-              price: 400,
-              buff: 'CrystalBall' as BuffType,
-              isEquipment: true,
-              charges: 10,
-              maxCharges: 10
-            },
-            {
-              name: 'Tomo Antigo',
-              emoji: '📖',
-              desc: 'Equipável: +15% de XP em sessões de 60 min+. (8 Cargas)',
-              price: 500,
-              buff: 'AncientTome' as BuffType,
-              isEquipment: true,
-              charges: 8,
-              maxCharges: 8
-            }
-          ];
+      // Add looted items directly if any drop occurs (pre-resolved at drop time)
+      if (lootedItems && lootedItems.length > 0) {
+        lootedItems.forEach((item, index) => {
+          const uniqueId = `loot_${Date.now()}_${index}_${Math.floor(Math.random() * 1000)}`;
+          updatedInv.push({
+            id: uniqueId,
+            name: item.name,
+            emoji: item.emoji,
+            desc: item.desc,
+            buff: item.buff,
+            price: item.price,
+            isEquipment: item.isEquipment,
+            charges: item.charges,
+            maxCharges: item.maxCharges
+          });
 
-          const eqDrop = equipments[Math.floor(Math.random() * equipments.length)];
-          updatedInv.push({
-            id: `eq_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            ...eqDrop
-          });
-          
           setTimeout(() => {
-            addSystemLog(`✨ ESPÓLIO LENDÁRIO ENCONTRADO: Você localizou o equipamento "${eqDrop.emoji} ${eqDrop.name}"! Vá à Ficha para equipá-lo.`, true);
-          }, 200);
-        } else {
-          // Regular loot drop
-          updatedInv.push({
-            id: `loot_${Date.now()}`,
-            name: lootedItem.name,
-            emoji: lootedItem.emoji,
-            buff: 'DoubleLoot', // simple generic buff label for generic loots
-            price: 50,
-            desc: 'Espólio colecionável de foco heróico.'
-          });
-        }
+            addSystemLog(`✨ ESPÓLIO ENCONTRADO: Você localizou o item "${item.emoji} ${item.name}"! Vá ao Inventário para visualizá-lo ou equipá-lo.`, true);
+          }, 200 + index * 50);
+        });
       }
 
       // 3. Combat level progression calculations
@@ -1678,7 +1625,7 @@ function App({ userId, signOut }: AppProps) {
         date: new Date().toLocaleString('pt-BR'),
         duration: durationMins,
         xp: xpEarned,
-        gold: goldEarned,
+        gold: totalGoldGained,
         notes: editedNotes.trim(),
         subskillTag: selectedTag || undefined,
         wilderness: isWildernessChecked,
@@ -1717,8 +1664,8 @@ function App({ userId, signOut }: AppProps) {
 
       return {
         ...prev,
-        gold: prev.gold + goldEarned,
-        totalGoldEarned: prev.totalGoldEarned + goldEarned,
+        gold: prev.gold + totalGoldGained,
+        totalGoldEarned: prev.totalGoldEarned + totalGoldGained,
         totalSessions: prev.totalSessions + 1,
         totalMinutes: prev.totalMinutes + durationMins,
         combatLevel: currentCombatLevel,
@@ -1740,8 +1687,8 @@ function App({ userId, signOut }: AppProps) {
     });
 
     const logOptions = [
-      `✅ Missão concluída. ${activeSkillName} recebeu +${xpEarned} XP e +${goldEarned} GP.`,
-      `📜 Mais uma sessão registrada. +${xpEarned} XP | +${goldEarned} GP.`,
+      `✅ Missão concluída. ${activeSkillName} recebeu +${xpEarned} XP e +${totalGoldGained} GP.`,
+      `📜 Mais uma sessão registrada. +${xpEarned} XP | +${totalGoldGained} GP.`,
       `⚔️ O foco foi mantido. ${activeSkillName} ganhou +${xpEarned} XP`,
     ];
     const chosenLog = logOptions[Math.floor(Math.random() * logOptions.length)];
@@ -2088,7 +2035,7 @@ function App({ userId, signOut }: AppProps) {
       {/* HEADER BAR */}
       <header className="sticky top-0 bg-quest-panel/95 border-b-2 border-amber-500/20 px-4 py-3 flex justify-between items-center z-40 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-2">
-          <span className="text-xl md:text-2xl animate-spin" style={{ animationDuration: '8s' }}>⚔️</span>
+          <span className="text-xl md:text-2xl animate-spin pausable-anim" style={{ animationDuration: '8s' }}>⚔️</span>
           <div>
             <h1 className="font-serif font-black text-amber-400 text-sm md:text-base tracking-widest uppercase">
               HeroLog
@@ -2493,119 +2440,240 @@ function App({ userId, signOut }: AppProps) {
                         </div>
 
                         {/* Mode Context Information / Help Button */}
-                        {(sessionConfig.isDungeonMode || sessionConfig.isWildernessChecked) && (
-                          <div className="bg-stone-950/40 py-1.5 px-2.5 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
-                            {sessionConfig.isDungeonMode && (
+                        <div className="bg-stone-950/40 py-1.5 px-2.5 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
+                          {sessionConfig.isDungeonMode && (
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-purple-300 font-serif">
+                                <span>⚔️ Explorando Masmorra </span>
+                                <span className="font-mono">({sessionConfig.dungeonSessions}/4)</span>
+                                {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
+                                  <span className="text-[9px] font-mono ml-2 text-purple-400">⏳ Cooldown</span>
+                                ) : (
+                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDungeonTooltip(!showDungeonTooltip);
+                                }}
+                                className="px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-400 hover:bg-purple-500/10 font-bold transition-all cursor-pointer bg-purple-950/10 text-[9px]"
+                                title="Ajuda sobre a Masmorra"
+                              >
+                                ?
+                              </button>
+                            </div>
+                          )}
+
+                          {sessionConfig.isWildernessChecked && (
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-red-400 font-serif">
+                                <span>💀 Terra Selvagem Ativa </span>
+                                <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +25% XP & GP</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowWildernessTooltip(!showWildernessTooltip);
+                                }}
+                                className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold transition-all cursor-pointer bg-red-950/10 text-[9px]"
+                                title="Ajuda sobre a Terra Selvagem"
+                              >
+                                ?
+                              </button>
+                            </div>
+                          )}
+
+                          {!sessionConfig.isDungeonMode && !sessionConfig.isWildernessChecked && (() => {
+                            const currentDuration = gameState.pomodoroSettings.focusDuration;
+                            const eqTitleId = gameState.equippedTitle;
+                            const chanceInfo = calculateLootChance(currentDuration, false, eqTitleId);
+                            const chancePct = Math.round(chanceInfo.finalChance * 100);
+
+                            return (
                               <div className="flex items-center justify-between gap-2">
-                                <div className="text-purple-300 font-serif">
-                                  <span>⚔️ Explorando Masmorra </span>
-                                  <span className="font-mono">({sessionConfig.dungeonSessions}/4)</span>
-                                  {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
-                                    <span className="text-[9px] font-mono ml-2 text-purple-400">⏳ Cooldown</span>
-                                  ) : (
-                                    <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
-                                  )}
+                                <div className="text-amber-300 font-serif">
+                                  <span>🎯 Modo Padrão </span>
+                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">
+                                    • Chance de Saque: {chancePct}%
+                                  </span>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowDungeonTooltip(!showDungeonTooltip);
+                                    setShowStandardLootTooltip(!showStandardLootTooltip);
                                   }}
-                                  className="px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-400 hover:bg-purple-500/10 font-bold transition-all cursor-pointer bg-purple-950/10 text-[9px]"
-                                  title="Ajuda sobre a Masmorra"
+                                  className="px-1.5 py-0.5 rounded border border-amber-500/20 text-amber-400 hover:bg-amber-500/10 font-bold transition-all cursor-pointer bg-amber-950/10 text-[9px]"
+                                  title="Ajuda sobre Chance de Saque"
                                 >
                                   ?
                                 </button>
                               </div>
-                            )}
+                            );
+                          })()}
 
-                            {sessionConfig.isWildernessChecked && (
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="text-red-400 font-serif">
-                                  <span>💀 Terra Selvagem Ativa </span>
-                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +25% XP & GP</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowWildernessTooltip(!showWildernessTooltip);
-                                  }}
-                                  className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold transition-all cursor-pointer bg-red-950/10 text-[9px]"
-                                  title="Ajuda sobre a Terra Selvagem"
-                                >
-                                  ?
-                                </button>
-                              </div>
-                            )}
+                          {/* Dungeon Mode Modal */}
+                          <ModeDescriptionModal
+                            isOpen={showDungeonTooltip}
+                            onClose={() => setShowDungeonTooltip(false)}
+                            title="⚔️ Incursão em Masmorra"
+                            variant="purple"
+                            blocks={[
+                              {
+                                label: 'Regras da Jornada',
+                                icon: <Swords className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Comprometa-se a realizar <strong>4 sessões consecutivas</strong> de foco sem abandonar.
+                                  </span>
+                                ),
+                              },
+                              {
+                                label: 'Recompensas Magnas',
+                                icon: <Flame className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    +50% de XP por minuto em cada sessão, rolos de saque quadruplicados (Quad Loot), 40% de chance de saque Lendário e um bônus monumental de <strong>+2.500 GP</strong> ao concluir as 4 sessões.
+                                  </span>
+                                ),
+                              },
+                              {
+                                label: 'Recarga para Masmorra',
+                                icon: <RotateCcw className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Tempo de recarga de 2 horas após a conclusão. Não acumulável com o Modo Terra Selvagem.
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
 
-                            {/* Dungeon Mode Modal */}
-                            <ModeDescriptionModal
-                              isOpen={showDungeonTooltip}
-                              onClose={() => setShowDungeonTooltip(false)}
-                              title="⚔️ Incursão em Masmorra"
-                              variant="purple"
-                              blocks={[
-                                {
-                                  label: 'Regras da Jornada',
-                                  icon: <Swords className="w-4 h-4" />,
-                                  text: (
-                                    <span>
-                                      Comprometa-se a realizar <strong>4 sessões consecutivas</strong> de foco sem abandonar.
-                                    </span>
-                                  ),
-                                },
-                                {
-                                  label: 'Recompensas Magnas',
-                                  icon: <Flame className="w-4 h-4" />,
-                                  text: (
-                                    <span>
-                                      +50% de XP por minuto em cada sessão, rolos de saque quadruplicados (Quad Loot), 40% de chance de saque Lendário e um bônus monumental de <strong>+2.500 GP</strong> ao concluir as 4 sessões.
-                                    </span>
-                                  ),
-                                },
-                                {
-                                  label: 'Recarga para Masmorra',
-                                  icon: <RotateCcw className="w-4 h-4" />,
-                                  text: (
-                                    <span>
-                                      Tempo de recarga de 2 horas após a conclusão. Não acumulável com o Modo Terra Selvagem.
-                                    </span>
-                                  ),
-                                },
-                              ]}
-                            />
+                          {/* Wilderness Mode Modal */}
+                          <ModeDescriptionModal
+                            isOpen={showWildernessTooltip}
+                            onClose={() => setShowWildernessTooltip(false)}
+                            title="💀 Terra Selvagem"
+                            variant="red"
+                            blocks={[
+                              {
+                                label: 'Regras da Jornada',
+                                icon: <Skull className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Regra severa: minimizar a aba durante a sessão cancela o bônus automaticamente.
+                                  </span>
+                                ),
+                              },
+                              {
+                                label: 'Recompensas Magnas',
+                                icon: <Coins className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Sobreviventes ganham um bônus monumental de <strong>+25% de XP & GP extras</strong> no fechamento do foco.
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
 
-                            {/* Wilderness Mode Modal */}
-                            <ModeDescriptionModal
-                              isOpen={showWildernessTooltip}
-                              onClose={() => setShowWildernessTooltip(false)}
-                              title="💀 Terra Selvagem"
-                              variant="red"
-                              blocks={[
-                                {
-                                  label: 'Regras da Jornada',
-                                  icon: <Skull className="w-4 h-4" />,
-                                  text: (
-                                    <span>
-                                      Voto cognitivo severo. Minimizar a aba convoca a morte e falha de bônus automaticamente.
-                                    </span>
-                                  ),
-                                },
-                                {
-                                  label: 'Recompensas Magnas',
-                                  icon: <Coins className="w-4 h-4" />,
-                                  text: (
-                                    <span>
-                                      Sobreviventes ganham um bônus monumental de <strong>+25% de XP & GP extras</strong> no fechamento do foco.
-                                    </span>
-                                  ),
-                                },
-                              ]}
-                            />
-                          </div>
-                        )}
+                          {/* Standard Mode Loot Chance Modal */}
+                          {(() => {
+                            const currentDuration = gameState.pomodoroSettings.focusDuration;
+                            const eqTitleId = gameState.equippedTitle;
+                            const chanceInfo = calculateLootChance(currentDuration, false, eqTitleId);
+                            const currentTitleObj = eqTitleId ? TITLE_CATALOG.find(t => t.id === eqTitleId) : null;
+                            const hasTitleBonus = !!(eqTitleId && eqTitleId in TITLE_LOOT_MULTIPLIERS);
+                            const titleBonusPct = hasTitleBonus ? Math.round(TITLE_LOOT_MULTIPLIERS[eqTitleId] * 100) : 0;
+
+                            return (
+                              <ModeDescriptionModal
+                                isOpen={showStandardLootTooltip}
+                                onClose={() => setShowStandardLootTooltip(false)}
+                                title="🎯 Modo Padrão"
+                                variant="amber"
+                                blocks={[
+                                  {
+                                    label: 'CHANCE DE SAQUE ATUAL',
+                                    icon: <Sparkles className="w-4 h-4" />,
+                                    text: (
+                                      <div className="space-y-1 font-sans">
+                                        <div>
+                                          Duração selecionada: <strong>{currentDuration} min</strong> (Base: {Math.round(chanceInfo.baseChance * 100)}%)
+                                        </div>
+                                        <div>
+                                          Título equipado: <strong>{currentTitleObj ? `${currentTitleObj.emoji} ${currentTitleObj.name}` : 'Nenhum'}</strong>
+                                          {hasTitleBonus ? (
+                                            <span className="text-amber-300 ml-1 font-semibold">
+                                              (+{titleBonusPct}% de bônus)
+                                            </span>
+                                          ) : (
+                                            <span className="text-stone-400 ml-1 font-normal">(Sem bônus de saque)</span>
+                                          )}
+                                        </div>
+                                        <div className="pt-1.5 border-t border-amber-500/10 font-bold text-amber-300">
+                                          Chance final de drop: {Math.round(chanceInfo.finalChance * 100)}% <span className="text-[10px] font-normal text-stone-400">(Teto máximo: {Math.round(MAX_LOOT_CHANCE_CAP * 100)}%)</span>
+                                        </div>
+                                      </div>
+                                    ),
+                                  },
+                                  {
+                                    label: 'CHANCE BASE POR DURAÇÃO',
+                                    icon: <Timer className="w-4 h-4" />,
+                                    text: (
+                                      <div className="space-y-1 font-mono text-[11px]">
+                                        <div className="flex justify-between items-center">
+                                          <span>Menos de 50 min:</span>
+                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.SHORT * 100)}%</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span>50 a 89 min:</span>
+                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.MEDIUM * 100)}%</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span>90 min ou mais:</span>
+                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.LONG * 100)}%</span>
+                                        </div>
+                                      </div>
+                                    ),
+                                  },
+                                  {
+                                    label: 'BÔNUS POR TÍTULO RARO',
+                                    icon: <Crown className="w-4 h-4" />,
+                                    text: (
+                                      <div className="space-y-1 font-mono text-[11px]">
+                                        {Object.entries(TITLE_LOOT_MULTIPLIERS).map(([titleId, mult]) => {
+                                          const tObj = TITLE_CATALOG.find((t) => t.id === titleId);
+                                          const name = tObj ? `${tObj.emoji} ${tObj.name}` : titleId;
+                                          const percentage = Math.round(mult * 100);
+                                          return (
+                                            <div key={titleId} className="flex justify-between items-center">
+                                              <span>{name}</span>
+                                              <span className="text-amber-300 font-bold">+{percentage}%</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ),
+                                  },
+                                  {
+                                    label: 'REGRA DE CÁLCULO',
+                                    icon: <Scroll className="w-4 h-4" />,
+                                    text: (
+                                      <span>
+                                        Os bônus de título multiplicam a chance base da duração selecionada.
+                                        A chance final é limitada a um teto de {Math.round(MAX_LOOT_CHANCE_CAP * 100)}% por sessão.
+                                      </span>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Random screen interactive event notifier */}
@@ -3570,259 +3638,271 @@ function App({ userId, signOut }: AppProps) {
       </AnimatePresence>
 
       {/* COMPLETED QUEST REWARDS POPUP WITH COHESIVE RPG TEMPLATE AS IN THE SCREENSHOT */}
-      <AnimatePresence>
-        {rewardsModalData?.visible && (() => {
-          const hasLoot = !!(rewardsModalData.lootName || rewardsModalData.droppedTitleName);
+      {rewardsModalData?.visible && (() => {
+        const hasLoot = !!(rewardsModalData.lootedItems?.length || rewardsModalData.droppedTitleName);
 
-          return (
-            <div className="fixed inset-0 bg-black/85 z-50 flex items-start justify-center p-4 backdrop-blur-sm overflow-y-auto">
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-quest-panel border-2 border-[#C29544] max-w-lg w-full rounded shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar my-auto py-4 px-1 animate-fadeIn"
-              >
-                {rewardsStep === 1 && (
-                  <div>
-                    {/* Header Title alignment matching screenshot */}
-                    <div className="pt-4 pb-2 text-center select-none">
-                      <h2 className="text-[#E2B054] font-serif font-black text-xl md:text-2xl tracking-[0.15em] uppercase flex items-center justify-center gap-2">
-                        ⚔️ MISSÃO CONCLUÍDA ⚔️
-                      </h2>
-                      <div className="mt-3 flex flex-col items-center justify-center gap-1">
-                        <span className="text-amber-400 font-extrabold text-sm md:text-base tracking-widest font-serif drop-shadow-[0_2px_8px_rgba(226,176,84,0.35)]">
-                          ★ CLASSIFICAÇÃO {(() => {
-                            if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) return "S+";
-                            if (rewardsModalData.pauseCount === 0) return "S";
-                            if (rewardsModalData.pauseCount === 1) return "A";
-                            if (rewardsModalData.pauseCount <= 2) return "B";
-                            if (rewardsModalData.pauseCount <= 4) return "C";
-                            return "F";
-                          })()} ★
-                        </span>
-                        <span className="text-[10px] text-amber-100/40 font-mono tracking-widest uppercase">
-                          {(() => {
-                            if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) return "Sobrevivente Cognitivo — Lenda";
-                            if (rewardsModalData.pauseCount === 0) return "Sem Pausas — Lendário";
-                            if (rewardsModalData.pauseCount === 1) return "Pausa Única — Heróico";
-                            if (rewardsModalData.pauseCount <= 2) return "Foco Estável — Exquisito";
-                            if (rewardsModalData.pauseCount <= 4) return "Distração Parcial — Comum";
-                            return "Pausas Constantes — Instável";
-                          })()}
-                        </span>
-                      </div>
-                      <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-4 mb-4"></div>
+        return (
+          <Modal
+            isOpen={!!rewardsModalData?.visible}
+            onClose={() => {}}
+            title=""
+            hideHeader
+            allowBackdropClose={false}
+            disableEscClose
+            variant="amber"
+          >
+            {rewardsStep === 1 && (
+              <div>
+                {/* Header Title alignment matching screenshot */}
+                <div className="pt-2 pb-2 text-center select-none">
+                  <h2 className="text-[#E2B054] font-serif font-black text-xl tracking-[0.15em] uppercase flex items-center justify-center gap-2">
+                    SESSÃO CONCLUÍDA
+                  </h2>
+                  <div className="mt-3 flex flex-col items-center justify-center gap-1">
+                    <span className="text-amber-400 font-extrabold text-sm tracking-widest font-serif drop-shadow-[0_2px_8px_rgba(226,176,84,0.35)]">
+                      ★ CLASSIFICAÇÃO {(() => {
+                        if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) return "S+";
+                        if (rewardsModalData.pauseCount === 0) return "S";
+                        if (rewardsModalData.pauseCount === 1) return "A";
+                        if (rewardsModalData.pauseCount <= 2) return "B";
+                        if (rewardsModalData.pauseCount <= 4) return "C";
+                        return "F";
+                      })()} ★
+                    </span>
+                    <span className="text-[10px] text-amber-100/40 font-mono tracking-widest uppercase">
+                      {(() => {
+                        if (rewardsModalData.isWildernessChecked && rewardsModalData.pauseCount === 0) return "Sobrevivente Cognitivo — Lenda";
+                        if (rewardsModalData.pauseCount === 0) return "Sem Pausas — Lendário";
+                        if (rewardsModalData.pauseCount === 1) return "Pausa Única — Heróico";
+                        if (rewardsModalData.pauseCount <= 2) return "Foco Estável — Exquisito";
+                        if (rewardsModalData.pauseCount <= 4) return "Distração Parcial — Comum";
+                        return "Pausas Constantes — Instável";
+                      })()}
+                    </span>
+                  </div>
+                  <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-4 mb-4"></div>
+                </div>
+
+                {/* Grid of session stats with perfect space-between spacing */}
+                <div className="w-[85%] mx-auto space-y-4 font-serif text-xs text-[#A2A7A6] tracking-wide mb-6">
+                  <div className="flex justify-between items-center py-2 border-b border-amber-500/5">
+                    <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F] text-[10px]">DURAÇÃO DA SESSÃO</span>
+                    <span className="text-[#E2B054] font-bold font-serif text-right">{rewardsModalData.durationMins} MIN</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-amber-500/5">
+                    <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F] text-[10px]">SEQUÊNCIA DE CHAMA</span>
+                    <span className="text-[#F14D2A] font-bold text-right flex items-center justify-end gap-1 font-serif">
+                       🔥 {gameState.streak || 1} {gameState.streak === 1 ? 'DIA' : 'DIAS'}
+                    </span>
+                  </div>
+
+                  {rewardsModalData.comboBonusPercent > 0 && (
+                    <div className="flex justify-between items-center py-2 border-b border-amber-500/5 text-[#F14D2A]">
+                      <span className="uppercase text-left font-serif font-black tracking-widest text-[10px]">BÔNUS DE MULTIPLICADOR COMBO</span>
+                      <span className="font-bold text-right">+{rewardsModalData.comboBonusPercent}%</span>
                     </div>
+                  )}
 
-                    {/* Grid of session stats with perfect space-between spacing */}
-                    <div className="w-[85%] mx-auto space-y-4 font-serif text-xs md:text-sm text-[#A2A7A6] tracking-wide mb-6">
-                      <div className="flex justify-between items-center py-2 border-b border-amber-500/5">
-                        <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F] text-[10px]">DURAÇÃO DE MEDITAÇÃO</span>
-                        <span className="text-[#E2B054] font-bold font-serif text-right">{rewardsModalData.durationMins} MIN</span>
-                      </div>
-
-                      <div className="flex justify-between items-center py-2 border-b border-amber-500/5">
-                        <span className="uppercase text-left font-serif tracking-widest text-[#9F9F9F] text-[10px]">SEQUÊNCIA DE CHAMA</span>
-                        <span className="text-[#F14D2A] font-bold text-right flex items-center justify-end gap-1 font-serif">
-                           🔥 {gameState.streak || 1} {gameState.streak === 1 ? 'DIA' : 'DIAS'}
-                        </span>
-                      </div>
-
-                      {rewardsModalData.comboBonusPercent > 0 && (
-                        <div className="flex justify-between items-center py-2 border-b border-amber-500/5 text-[#F14D2A]">
-                          <span className="uppercase text-left font-serif font-black tracking-widest text-[10px]">🔥 BÔNUS DE MULTIPLICADOR COMBO</span>
-                          <span className="font-bold text-right">+{rewardsModalData.comboBonusPercent}%</span>
-                        </div>
-                      )}
-
-                      {/* XP and GP Gains Box */}
-                      <div className="mt-6 bg-stone-900/40 border border-amber-500/10 rounded-lg p-4 grid grid-cols-2 gap-4 divide-x divide-amber-500/10 text-center">
-                        <div className="space-y-1">
-                          <div className="text-[10px] text-amber-100/40 uppercase tracking-widest text-center">EXPERIÊNCIA ADQUIRIDA</div>
-                          <div className="text-emerald-400 font-extrabold font-mono text-base md:text-lg drop-shadow-[0_2px_6px_rgba(52,211,153,0.25)]">
-                            ⚡ +{rewardsModalData.xpEarned} XP
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-[10px] text-amber-100/40 uppercase tracking-widest text-center">OURO ARRECADADO</div>
-                          <div className="text-[#E2B054] font-extrabold font-mono text-base md:text-lg drop-shadow-[0_2px_6px_rgba(226,176,84,0.25)]">
-                            💎 +{rewardsModalData.goldEarned} GP
-                          </div>
-                        </div>
+                  {/* XP and GP Gains Box */}
+                  <div className="mt-6 bg-stone-900/40 border border-amber-500/10 rounded-lg p-4 grid grid-cols-2 gap-4 divide-x divide-amber-500/10 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="text-emerald-400 font-extrabold font-mono text-base drop-shadow-[0_2px_6px_rgba(52,211,153,0.25)]">
+                        ⚡ +{rewardsModalData.xpEarned} XP
                       </div>
                     </div>
-
-                    <div className="w-[85%] mx-auto pt-4 pb-4">
-                      <button
-                        onClick={() => {
-                          if (hasLoot) {
-                            setRewardsStep(2);
-                          } else {
-                            setRewardsStep(3);
-                          }
-                        }}
-                        className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
-                      >
-                        REIVINDICAR RECOMPENSAS →
-                      </button>
+                    <div className="flex items-center justify-center">
+                      <div className="text-[#E2B054] font-extrabold font-mono text-base drop-shadow-[0_2px_6px_rgba(226,176,84,0.25)]">
+                        💎 +{rewardsModalData.goldEarned + (rewardsModalData.dungeonClearGoldBonus || 0)} GP
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {rewardsStep === 2 && (
-                  <div>
-                    {/* Exquisite drop screen */}
-                    <div className="pt-4 pb-2 text-center select-none animate-fadeIn">
-                      <span className="text-3xl animate-bounce inline-block filter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">🎁</span>
-                      <h2 className="text-purple-400 font-serif font-black text-lg md:text-xl tracking-[0.2em] uppercase mt-2">
-                        TESOURO CONQUISTADO
-                      </h2>
-                      <p className="text-[9px] text-amber-100/40 font-serif italic mt-1 uppercase tracking-widest">O destino agraciou sua persistência</p>
-                      <div className="w-[85%] mx-auto border-b border-purple-500/20 mt-4 mb-4"></div>
-                    </div>
+                <div className="w-[85%] mx-auto pt-4 pb-4">
+                  <button
+                    onClick={() => {
+                      if (hasLoot) {
+                        setRewardsStep(2);
+                      } else {
+                        setRewardsStep(3);
+                      }
+                    }}
+                    className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
+                  >
+                    REIVINDICAR RECOMPENSAS →
+                  </button>
+                </div>
+              </div>
+            )}
 
-                    <div className="w-[85%] mx-auto space-y-4 mb-6">
-                      {rewardsModalData.lootName && (
-                        <div className="bg-gradient-to-b from-purple-950/40 via-stone-950 to-stone-950 border border-purple-500/30 p-5 rounded-lg text-center relative overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.15)] select-none">
-                          <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-purple-500/40"></span>
-                          <span className="absolute top-0 right-0 w-2 h-2 border-t border-r border-purple-500/40"></span>
-                          <span className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-purple-500/40"></span>
-                          <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-purple-500/40"></span>
-                          
-                          <div className="text-5xl my-2 select-none filter drop-shadow-[0_0_12px_rgba(168,85,247,0.4)] transform hover:scale-110 transition-transform cursor-default inline-block">
-                            {rewardsModalData.lootEmoji || '🎒'}
+            {rewardsStep === 2 && (
+              <div>
+                {/* Exquisite drop screen */}
+                <div className="pt-2 pb-2 text-center select-none animate-fadeIn">
+                  <span className="text-3xl animate-bounce inline-block filter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">🎁</span>
+                  <h2 className="text-purple-400 font-serif font-black text-lg md:text-xl tracking-[0.2em] uppercase mt-2">
+                    TESOURO CONQUISTADO
+                  </h2>
+                  <div className="w-[85%] mx-auto border-b border-purple-500/20 mt-4 mb-4"></div>
+                </div>
+
+                <div className="w-[85%] mx-auto space-y-4 mb-6">
+                  {/* Looted Items & Title Grid - Bento Style (Compact & no nested scrolls) */}
+                  {((rewardsModalData.lootedItems && rewardsModalData.lootedItems.length > 0) || rewardsModalData.droppedTitleName) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {rewardsModalData.lootedItems?.map((item, index) => {
+                        const isEspecial = item.rarity === 'especial';
+                        return (
+                          <div
+                            key={index}
+                            className={`bg-gradient-to-b ${
+                              isEspecial
+                                ? 'from-purple-950/30 via-stone-950 to-stone-950 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]'
+                                : 'from-stone-850/40 via-stone-950 to-stone-950 border-stone-800'
+                            } border p-3 rounded-lg text-left relative overflow-hidden select-none flex items-center gap-3`}
+                          >
+                            <span className={`absolute top-0 left-0 w-1.5 h-1.5 border-t border-l ${isEspecial ? 'border-purple-500/40' : 'border-stone-700/40'}`}></span>
+                            <span className={`absolute top-0 right-0 w-1.5 h-1.5 border-t border-r ${isEspecial ? 'border-purple-500/40' : 'border-stone-700/40'}`}></span>
+                            <span className={`absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l ${isEspecial ? 'border-purple-500/40' : 'border-stone-700/40'}`}></span>
+                            <span className={`absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r ${isEspecial ? 'border-purple-500/40' : 'border-stone-700/40'}`}></span>
+                            
+                            <div className={`text-3xl shrink-0 select-none filter ${isEspecial ? 'drop-shadow-[0_0_10px_rgba(168,85,247,0.4)]' : ''} transition-transform duration-200`}>
+                              {item.emoji || '🎒'}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <h3 className={`font-bold text-xs md:text-sm tracking-wide uppercase font-serif truncate ${isEspecial ? 'text-purple-300' : 'text-stone-300'}`}>
+                                  {item.name}
+                                </h3>
+                                {isEspecial ? (
+                                  <span className="inline-block self-start sm:self-center px-1.5 py-0.5 bg-purple-500/10 border border-purple-500/20 rounded text-[7px] font-mono font-bold uppercase tracking-widest text-purple-400 leading-none">
+                                    ★ ESPECIAL ★
+                                  </span>
+                                ) : (
+                                  <span className="inline-block self-start sm:self-center px-1.5 py-0.5 bg-stone-850 border border-stone-700/50 rounded text-[7px] font-mono font-bold uppercase tracking-widest text-stone-500 leading-none">
+                                    COMUM
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-amber-100/50 font-serif italic truncate mt-1">
+                                {item.desc}
+                              </p>
+                            </div>
                           </div>
-                          
-                          <h3 className="text-purple-300 font-bold text-base md:text-lg tracking-wider uppercase font-serif mt-1">
-                            {rewardsModalData.lootName}
-                          </h3>
-                          
-                          <span className="inline-block px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-purple-400 text-[9px] font-mono font-bold uppercase tracking-widest mt-1 my-2">
-                             RARIDADE: EXQUISITO
-                          </span>
-                          
-                          <p className="text-[10px] md:text-xs text-amber-100/60 leading-relaxed font-serif max-w-xs mx-auto italic mt-1">
-                            "Um fragmento estelar condensado, guardado nos arquivos da alma como lembrança de sua pura determinação mística."
-                          </p>
-                        </div>
-                      )}
+                        );
+                      })}
 
                       {rewardsModalData.droppedTitleName && (
-                        <div className="bg-gradient-to-b from-yellow-950/40 via-stone-950 to-stone-950 border border-yellow-500/40 p-5 rounded-lg text-center relative overflow-hidden shadow-[0_0_25px_rgba(234,179,8,0.25)] select-none">
-                          <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-yellow-500/40"></span>
-                          <span className="absolute top-0 right-0 w-2 h-2 border-t border-r border-yellow-500/40"></span>
-                          <span className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-yellow-500/40"></span>
-                          <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-yellow-500/40"></span>
+                        <div className="bg-gradient-to-b from-amber-950/40 via-stone-950 to-stone-950 border-amber-500/40 shadow-[0_0_15px_rgba(226,176,84,0.15)] border p-3 rounded-lg text-left relative overflow-hidden select-none flex items-center gap-3">
+                          <span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-amber-500/40"></span>
+                          <span className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-amber-500/40"></span>
+                          <span className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-amber-500/40"></span>
+                          <span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-amber-500/40"></span>
                           
-                          <div className="text-4xl my-2 select-none filter drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform hover:scale-110 transition-transform cursor-default inline-block animate-pulse">
+                          <div className="text-3xl shrink-0 select-none filter drop-shadow-[0_0_10px_rgba(226,176,84,0.4)] transition-transform duration-200">
                             {rewardsModalData.droppedTitleEmoji || '👑'}
                           </div>
                           
-                          <h3 className="text-yellow-400 font-black text-sm md:text-base tracking-widest uppercase font-serif mt-1">
-                            {rewardsModalData.droppedTitleName}
-                          </h3>
-                          
-                          <span className="inline-block px-2.5 py-0.5 bg-yellow-500/15 border border-yellow-500/30 rounded-full text-[#E2B054] text-[9px] font-mono font-bold uppercase tracking-widest mt-1 my-2">
-                            👑 TÍTULO RARO OBTIDO!
-                          </span>
-                          
-                          <p className="text-[10px] md:text-xs text-amber-100/50 leading-relaxed font-serif max-w-xs mx-auto italic mt-1">
-                            "Este epíteto imortal atesta perante os deuses teu foco inabalável. Pode ser equipado na tela de Títulos."
-                          </p>
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                              <h3 className="font-bold text-xs md:text-sm tracking-wide uppercase font-serif truncate text-amber-300">
+                                {rewardsModalData.droppedTitleName}
+                              </h3>
+                              <span className="inline-block self-start sm:self-center px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded text-[7px] font-mono font-bold uppercase tracking-widest text-amber-400 leading-none">
+                                ★ TÍTULO RARO ★
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-amber-100/50 font-serif italic truncate mt-1">
+                              Pode ser equipado na tela de Títulos.
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
+                  )}
+                </div>
 
-                    <div className="w-[85%] mx-auto pt-4 pb-4">
-                      <button
-                        onClick={() => setRewardsStep(3)}
-                        className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
-                      >
-                        CONFIRMAR TESOURO & CONTINUAR →
-                      </button>
-                    </div>
+                <div className="w-[85%] mx-auto pt-4 pb-4">
+                  <button
+                    onClick={() => setRewardsStep(3)}
+                    className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
+                  >
+                    REIVINDICAR RECOMPENSAS →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {rewardsStep === 3 && (
+              <div>
+                {/* Chronicle of exploration */}
+                <div className="pt-2 pb-2 text-center select-none animate-fadeIn">
+                  <h2 className="text-[#E2B054] font-serif font-black text-lg tracking-[0.2em] uppercase">
+                    📜 CRÔNICA DA MISSÃO
+                  </h2>
+                  <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-4 mb-4"></div>
+                </div>
+
+                <div className="w-[85%] mx-auto space-y-6 text-left">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054]/75 flex items-center gap-1.5 leading-none">
+                      ANOTAÇÕES DA SESSÃO
+                    </label>
+                    <textarea
+                      value={completionNotes}
+                      onChange={(e) => setCompletionNotes(e.target.value)}
+                      placeholder="O que você aprendeu ou fez nesta sessão?"
+                      className="w-full bg-stone-950/85 border border-[#C29544]/25 rounded-lg p-3 text-xs text-amber-200 placeholder-amber-100/25 focus:border-[#E2B054] focus:outline-none custom-scrollbar resize-none font-serif h-24 shadow-inner"
+                    />
                   </div>
-                )}
 
-                {rewardsStep === 3 && (
-                  <div>
-                    {/* Chronicle of exploration */}
-                    <div className="pt-4 pb-2 text-center select-none animate-fadeIn">
-                      <h2 className="text-[#E2B054] font-serif font-black text-lg md:text-xl tracking-[0.2em] uppercase">
-                        📜 CRÔNICA DA MISSÃO
-                      </h2>
-                      <p className="text-[9px] text-amber-100/40 font-serif italic mt-1 uppercase tracking-widest">
-                        Registre suas memórias nas tábuas do conhecimento
-                      </p>
-                      <div className="w-[85%] mx-auto border-b border-amber-500/15 mt-4 mb-4"></div>
-                    </div>
-
-                    <div className="w-[85%] mx-auto space-y-6 text-left">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054]/75 flex items-center gap-1.5 leading-none">
-                          📋 NOTAS DO SÁBIO / REFLEXÕES FINAIS
-                        </label>
-                        <textarea
-                          value={completionNotes}
-                          onChange={(e) => setCompletionNotes(e.target.value)}
-                          placeholder="O herói recorda as revelações adquiridas sob este foco..."
-                          className="w-full bg-stone-950/85 border border-[#C29544]/25 rounded-lg p-3 text-xs text-amber-200 placeholder-amber-100/25 focus:border-[#E2B054] focus:outline-none custom-scrollbar resize-none font-serif h-24 shadow-inner"
-                        />
-                      </div>
-
+                  {(() => {
+                    const currentSkillTags = gameState.skills[rewardsModalData.skillIdx]?.tags || [];
+                    if (currentSkillTags.length === 0) return null;
+                    return (
                       <div className="space-y-2 pt-2 border-t border-amber-500/5">
                         <label className="text-[10px] uppercase font-serif font-black tracking-widest text-[#E2B054]/75 flex items-center gap-1.5 leading-none">
-                          🏷️ ESPECIALIZAÇÃO TREINADA (VINCULAR SUBSKILL)
+                          VINCULAR SUBSKILL
                         </label>
-                        {(() => {
-                          const currentSkillTags = gameState.skills[rewardsModalData.skillIdx]?.tags || [];
-                          if (currentSkillTags.length === 0) {
+                        <div className="flex flex-wrap gap-1.5 p-2 bg-stone-950/50 border border-amber-500/10 rounded-lg max-h-28 overflow-y-auto custom-scrollbar">
+                          {currentSkillTags.map((tag) => {
+                            const isSelected = completionTag === tag;
                             return (
-                              <div className="text-[10px] text-[#A2A7A6]/60 italic p-3 bg-black/30 border border-amber-500/10 rounded font-serif py-2 leading-relaxed">
-                                Nenhuma subskill cadastrada para a habilidade ativa "{rewardsModalData.skillName}". Para cadastrar, feche esta tela e clique em Habilidades no topo para Gerenciar Subskills.
-                              </div>
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => setCompletionTag(isSelected ? '' : tag)}
+                                className={`px-3 py-1 text-xs rounded transition-all cursor-pointer font-serif border ${
+                                  isSelected
+                                    ? 'bg-[#E2B054]/25 border-[#E2B054] text-[#E2B054] font-bold scale-[1.03] shadow-[0_0_10px_rgba(245,158,11,0.20)]'
+                                    : 'bg-stone-900/60 border border-amber-500/5 text-amber-100/40 hover:border-amber-500/25 hover:text-amber-100/80'
+                                }`}
+                              >
+                                {tag} {isSelected && '✓'}
+                              </button>
                             );
-                          }
-                          return (
-                            <div className="flex flex-wrap gap-1.5 p-2 bg-stone-950/50 border border-amber-500/10 rounded-lg max-h-28 overflow-y-auto custom-scrollbar">
-                              {currentSkillTags.map((tag) => {
-                                const isSelected = completionTag === tag;
-                                return (
-                                  <button
-                                    key={tag}
-                                    type="button"
-                                    onClick={() => setCompletionTag(isSelected ? '' : tag)}
-                                    className={`px-3 py-1 text-xs rounded transition-all cursor-pointer font-serif border ${
-                                      isSelected
-                                        ? 'bg-[#E2B054]/25 border-[#E2B054] text-[#E2B054] font-bold scale-[1.03] shadow-[0_0_10px_rgba(245,158,11,0.20)]'
-                                        : 'bg-stone-900/60 border border-amber-500/5 text-amber-100/40 hover:border-amber-500/25 hover:text-amber-100/80'
-                                    }`}
-                                  >
-                                    {tag} {isSelected && '✓'}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    );
+                  })()}
+                </div>
 
-                    <div className="w-[85%] mx-auto pt-6 pb-4">
-                      <button
-                        onClick={() => handleConfirmClaimRewards(completionNotes, completionTag)}
-                        className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
-                      >
-                        ⚙️ SELAR RITUAL & CONCLUIR MISSÃO →
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </div>
-          );
-        })()}
-      </AnimatePresence>
+                <div className="w-[85%] mx-auto pt-6 pb-4">
+                  <button
+                    onClick={() => handleConfirmClaimRewards(completionNotes, completionTag)}
+                    className="w-full py-3 bg-[#c29544] hover:bg-[#d1a654] active:bg-[#b0863a] text-stone-950 font-serif font-black tracking-widest uppercase rounded border border-[#E9C37A] cursor-pointer select-none shadow-[0_4px_12px_rgba(194,149,68,0.25)] transition-all active:scale-[0.98] text-center text-xs md:text-sm"
+                  >
+                    CONTINUAR →
+                  </button>
+                </div>
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
 
       {/* FLOATING DETAILED MENU FOR A SKILL (CLICK ICON OR CARD EDGE) */}
       <AnimatePresence>
@@ -4457,7 +4537,7 @@ function App({ userId, signOut }: AppProps) {
                     💎 +{dailyReport.rewardAmount} GP
                   </div>
                   <p className="text-xs text-amber-100/60 font-serif">
-                    O Santuário recompensa quem retorna à jornada.
+                    Recompensa Diária
                   </p>
                 </div>
 
@@ -4595,14 +4675,6 @@ function App({ userId, signOut }: AppProps) {
                         {active.charName.toUpperCase()} ALCANÇOU O <span className="text-[#E2B054] text-lg sm:text-xl font-bold block sm:inline mt-1 sm:mt-0">NÍVEL {active.newLevel}</span>
                       </p>
                       <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mx-auto my-3" />
-                      <div className="space-y-2 mt-3">
-                        <p className="text-xs text-amber-100/60 font-serif italic max-w-xs mx-auto leading-relaxed">
-                           O conhecimento fortalece o guerreiro.
-                        </p>
-                        <p className="text-xs text-amber-100/65 font-serif italic max-w-xs mx-auto leading-relaxed">
-                           Continue avançando.
-                        </p>
-                      </div>
                     </div>
 
                     <div className="pt-2">
@@ -4668,9 +4740,6 @@ function App({ userId, signOut }: AppProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="text-[10px] sm:text-xs uppercase font-serif tracking-widest text-[#34D399] font-black">
-                        Novo patamar alcançado.
-                      </h3>
                       <h2 className="text-xl sm:text-2xl font-serif font-black tracking-wider text-emerald-400 drop-shadow-[0_2px_10px_rgba(52,211,153,0.35)]">
                         MAESTRIA APRIMORADA
                       </h2>
@@ -4681,9 +4750,6 @@ function App({ userId, signOut }: AppProps) {
                         alcançou o <span className="text-emerald-400 text-lg sm:text-xl font-black block sm:inline mt-1 sm:mt-0">Nível {active.newLevel}</span>
                       </p>
                       <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent mx-auto my-3" />
-                      <p className="text-[11px] text-amber-100/50 font-serif italic max-w-xs mx-auto leading-normal">
-                        Nenhum nível é concedido por acaso. Este foi conquistado minuto após minuto.
-                      </p>
                     </div>
 
                     <div className="pt-2">
