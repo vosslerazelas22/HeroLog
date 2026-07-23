@@ -40,7 +40,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
             <h4 className="font-serif font-bold text-sm text-amber-200 flex items-center gap-1.5">
               {q.name}
               {isCompleted && !isClaimed && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping pausable-anim" />
               )}
             </h4>
             <p className="text-xs text-amber-100/50 leading-relaxed mt-0.5">{q.desc}</p>
