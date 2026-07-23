@@ -1,3 +1,5 @@
+import { BuffType } from '../../types';
+
 export interface SessionConfig {
   selectedSkillIdx: number;
   isWildernessChecked: boolean;
@@ -28,9 +30,11 @@ export interface RewardsModalData {
   hasUsedCrystalClarity: boolean;
   usedEquipmentIndicesAndCharges: { index: number; charges: number }[];
   lootedItem?: { name: string; emoji: string };
+  lootedItems?: Array<{ name: string; emoji: string; desc: string; buff: BuffType; price: number; isEquipment: boolean; charges: number; maxCharges: number; rarity: 'comum' | 'especial' }>;
   droppedTitle?: { id: string; name: string; emoji: string };
   isWildernessChecked: boolean;
   isDungeonMode: boolean;
   pauseCount: number;
   comboBonusPercent: number;
 }
+

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CharacterState, ActiveSession, BuffType } from '../../types';
 import { SessionConfig, RewardsModalData } from './types';
+import { LOOT_TABLE, LootItem } from './lootTable';
+import { calculateLootChance } from './lootConfig';
 
 export interface UseFocusSessionParams {
   gameState: CharacterState;
@@ -432,10 +434,50 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
             xpMultiplier += 0.15;
             activated = true;
           }
+        } else if (item.buff === 'SilverGrimoire') {
+          xpMultiplier += 0.01;
+          activated = true;
+        } else if (item.buff === 'AncientScroll') {
+          goldMultiplier += 0.01;
+          activated = true;
+        } else if (item.buff === 'CelestinePotion') {
+          if (studiedMinutes >= 30) {
+            xpMultiplier += 0.02;
+            activated = true;
+          }
+        } else if (item.buff === 'StarPowder') {
+          if (studiedMinutes >= 30) {
+            goldMultiplier += 0.02;
+            activated = true;
+          }
+        } else if (item.buff === 'GoldBrooch') {
+          xpMultiplier += 0.01;
+          goldMultiplier += 0.01;
+          activated = true;
+        } else if (item.buff === 'ChaosGrimoire') {
+          xpMultiplier += 0.02;
+          activated = true;
+        } else if (item.buff === 'UnwaveringSword') {
+          goldMultiplier += 0.02;
+          activated = true;
+        } else if (item.buff === 'SacredChalice') {
+          xpMultiplier += 0.01;
+          goldMultiplier += 0.01;
+          activated = true;
+        } else if (item.buff === 'ArcaneRelic') {
+          if (studiedMinutes >= 45) {
+            xpMultiplier += 0.03;
+            activated = true;
+          }
+        } else if (item.buff === 'RunicStone') {
+          if (studiedMinutes >= 45) {
+            goldMultiplier += 0.03;
+            activated = true;
+          }
         }
 
         if (activated) {
-          const currentCharges = item.charges ?? 8;
+          const currentCharges = item.charges ?? item.maxCharges ?? 5;
           usedEquipmentIndicesAndCharges.push({ index, charges: currentCharges - 1 });
         }
       }
@@ -444,39 +486,29 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
     const finalXP = Math.floor(baseXP * xpMultiplier);
     const finalGold = Math.floor(baseGold * goldMultiplier);
 
-    // Loot rates custom multiplier based on title
-    let lootRateMultiplier = 1.0;
-    if (eqTitleId === 'VOIDWALKER') lootRateMultiplier += 0.50;
-    if (eqTitleId === 'TRANSCENDENT' || eqTitleId === 'CELESTIAL') lootRateMultiplier += 1.00;
-    if (eqTitleId === 'IMMORTAL_SCHOLAR') lootRateMultiplier += 0.50;
-    if (eqTitleId === 'NOCTURNAL') lootRateMultiplier += 0.30;
-    if (eqTitleId === 'SHADOW') lootRateMultiplier += 0.75;
+    const lootChanceInfo = calculateLootChance(studiedMinutes, configRef.current.isDungeonMode, eqTitleId);
 
-    // Random Loot drops
-    const landedLoots: { name: string; emoji: string }[] = [];
+    // Random Loot drops (independent roll resolution)
+    const landedLoots: LootItem[] = [];
     const rollCount = configRef.current.isDungeonMode ? 4 : 1;
 
     for (let r = 0; r < rollCount; r++) {
-      let thresholdChance = configRef.current.isDungeonMode ? 0.40 : (studiedMinutes >= 90 ? 0.70 : studiedMinutes >= 50 ? 0.45 : 0.25);
-      thresholdChance = Math.min(0.95, thresholdChance * lootRateMultiplier);
+      const thresholdChance = lootChanceInfo.finalChance;
       if (Math.random() < thresholdChance) {
-        const lootCatalog = configRef.current.isDungeonMode 
-          ? [
-              { name: 'Grimório Lendário do Caos 🔮', emoji: '🔮' },
-              { name: 'Espada do Foco Inabalável 🗡️', emoji: '🗡️' },
-              { name: 'Cálice Sagrado da Sabedoria 🏆', emoji: '🏆' },
-              { name: 'Relíquia Secreta Arcana 🔱', emoji: '🔱' },
-              { name: 'Pedra Filosofal Rúnica 💎', emoji: '💎' }
-            ]
-          : [
-              { name: 'Grimório de Prata', emoji: '📚' },
-              { name: 'Pergaminho Antigo', emoji: '📜' },
-              { name: 'Poção Celestina', emoji: '🧪' },
-              { name: 'Fécula de Estrelas', emoji: '✨' },
-              { name: 'Broche de Ouro', emoji: '🏅' }
-            ];
-        const item = lootCatalog[Math.floor(Math.random() * lootCatalog.length)];
-        landedLoots.push(item);
+        // Roll rarity
+        let chosenRarity: 'comum' | 'especial';
+        if (configRef.current.isDungeonMode) {
+          chosenRarity = Math.random() < 0.40 ? 'especial' : 'comum';
+        } else {
+          chosenRarity = Math.random() < 0.12 ? 'especial' : 'comum';
+        }
+        
+        // Filter candidates by rarity and select one with equal weights
+        const candidates = LOOT_TABLE.filter(item => item.rarity === chosenRarity);
+        if (candidates.length > 0) {
+          const chosenItem = candidates[Math.floor(Math.random() * candidates.length)];
+          landedLoots.push(chosenItem);
+        }
       }
     }
 
@@ -544,11 +576,11 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
       skillName: activeSkillName,
       skillIdx: currentSkillIdx,
       xpEarned: finalXP,
-      goldEarned: finalGold + dungeonClearGoldBonus,
+      goldEarned: finalGold,
       notes: configRef.current.sessionNotes || '',
       durationMins: studiedMinutes,
-      lootName: lootedItem?.name,
-      lootEmoji: lootedItem?.emoji,
+      lootName: landedLoots.length > 0 ? landedLoots.map(l => l.name).join(', ') : undefined,
+      lootEmoji: landedLoots.length > 0 ? landedLoots[0].emoji : undefined,
       droppedTitleName: droppedTitle?.name,
       droppedTitleEmoji: droppedTitle?.emoji,
       aiChronicleLoading: false,
@@ -560,6 +592,7 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
       hasUsedCrystalClarity,
       usedEquipmentIndicesAndCharges,
       lootedItem,
+      lootedItems: landedLoots,
       droppedTitle,
       isWildernessChecked: configRef.current.isWildernessChecked,
       isDungeonMode: configRef.current.isDungeonMode,

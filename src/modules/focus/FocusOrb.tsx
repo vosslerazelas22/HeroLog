@@ -197,16 +197,16 @@ export function FocusOrb({
 
   // Sizing styles
   const sizeClasses = {
-    compact: 'w-[150px] h-[150px]',
-    standard: 'w-[150px] h-[150px] min-[390px]:w-[190px] min-[390px]:h-[190px] lg:w-[250px] lg:h-[250px]',
-    fullscreen: 'w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] lg:w-[380px] lg:h-[380px]',
+    compact: 'w-[172px] h-[172px]',
+    standard: 'w-[172px] h-[172px] min-[390px]:w-[218px] min-[390px]:h-[218px] lg:w-[288px] lg:h-[288px]',
+    fullscreen: 'w-[253px] h-[253px] sm:w-[345px] sm:h-[345px] lg:w-[437px] lg:h-[437px]',
   };
 
   // Text overlay responsive scale
   const textStyles = isBreakActive
     ? 'text-emerald-300 font-extrabold tracking-wider drop-shadow-[0_2px_12px_rgba(16,185,129,0.5)]'
     : isUrgent
-      ? 'text-red-400 font-extrabold animate-pulse tracking-wider drop-shadow-[0_2px_12px_rgba(239,68,68,0.6)]'
+      ? 'text-red-400 font-extrabold animate-pulse pausable-anim tracking-wider drop-shadow-[0_2px_12px_rgba(239,68,68,0.6)]'
       : isPaused
         ? 'text-amber-500/80 font-bold tracking-wider drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)]'
         : isRunning
@@ -225,7 +225,7 @@ export function FocusOrb({
           isBreakActive
             ? 'bg-emerald-500'
             : isUrgent
-              ? 'bg-red-500 animate-pulse'
+              ? 'bg-red-500 animate-pulse pausable-anim'
               : isPaused
                 ? 'bg-amber-600'
                 : isRunning
@@ -316,11 +316,11 @@ export function FocusOrb({
           <path ref={frontWaveRef} fill={gradientFront} />
 
           {/* Ambient rising bubbles inside potion */}
-          <circle cx="30" cy="60" r="1.2" fill="#ffffff" opacity="0.25" className="animate-pulse" style={{ animationDuration: '2s' }} />
-          <circle cx="72" cy="70" r="1.8" fill="#ffffff" opacity="0.15" className="animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
-          <circle cx="52" cy="80" r="1.5" fill="#ffffff" opacity="0.2" className="animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '1.2s' }} />
-          <circle cx="40" cy="45" r="0.8" fill="#ffffff" opacity="0.3" className="animate-pulse" style={{ animationDuration: '1.5s', animationDelay: '0.8s' }} />
-          <circle cx="60" cy="55" r="1.0" fill="#ffffff" opacity="0.25" className="animate-pulse" style={{ animationDuration: '2.2s', animationDelay: '0.3s' }} />
+          <circle cx="30" cy="60" r="1.2" fill="#ffffff" opacity="0.25" className="animate-pulse pausable-anim" style={{ animationDuration: '2s' }} />
+          <circle cx="72" cy="70" r="1.8" fill="#ffffff" opacity="0.15" className="animate-pulse pausable-anim" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+          <circle cx="52" cy="80" r="1.5" fill="#ffffff" opacity="0.2" className="animate-pulse pausable-anim" style={{ animationDuration: '2.5s', animationDelay: '1.2s' }} />
+          <circle cx="40" cy="45" r="0.8" fill="#ffffff" opacity="0.3" className="animate-pulse pausable-anim" style={{ animationDuration: '1.5s', animationDelay: '0.8s' }} />
+          <circle cx="60" cy="55" r="1.0" fill="#ffffff" opacity="0.25" className="animate-pulse pausable-anim" style={{ animationDuration: '2.2s', animationDelay: '0.3s' }} />
         </g>
 
         {/* Rotating runic gold frame outside */}
@@ -333,7 +333,7 @@ export function FocusOrb({
           strokeWidth="1.2"
           opacity="0.45"
           strokeDasharray="4, 4"
-          className={isRunning && !isPaused ? 'animate-spin' : ''}
+          className={isRunning && !isPaused ? 'animate-spin pausable-anim' : ''}
           style={{ transformOrigin: 'center', animationDuration: '45s' }}
         />
 
