@@ -15,6 +15,66 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.8] - 2026-07-22
+
+### Adicionado
+
+- **Modal de Detalhe de Item reutilizável (`ItemInspectModal`)** — Bênçãos/Elixires Ativos e Equipamentos na Ficha de Personagem agora são clicáveis e abrem um modal de detalhe completo (efeito, descrição, cargas), substituindo o tooltip nativo `title=` que não funcionava em touch/mobile.
+- **Tooltip de Chance de Saque (Modo Padrão)** — novo indicador "🎯 Modo Padrão • Chance de Saque: X%" na tela de Foco, com modal explicativo detalhando os limiares de chance por duração de sessão e os bônus de títulos raros equipados, calculados dinamicamente a partir da mesma lógica usada pelo motor de jogo.
+- **Catálogo único de itens de loot (`LOOT_TABLE`)** — 14 itens (4 Especiais e 10 Comuns) com efeitos, descrições e raridade centralizados em um só lugar, com resolução da rolagem no momento do drop (não mais em duas etapas desconexas).
+
+### Alterado
+
+- **Redesenho do Modal de Recompensas (Tesouro)** — itens obtidos e título raro dropado agora são exibidos em um grid compacto estilo "bento" (em vez de lista vertical com scroll interno duplo), eliminando o conflito de rolagem que existia em sessões de Masmorra com múltiplos drops.
+- **Copy revisado nos modais de conclusão de sessão** — linguagem simplificada em diversos textos ("Sessão Concluída", "Duração da Sessão", "Anotações da Sessão", "Vincular Subskill", "Continuar", "Reivindicar Recompensas"), removendo floreios narrativos sem valor funcional (ex.: frases motivacionais genéricas nos modais de Level Up e Login Diário).
+- **Campo de Subskill na Crônica da Missão** — a seção de vínculo de subskill agora só é exibida quando existem subskills cadastradas para a habilidade ativa, eliminando espaço vertical desnecessário no modal.
+- **Focus Orb (timer central)** — aumento de aproximadamente 15% nas dimensões em todos os perfis de exibição (compacto, padrão e tela cheia).
+- **Performance de abertura de modais (mobile)** — eliminado travamento perceptível ao abrir modais em dispositivos móveis; animações de fundo (partículas, brilhos, ícones giratórios) agora pausam automaticamente enquanto um modal está aberto, via classe CSS global em vez de re-render de estado React.
+
+### Corrigido
+
+- **Bônus de ouro de Masmorra não creditado** — corrigido bug em que o bônus de +2.500 GP ao concluir uma Masmorra (`dungeonClearGoldBonus`) nunca era somado ao saldo real de ouro do jogador.
+- **Duplicação da lógica de chance de drop** — a regra de cálculo de chance de saque (por duração de sessão e bônus de título equipado) existia de forma duplicada em dois arquivos; agora centralizada em uma única função (`calculateLootChance`), usada tanto pelo motor de jogo quanto pelo novo tooltip informativo.
+
+### Removido
+
+- **Frases decorativas sem função nos modais** — removidas ou simplificadas falas de tom fantasioso em Tesouro, Crônica da Missão, Level Up (Personagem e Habilidade), Login Diário e Modo Selvagem, mantendo apenas o conteúdo funcional de cada texto.
+- **Código morto no fluxo de recompensas** — removido bloco de fallback legado (`!lootedItems && lootName`) que nunca mais era acionado desde a migração para o catálogo único de itens.
+- **Banner vertical de Título Raro** — o card de título raro obtido no drop (antes um banner de largura total) foi integrado ao mesmo grid compacto dos itens de loot comuns/especiais.
+
+### Conhecido
+
+- **Nomes de título raro sem tradução no catálogo** — alguns títulos (SHADOW, IMMORTAL SCHOLAR, NOCTURNAL) ainda não possuem nome em português no `TITLE_CATALOG`, aparecendo em inglês onde outros já estão traduzidos; candidato a revisão em ciclo futuro.
+- **Validação em APK/produção pendente** para a otimização de performance de abertura de modais — validado em dev build; build de produção ainda não testado diretamente em dispositivo.
+
+### Arquivos alterados
+
+- `/src/App.tsx`
+- `/src/components/Modal.tsx`
+- `/src/modules/focus/FocusOrb.tsx`
+- `/src/modules/skills/SkillsScreen.tsx`
+- `/src/modules/quests/QuestsTab.tsx`
+- `/src/index.css`
+- `/src/modules/character/InventoryScreen.tsx`
+- `/src/modules/character/CharacterScreen.tsx`
+- `/src/types.ts`
+- `/src/modules/focus/types.ts`
+- `/src/modules/focus/useFocusSession.ts`
+- `/src/modules/focus/ModeDescriptionModal.tsx`
+
+### Arquivos criados
+
+- `/src/utils/modalHelper.ts`
+- `/src/components/ItemInspectModal.tsx`
+- `/src/modules/focus/lootTable.ts`
+- `/src/modules/focus/lootConfig.ts`
+
+### Arquivos removidos
+
+- `/src/components/ModalState.ts` (criado na Tarefa C, substituído pelo mecanismo em `modalHelper.ts` na Tarefa C2)
+
+---
+
 ## [1.1.7] - 2026-07-17
 
 ### Corrigido
