@@ -245,7 +245,7 @@ export const SkillsScreen: React.FC<SkillsScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => onPrestigeSkill(idx)}
-                    className="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-400 hover:from-yellow-400 hover:to-amber-300 text-stone-950 text-[10px] font-black uppercase tracking-widest py-1.5 rounded font-serif shadow animate-pulse cursor-pointer text-center"
+                    className="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-400 hover:from-yellow-400 hover:to-amber-300 text-stone-950 text-[10px] font-black uppercase tracking-widest py-1.5 rounded font-serif shadow animate-pulse pausable-anim cursor-pointer text-center"
                   >
                     👑 Alcançar Prestígio (Resetar a Nível 1 & Ganhar +25% XP Definitivo)
                   </button>
