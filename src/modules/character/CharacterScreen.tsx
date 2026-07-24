@@ -6,9 +6,9 @@ import { TitleEquipModal } from '../../components/TitleEquipModal';
 import { ItemInspectModal } from '../../components/ItemInspectModal';
 
 const CLASS_AVATAR_MAP: Record<'Mage' | 'Warrior' | 'Ranger', string> = {
-  Mage: '/avatars/mage-idle.png',
-  Warrior: '/avatars/warrior-idle.png',
-  Ranger: '/avatars/ranger-idle.png',
+  Mage: 'avatars/mage-idle.png',
+  Warrior: 'avatars/warrior-idle.png',
+  Ranger: 'avatars/ranger-idle.png',
 };
 const DEFAULT_AVATAR = CLASS_AVATAR_MAP.Warrior;
 
