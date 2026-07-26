@@ -15,6 +15,34 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.10] - 2026-07-26
+
+### Corrigido
+- **Deslocamento horizontal no cabeçalho** — o grupo de indicadores (Sequência, Ouro, Relógio, Mudo, Ajustes) se deslocava horizontalmente conforme a barra de rolagem vertical aparecia ou desaparecia; corrigido reservando permanentemente o espaço da barra de rolagem.
+- **Quebra de linha na pílula de Sequência** — o ícone 🔥 e o número podiam quebrar em duas linhas quando o espaço do cabeçalho era comprimido (ex.: saldo de Ouro com muitos dígitos); corrigido em todos os indicadores do cabeçalho.
+- **Raridade incorreta no modal de detalhe de item** — todo item equipável exibia "Equipamento Legendário" independente da raridade real; agora reflete corretamente Especial/Comum, ou nenhum qualificador para itens sem raridade registrada.
+
+### Adicionado
+- **Raridade persistida no Inventário** — itens agora guardam sua raridade (Comum/Especial) tanto ao serem obtidos por drop de foco quanto comprados no Bazar de Mystara, exibida como selo na lista de itens e no modal de detalhe.
+
+### Alterado
+- **Redesenho da aba Inventário** — o grid compacto de ícones foi substituído por uma lista de linhas, com ícone maior, nome, efeito e raridade visíveis sem necessidade de clique; removida a limitação de altura com rolagem interna própria.
+- **Sub-aba Crônicas Diárias padronizada** — cabeçalho renomeado e cabeçalho redundante removido; alternância entre "Crônicas Completas" e "Compilado de Notas" redesenhada no mesmo padrão visual usado no Bazar de Mystara, sem emojis nos botões.
+
+### Conhecido
+- **Corte do item "Reino" na navegação inferior** — problema relatado em viewports estreitos parece ter se resolvido como efeito colateral da correção de rolagem do cabeçalho, mas a causa raiz não foi isolada de forma independente; a acompanhar em ciclos futuros.
+
+### Arquivos alterados
+- `/src/index.css`
+- `/src/App.tsx`
+- `/src/types.ts`
+- `/src/modules/kingdom/ShopTab.tsx`
+- `/src/modules/character/InventoryScreen.tsx`
+- `/src/components/ItemInspectModal.tsx`
+- `/src/modules/quests/HistoryTab.tsx`
+
+---
+
 ## [1.1.9] - 2026-07-23
 
 ### Adicionado
