@@ -30,31 +30,58 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
     <>
       {/* COLLECTED BAG ITEMS VIEWPORT */}
       <div className="space-y-2">
-        <h4 className="text-[10px] font-serif font-bold tracking-wider uppercase text-amber-100/40 pb-0.5 border-b border-amber-500/5">
-          Mochila de Relíquias & Itens
-        </h4>
-        <div className="grid grid-cols-5 gap-1.5 max-h-[120px] overflow-y-auto pr-0.5">
-          {physicalItems.length > 0 ? (
-            physicalItems.map((item, idx) => (
+        {physicalItems.length > 0 ? (
+          physicalItems.map((item, idx) => (
+            <div
+              key={item.id || idx}
+              onClick={() => onInspectItem(item)}
+              className={`py-3.5 px-3 bg-stone-900 border ${
+                item.isEquipment
+                  ? 'border-amber-500/40 bg-amber-500/[0.04] hover:border-amber-400'
+                  : 'border-amber-500/10 bg-stone-900/60 hover:border-amber-500/30'
+              } rounded-lg flex items-center gap-3 cursor-pointer transition-all active:scale-[0.99] group`}
+              title={`${item.name} — Clique para interagir`}
+            >
+              {/* Ícone em destaque à esquerda (~60px) */}
               <div
-                key={item.id || idx}
-                onClick={() => onInspectItem(item)}
-                className={`aspect-square bg-stone-900 border ${
-                  item.isEquipment
-                    ? 'border-amber-500/40 bg-amber-500/[0.03] hover:border-amber-400'
-                    : 'border-amber-500/10 hover:border-amber-500/30'
-                } rounded flex items-center justify-center text-xl cursor-pointer transition-all active:scale-95`}
-                title={`${item.name} — Clique para interagir`}
+                className={`w-[60px] h-[60px] shrink-0 rounded-md bg-stone-950/70 border ${
+                  item.isEquipment ? 'border-amber-500/30' : 'border-stone-800'
+                } flex items-center justify-center text-3xl shadow-inner group-hover:scale-105 transition-transform`}
               >
                 {item.emoji}
               </div>
-            ))
-          ) : (
-            <div className="col-span-5 text-[10px] italic text-amber-100/35 font-serif py-1 animate-pulse">
-              Mochila vazia. Drops ocorrem ao concluir focos ou compre no Bazar.
+
+              {/* Nome, Badge de Raridade e Descrição */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-xs font-bold text-amber-100 truncate group-hover:text-amber-300 transition-colors">
+                    {item.name}
+                  </span>
+
+                  {item.rarity && (
+                    <span
+                      className={`shrink-0 text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                        item.rarity === 'especial'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-stone-800/80 text-stone-400 border-stone-700'
+                      }`}
+                    >
+                      {item.rarity === 'especial' ? 'Especial' : 'Comum'}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-stone-400 truncate leading-tight font-serif">
+                  {item.desc}
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+          ))
+        ) : (
+          <div className="text-[10px] italic text-amber-100/35 font-serif py-3 text-center animate-pulse border border-dashed border-amber-500/10 rounded-lg bg-stone-900/30">
+            Mochila vazia. Drops ocorrem ao concluir focos ou compre no Bazar.
+          </div>
+        )}
       </div>
 
       {/* ITEM INSPECTION MODAL */}
