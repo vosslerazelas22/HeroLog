@@ -28,10 +28,10 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
   const notesEntries = history.filter(entry => entry.notes && entry.notes.trim().length > 0);
 
   const renderToggle = () => (
-    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 mb-4 gap-1">
+    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 mb-4 gap-1 font-serif">
       <button
         onClick={() => setViewMode('all')}
-        className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
+        className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-serif font-bold rounded tracking-wider transition-all cursor-pointer ${
           viewMode === 'all'
             ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
             : 'text-stone-500 hover:text-stone-300 border border-transparent'
@@ -42,7 +42,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
       </button>
       <button
         onClick={() => setViewMode('notes')}
-        className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
+        className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-serif font-bold rounded tracking-wider transition-all cursor-pointer ${
           viewMode === 'notes'
             ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
             : 'text-stone-500 hover:text-stone-300 border border-transparent'
