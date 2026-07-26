@@ -2,6 +2,7 @@ import React from 'react';
 import { InventoryItem } from '../../types';
 import { ShoppingBag, ChevronRight, Coins } from 'lucide-react';
 import { sound } from '../../utils/audio';
+import { LOOT_TABLE } from '../focus/lootTable';
 
 const SHOP_CATALOG: Omit<InventoryItem, 'id'>[] = [
   {
@@ -92,9 +93,11 @@ export const ShopTab: React.FC<ShopTabProps> = ({ gold, inventory, onBuyItem }) 
     if (gold < item.price) return;
     
     sound.playCoins();
+    const matchingLootItem = LOOT_TABLE.find(l => l.buff === item.buff);
     onBuyItem({
       ...item,
-      id: `${item.buff}_${Date.now()}`
+      id: `${item.buff}_${Date.now()}`,
+      ...(matchingLootItem ? { rarity: matchingLootItem.rarity } : {})
     });
   };
 
