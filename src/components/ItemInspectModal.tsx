@@ -77,7 +77,13 @@ export const ItemInspectModal: React.FC<ItemInspectModalProps> = ({
                   {item.name}
                 </h4>
                 <span className="text-[9px] font-mono uppercase text-amber-100/40">
-                  {item.isEquipment ? '🛡️ Equipamento Legendário' : '🎒 Relíquia Colecionável'}
+                  {item.isEquipment
+                    ? item.rarity === 'especial'
+                      ? '🛡️ Equipamento Especial'
+                      : item.rarity === 'comum'
+                      ? '🛡️ Equipamento Comum'
+                      : '🛡️ Equipamento'
+                    : '🎒 Relíquia Colecionável'}
                 </span>
               </div>
             </div>
