@@ -28,39 +28,34 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
   const notesEntries = history.filter(entry => entry.notes && entry.notes.trim().length > 0);
 
   const renderToggle = () => (
-    <div className="flex bg-stone-950/60 p-1.5 rounded-lg border border-amber-500/10 mb-4 gap-2">
+    <div className="flex bg-stone-950/40 p-1 rounded border border-amber-500/10 mb-4 gap-1">
       <button
         onClick={() => setViewMode('all')}
-        className={`flex-1 text-center py-1.5 rounded text-[10px] md:text-xs font-serif uppercase tracking-widest transition-all cursor-pointer ${
+        className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
           viewMode === 'all'
-            ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 font-bold shadow-md'
-            : 'text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/40'
+            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+            : 'text-stone-500 hover:text-stone-300 border border-transparent'
         }`}
         id="history-tab-all-btn"
       >
-        🛡️ Crônicas completas
+        Crônicas completas
       </button>
       <button
         onClick={() => setViewMode('notes')}
-        className={`flex-1 text-center py-1.5 rounded text-[10px] md:text-xs font-serif uppercase tracking-widest transition-all cursor-pointer ${
+        className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
           viewMode === 'notes'
-            ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 font-bold shadow-md'
-            : 'text-amber-100/50 hover:text-amber-200 hover:bg-stone-900/40'
+            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+            : 'text-stone-500 hover:text-stone-300 border border-transparent'
         }`}
         id="history-tab-notes-btn"
       >
-        📝 Compilado de Notas
+        Compilado de Notas
       </button>
     </div>
   );
 
   return (
-    <div className="space-y-4 p-4 max-w-xl mx-auto">
-      <h3 className="font-serif text-lg text-amber-400 border-b border-amber-500/20 pb-2 mb-4 tracking-wider uppercase flex items-center gap-2">
-        <BookOpen className="w-5 h-5 text-amber-500" />
-        Crônicas da Alma (Histórico)
-      </h3>
-
+    <div className="space-y-4 px-4 pb-4 max-w-xl mx-auto">
       {renderToggle()}
 
       {viewMode === 'notes' ? (
