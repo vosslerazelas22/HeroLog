@@ -823,7 +823,8 @@ function App({ userId, signOut }: AppProps) {
             price: item.price,
             isEquipment: item.isEquipment,
             charges: item.charges,
-            maxCharges: item.maxCharges
+            maxCharges: item.maxCharges,
+            rarity: item.rarity
           });
 
           setTimeout(() => {
@@ -1587,7 +1588,8 @@ function App({ userId, signOut }: AppProps) {
             price: item.price,
             isEquipment: item.isEquipment,
             charges: item.charges,
-            maxCharges: item.maxCharges
+            maxCharges: item.maxCharges,
+            rarity: item.rarity
           });
 
           setTimeout(() => {
@@ -2048,29 +2050,29 @@ function App({ userId, signOut }: AppProps) {
 
         {/* Global indicators pills */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold shadow-inner" title="Combo de Consistência (Streak)">
-            <span>🔥 {gameState.streak}</span>
+          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold shadow-inner whitespace-nowrap flex-shrink-0" title="Combo de Consistência (Streak)">
+            <span className="whitespace-nowrap">🔥 {gameState.streak}</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold font-serif shadow-inner">
+          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold font-serif shadow-inner whitespace-nowrap flex-shrink-0">
             <Coins className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-            <span>{gameState.gold}</span>
+            <span className="whitespace-nowrap">{gameState.gold}</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-300/80 font-serif shadow-inner">
-            <span>{getClockPhase()}</span>
+          <div className="hidden sm:flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-300/80 font-serif shadow-inner whitespace-nowrap flex-shrink-0">
+            <span className="whitespace-nowrap">{getClockPhase()}</span>
           </div>
 
           <button
             onClick={() => setMuteSfx(!muteSfx)}
-            className="w-8 h-8 rounded bg-stone-950/40 border border-amber-500/10 text-amber-200/60 hover:text-amber-400 hover:border-amber-400 transition-all flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded bg-stone-950/40 border border-amber-500/10 text-amber-200/60 hover:text-amber-400 hover:border-amber-400 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
           >
             {muteSfx ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
           </button>
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="w-8 h-8 rounded bg-stone-950/40 border border-amber-500/10 text-amber-200/60 hover:text-amber-400 hover:border-amber-400 transition-all flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded bg-stone-950/40 border border-amber-500/10 text-amber-200/60 hover:text-amber-400 hover:border-amber-400 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
             title="Ajustes de Campanha"
           >
             <Settings className="w-4 h-4" />
@@ -3376,7 +3378,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <BookOpen className="w-4 h-4 text-amber-400" /> Diário de Bordo (Crônicas e Histórico)
+                      <BookOpen className="w-4 h-4 text-amber-400" /> Crônicas Diárias
                     </h3>
                   </div>
                   <HistoryTab history={gameState.history} />

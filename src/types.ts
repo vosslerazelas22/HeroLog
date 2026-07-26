@@ -10,6 +10,7 @@ export interface InventoryItem {
   isEquipment?: boolean;
   charges?: number;
   maxCharges?: number;
+  rarity?: 'comum' | 'especial';
 }
 
 export interface Skill {

@@ -9,6 +9,10 @@
   --color-quest-card: #120f21;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background-color: var(--color-quest-deep);
   color: #e8dfc8;
