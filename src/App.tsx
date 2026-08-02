@@ -4165,202 +4165,230 @@ function App({ userId, signOut }: AppProps) {
                 </button>
               </div>
 
-              <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
-                
-                {/* Hero identity details */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
-                      Apelido do Aventureiro:
-                    </label>
-                    <input
-                      id="hero-name-fld"
-                      type="text"
-                      defaultValue={gameState.charName}
-                      className="w-full bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400"
-                      maxLength={24}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
-                      Nome deste Dispositivo:
-                    </label>
-                    <input
-                      id="device-name-fld"
-                      type="text"
-                      defaultValue={localStorage.getItem('herolog_device_label') || 'Navegador Web'}
-                      className="w-full bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400"
-                      maxLength={32}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
-                      Descanso Longo (min) [1-120]:
-                    </label>
-                    <input
-                      id="long-break-fld"
-                      type="number"
-                      min={1}
-                      max={120}
-                      defaultValue={gameState.pomodoroSettings.longBreakDuration ?? 15}
-                      className="w-full bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
-                      Selecione sua Classe de Prestígio (Bônus Diferentes):
-                    </label>
-                    
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {/* Mage */}
-                      <div
-                        onClick={() => {
-                          const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
-                          handleApplyCharacterSetupChanges(nameFld, 'Mage');
-                        }}
-                        className={`p-3 border rounded text-center cursor-pointer transition-all ${
-                          gameState.charClass === 'Mage' 
-                            ? 'bg-amber-500/[0.04] border-amber-400' 
-                            : 'bg-stone-900 border-amber-500/5 opacity-55'
-                        }`}
-                      >
-                        <span className="text-2xl block mb-1">🧙</span>
-                        <strong className="text-[10px] uppercase tracking-wider font-serif text-amber-200 block">Mago</strong>
-                        <span className="text-[9px] text-purple-400 block">+20% XP</span>
-                      </div>
-
-                      {/* Warrior */}
-                      <div
-                        onClick={() => {
-                          const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
-                          handleApplyCharacterSetupChanges(nameFld, 'Warrior');
-                        }}
-                        className={`p-3 border rounded text-center cursor-pointer transition-all ${
-                          gameState.charClass === 'Warrior' 
-                            ? 'bg-amber-500/[0.04] border-amber-400' 
-                            : 'bg-stone-900 border-amber-500/5 opacity-55'
-                        }`}
-                      >
-                        <span className="text-2xl block mb-1">⚔️</span>
-                        <strong className="text-[10px] uppercase tracking-wider font-serif text-amber-200 block">Guerreiro</strong>
-                        <span className="text-[9px] text-amber-400 block">+20% Ouro</span>
-                      </div>
-
-                      {/* Ranger */}
-                      <div
-                        onClick={() => {
-                          const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
-                          handleApplyCharacterSetupChanges(nameFld, 'Ranger');
-                        }}
-                        className={`p-3 border rounded text-center cursor-pointer transition-all ${
-                          gameState.charClass === 'Ranger' 
-                            ? 'bg-amber-500/[0.04] border-amber-400' 
-                            : 'bg-stone-900 border-amber-500/5 opacity-55'
-                        }`}
-                      >
-                        <span className="text-2xl block mb-1">🏹</span>
-                        <strong className="text-[10px] uppercase tracking-wider font-serif text-amber-200 block">Patrulheiro</strong>
-                        <span className="text-[9px] text-emerald-400 block">+15% Streak</span>
-                      </div>
+              <div className="p-4 sm:p-5 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <section className="rounded-xl border border-amber-500/15 bg-stone-950/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h4 className="text-[11px] uppercase tracking-[0.24em] text-amber-300 font-serif font-black">
+                        Perfil do Herói
+                      </h4>
+                      <p className="text-[10px] text-amber-100/55 mt-1">
+                        Ajuste a identidade do seu herói e as preferências principais da campanha.
+                      </p>
                     </div>
-
                   </div>
-                </div>
 
-                {/* Backup / Restore campaign JSON data */}
-                <div className="border-t border-amber-500/10 pt-4 space-y-3">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">Backup da Campanha</span>
-                  
-                  {/* File approach */}
-                  <div className="space-y-1">
-                    <span className="text-[9px] text-amber-100/30 block mb-0.5 font-mono">OPÇÃO 1: Arquivo JSON (Para Computador/Navegador)</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={handleExportCampaignJSON}
-                        className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-widest rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
-                      >
-                        Exportar
-                      </button>
-                      <label className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-widest rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1 text-center">
-                        Importar
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={handleImportCampaignJSON}
-                          className="hidden"
-                        />
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] uppercase font-serif tracking-[0.2em] text-amber-100/60 block mb-1.5 font-semibold">
+                        Nome do Herói:
                       </label>
+                      <input
+                        id="hero-name-fld"
+                        type="text"
+                        defaultValue={gameState.charName}
+                        className="w-full bg-stone-900/90 border border-amber-500/20 rounded-lg px-3 py-2.5 text-[11px] text-amber-100 placeholder-amber-100/20 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-500/20 font-sans"
+                        maxLength={24}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-serif tracking-[0.2em] text-amber-100/60 block mb-1.5 font-semibold">
+                        Nome deste dispositivo:
+                      </label>
+                      <input
+                        id="device-name-fld"
+                        type="text"
+                        defaultValue={localStorage.getItem('herolog_device_label') || 'Navegador Web'}
+                        className="w-full bg-stone-900/90 border border-amber-500/20 rounded-lg px-3 py-2.5 text-[11px] text-amber-100 placeholder-amber-100/20 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-500/20 font-sans"
+                        maxLength={32}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-serif tracking-[0.2em] text-amber-100/60 block mb-1.5 font-semibold">
+                        Duração do descanso longo (minutos):
+                      </label>
+                      <input
+                        id="long-break-fld"
+                        type="number"
+                        min={1}
+                        max={120}
+                        defaultValue={gameState.pomodoroSettings.longBreakDuration ?? 15}
+                        className="w-full bg-stone-900/90 border border-amber-500/20 rounded-lg px-3 py-2.5 text-[11px] text-amber-100 placeholder-amber-100/20 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-500/20 font-sans"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-serif tracking-[0.2em] text-amber-100/60 block mb-1.5 font-semibold">
+                        Selecione sua Classe de Prestígio (Bônus Diferentes):
+                      </label>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Mage */}
+                        <div
+                          onClick={() => {
+                            const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
+                            handleApplyCharacterSetupChanges(nameFld, 'Mage');
+                          }}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.charClass === 'Mage' 
+                              ? 'bg-amber-500/[0.08] border-amber-400 shadow-[0_0_0_1px_rgba(245,158,11,0.15)] scale-[1.01]' 
+                              : 'bg-stone-900/70 border-amber-500/10 opacity-70 hover:opacity-100 hover:border-amber-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.charClass === 'Mage' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-400/0 via-amber-300 to-amber-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">🧙</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.16em] font-serif text-amber-200 block leading-tight break-words whitespace-normal">Mago</strong>
+                          <span className="text-[8px] text-purple-400 block mt-0.5 leading-tight">+20% XP</span>
+                        </div>
+
+                        {/* Warrior */}
+                        <div
+                          onClick={() => {
+                            const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
+                            handleApplyCharacterSetupChanges(nameFld, 'Warrior');
+                          }}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.charClass === 'Warrior' 
+                              ? 'bg-amber-500/[0.08] border-amber-400 shadow-[0_0_0_1px_rgba(245,158,11,0.15)] scale-[1.01]' 
+                              : 'bg-stone-900/70 border-amber-500/10 opacity-70 hover:opacity-100 hover:border-amber-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.charClass === 'Warrior' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-400/0 via-amber-300 to-amber-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">⚔️</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.16em] font-serif text-amber-200 block leading-tight break-words whitespace-normal">Guerreiro</strong>
+                          <span className="text-[8px] text-amber-400 block mt-0.5 leading-tight">+20% Ouro</span>
+                        </div>
+
+                        {/* Ranger */}
+                        <div
+                          onClick={() => {
+                            const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
+                            handleApplyCharacterSetupChanges(nameFld, 'Ranger');
+                          }}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.charClass === 'Ranger' 
+                              ? 'bg-amber-500/[0.08] border-amber-400 shadow-[0_0_0_1px_rgba(245,158,11,0.15)] scale-[1.01]' 
+                              : 'bg-stone-900/70 border-amber-500/10 opacity-70 hover:opacity-100 hover:border-amber-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.charClass === 'Ranger' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-400/0 via-amber-300 to-amber-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">🏹</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.16em] font-serif text-amber-200 block leading-tight break-words whitespace-normal">Patrulheiro</strong>
+                          <span className="text-[8px] text-emerald-400 block mt-0.5 leading-tight">+15% Streak</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                </section>
 
-                  {/* Clipboard text approach */}
-                  <div className="space-y-1.5 bg-stone-950/40 p-2.5 rounded border border-amber-500/5">
-                    <span className="text-[9px] text-amber-200/40 block font-mono">OPÇÃO 2: Registro por Código (Ideal para Android / APK)</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={handleCopySaveToClipboard}
-                        className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-wider rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
-                      >
-                        Copiar Progresso
-                      </button>
-                      <button
-                        onClick={() => {
-                          setPastedSaveText('');
-                          setIsImportTextOpen(true);
-                        }}
-                        className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-wider rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
-                      >
-                        Restaurar Progresso
-                      </button>
+                <section className="rounded-xl border border-amber-500/15 bg-stone-950/35 p-4 space-y-3">
+                  <div>
+                    <h4 className="text-[11px] uppercase tracking-[0.24em] text-amber-300 font-serif font-black">
+                      Backup da campanha
+                    </h4>
+                    <p className="text-[10px] text-amber-100/55 mt-1">
+                      Proteja o seu progresso ou restaure um salvamento anterior.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="rounded-lg border border-amber-500/10 bg-stone-900/50 p-3 space-y-2">
+                      <span className="text-[10px] text-amber-100/70 block font-semibold">Via arquivo JSON</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={handleExportCampaignJSON}
+                          className="py-2 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-widest rounded-lg transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
+                        >
+                          Exportar
+                        </button>
+                        <label className="py-2 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-widest rounded-lg transition-all cursor-pointer font-bold flex items-center justify-center gap-1 text-center">
+                          Importar
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportCampaignJSON}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-amber-500/10 bg-stone-950/45 p-3 space-y-2">
+                      <span className="text-[10px] text-amber-100/70 block font-semibold">Via código de salvamento</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={handleCopySaveToClipboard}
+                          className="py-2 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-wider rounded-lg transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
+                        >
+                          Copiar salvamento
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPastedSaveText('');
+                            setIsImportTextOpen(true);
+                          }}
+                          className="py-2 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-wider rounded-lg transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
+                        >
+                          Restaurar salvamento
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </section>
 
-                {/* Hard purge button triggers reset */}
-                <div className="border-t border-amber-500/10 pt-4 space-y-1.5">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-red-500 block">Excluir dados</span>
+                <section className="rounded-xl border border-red-500/20 bg-red-950/10 p-4 space-y-2.5">
+                  <div>
+                    <h4 className="text-[11px] uppercase tracking-[0.24em] text-red-400 font-serif font-black">
+                      Conta e dados
+                    </h4>
+                    <p className="text-[10px] text-amber-100/55 mt-1">
+                      Ações permanentes e sensíveis para a sua campanha.
+                    </p>
+                  </div>
                   <button
                     onClick={handleSanctizeCampaignData}
-                    className="w-full py-2 bg-red-950/20 border border-red-500/40 hover:bg-red-950 text-red-400 text-xs font-serif uppercase tracking-widest rounded transition-all cursor-pointer font-bold"
+                    className="w-full py-2.5 bg-red-950/20 border border-red-500/40 hover:bg-red-950 text-red-400 text-xs font-serif uppercase tracking-widest rounded-lg transition-all cursor-pointer font-bold"
                   >
-                    ⚠️ Excluir todos os dados salvos
+                    ⚠️ Limpar campanha e começar do zero
                   </button>
-                </div>
-
-                {/* Logout */}
-                <div className="border-t border-amber-500/10 pt-4 space-y-1.5">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">Conta</span>
                   <button
                     onClick={signOut}
-                    className="w-full py-2 bg-stone-900 border border-stone-700 hover:border-red-500/40 text-stone-400 hover:text-red-400 text-xs font-serif uppercase tracking-widest rounded transition-all cursor-pointer"
+                    className="w-full py-2.5 bg-stone-900 border border-stone-700 hover:border-red-500/40 text-stone-400 hover:text-red-400 text-xs font-serif uppercase tracking-widest rounded-lg transition-all cursor-pointer"
                   >
                     Sair da conta (logout)
                   </button>
-                </div>
+                </section>
 
-                <div className="flex gap-2.5">
-                  <button
-                    onClick={() => {
-                      const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
-                      const deviceFld = (document.getElementById('device-name-fld') as HTMLInputElement)?.value;
-                      if (deviceFld) {
-                        localStorage.setItem('herolog_device_label', deviceFld);
-                      }
-                      handleApplyCharacterSetupChanges(nameFld, gameState.charClass);
-                    }}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-serif font-black uppercase tracking-widest text-xs rounded cursor-pointer select-none"
-                  >
-                    Salvar Ajustes
-                  </button>
-                  <button
-                    onClick={() => setIsSettingsOpen(false)}
-                    className="px-4 py-2 bg-stone-900 border border-amber-500/10 font-serif text-xs text-amber-100/40 uppercase tracking-widest rounded"
-                  >
-                    Voltar
-                  </button>
+                <div className="rounded-xl border border-amber-500/15 bg-gradient-to-r from-amber-500/10 via-amber-500/[0.04] to-transparent p-3 shadow-[0_0_0_1px_rgba(245,158,11,0.08)]">
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <button
+                      onClick={() => {
+                        const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
+                        const deviceFld = (document.getElementById('device-name-fld') as HTMLInputElement)?.value;
+                        if (deviceFld) {
+                          localStorage.setItem('herolog_device_label', deviceFld);
+                        }
+                        handleApplyCharacterSetupChanges(nameFld, gameState.charClass);
+                      }}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-serif font-black uppercase tracking-widest text-xs rounded-lg cursor-pointer select-none shadow-[0_4px_16px_rgba(245,158,11,0.18)]"
+                    >
+                      Salvar alterações
+                    </button>
+                    <button
+                      onClick={() => setIsSettingsOpen(false)}
+                      className="px-4 py-2.5 bg-stone-900 border border-amber-500/20 font-serif text-xs text-amber-100/70 uppercase tracking-widest rounded-lg hover:border-amber-400 hover:text-amber-100 transition-all"
+                    >
+                      Voltar
+                    </button>
+                  </div>
                 </div>
 
               </div>
