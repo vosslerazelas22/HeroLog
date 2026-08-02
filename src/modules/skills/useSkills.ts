@@ -43,7 +43,7 @@ export function useSkills(params: UseSkillsParams): UseSkillsReturn {
     }
 
     setGameState(prev => {
-      const addedSkill = { name: trimmed, level: 1, xp: 0, emoji: emojiInput, prestige: 0 };
+      const addedSkill = { name: trimmed, level: 1, xp: 0, emoji: emojiInput, prestige: 0, id: crypto.randomUUID() };
       return {
         ...prev,
         skills: [...prev.skills, addedSkill]

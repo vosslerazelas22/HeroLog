@@ -1909,7 +1909,7 @@ function App({ userId, signOut }: AppProps) {
           isConfirm: false,
           onConfirm: () => setCustomDialog(null)
         });
-        addSystemLog(`🔮 Código Rúnico: Registro do aventureiro ${restoredState.charName} foi importado com sucesso.`, true);
+        addSystemLog(`🔮 Registro do aventureiro ${restoredState.charName} foi importado com sucesso.`, true);
       } else {
         throw new Error('Conteúdo inválido');
       }
@@ -4155,7 +4155,7 @@ function App({ userId, signOut }: AppProps) {
             >
               <div className="bg-quest-panel border-b border-amber-500/15 p-4 flex justify-between items-center">
                 <h3 className="font-serif font-bold text-amber-400 uppercase tracking-widest text-sm">
-                  Ajustes Sagrados de Campanha
+                  Ajustes Gerais
                 </h3>
                 <button
                   onClick={() => setIsSettingsOpen(false)}
@@ -4171,7 +4171,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
-                      Apelido Heráldico do Aventureiro:
+                      Apelido do Aventureiro:
                     </label>
                     <input
                       id="hero-name-fld"
@@ -4179,6 +4179,19 @@ function App({ userId, signOut }: AppProps) {
                       defaultValue={gameState.charName}
                       className="w-full bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400"
                       maxLength={24}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block mb-1">
+                      Nome deste Dispositivo:
+                    </label>
+                    <input
+                      id="device-name-fld"
+                      type="text"
+                      defaultValue={localStorage.getItem('herolog_device_label') || 'Navegador Web'}
+                      className="w-full bg-stone-950/80 border border-amber-500/20 rounded px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400"
+                      maxLength={32}
                     />
                   </div>
 
@@ -4259,7 +4272,7 @@ function App({ userId, signOut }: AppProps) {
 
                 {/* Backup / Restore campaign JSON data */}
                 <div className="border-t border-amber-500/10 pt-4 space-y-3">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">Backup Rúnico da Campanha</span>
+                  <span className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">Backup da Campanha</span>
                   
                   {/* File approach */}
                   <div className="space-y-1">
@@ -4269,10 +4282,10 @@ function App({ userId, signOut }: AppProps) {
                         onClick={handleExportCampaignJSON}
                         className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-widest rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
                       >
-                        📥 Exportar
+                        Exportar
                       </button>
                       <label className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-widest rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1 text-center">
-                        📤 Importar
+                        Importar
                         <input
                           type="file"
                           accept=".json"
@@ -4291,7 +4304,7 @@ function App({ userId, signOut }: AppProps) {
                         onClick={handleCopySaveToClipboard}
                         className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-wider rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
                       >
-                        📋 Copiar Progresso
+                        Copiar Progresso
                       </button>
                       <button
                         onClick={() => {
@@ -4300,7 +4313,7 @@ function App({ userId, signOut }: AppProps) {
                         }}
                         className="py-1.5 bg-stone-900 border border-amber-500/20 hover:border-amber-400 hover:text-amber-300 text-amber-400 text-[10px] font-serif uppercase tracking-wider rounded transition-all cursor-pointer font-bold flex items-center justify-center gap-1"
                       >
-                        🔮 Restaurar Código
+                        Restaurar Progresso
                       </button>
                     </div>
                   </div>
@@ -4308,12 +4321,12 @@ function App({ userId, signOut }: AppProps) {
 
                 {/* Hard purge button triggers reset */}
                 <div className="border-t border-amber-500/10 pt-4 space-y-1.5">
-                  <span className="text-[10px] uppercase font-serif tracking-widest text-red-500 block">Zona de Expurgo Violento</span>
+                  <span className="text-[10px] uppercase font-serif tracking-widest text-red-500 block">Excluir dados</span>
                   <button
                     onClick={handleSanctizeCampaignData}
                     className="w-full py-2 bg-red-950/20 border border-red-500/40 hover:bg-red-950 text-red-400 text-xs font-serif uppercase tracking-widest rounded transition-all cursor-pointer font-bold"
                   >
-                    ⚠️ Purgar Todos Dados da Gravação
+                    ⚠️ Excluir todos os dados salvos
                   </button>
                 </div>
 
@@ -4332,6 +4345,10 @@ function App({ userId, signOut }: AppProps) {
                   <button
                     onClick={() => {
                       const nameFld = (document.getElementById('hero-name-fld') as HTMLInputElement)?.value;
+                      const deviceFld = (document.getElementById('device-name-fld') as HTMLInputElement)?.value;
+                      if (deviceFld) {
+                        localStorage.setItem('herolog_device_label', deviceFld);
+                      }
                       handleApplyCharacterSetupChanges(nameFld, gameState.charClass);
                     }}
                     className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-serif font-black uppercase tracking-widest text-xs rounded cursor-pointer select-none"
@@ -4342,7 +4359,7 @@ function App({ userId, signOut }: AppProps) {
                     onClick={() => setIsSettingsOpen(false)}
                     className="px-4 py-2 bg-stone-900 border border-amber-500/10 font-serif text-xs text-amber-100/40 uppercase tracking-widest rounded"
                   >
-                    Sair
+                    Voltar
                   </button>
                 </div>
 

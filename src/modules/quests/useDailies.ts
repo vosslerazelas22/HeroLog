@@ -32,7 +32,7 @@ export function useDailies(
 
         updatedDailies = prev.dailies.map(d => {
           if (d.id === dailyId) {
-            return { ...d, completed: true, streak: d.streak + 1 };
+            return { ...d, completed: true, streak: d.streak + 1, value: (d.value ?? 0) + 1 };
           }
           return d;
         });
@@ -84,7 +84,7 @@ export function useDailies(
 
         updatedDailies = prev.dailies.map(d => {
           if (d.id === dailyId) {
-            return { ...d, completed: false, streak: Math.max(0, d.streak - 1) };
+            return { ...d, completed: false, streak: Math.max(0, d.streak - 1), value: (d.value ?? 0) - 1 };
           }
           return d;
         });
@@ -156,6 +156,8 @@ export function useDailies(
         every: newDaily.every,
         tags: newDaily.tags,
         checklist: formattedChecklist,
+        value: 0,
+        createdAt: new Date().toISOString(),
       };
 
       return {

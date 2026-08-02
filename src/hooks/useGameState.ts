@@ -17,9 +17,9 @@ export const INITIAL_STATE: CharacterState = {
   combatLevel: 1,
   combatXP: 0,
   skills: [
-    { name: 'Código Sagrado (Programação)', level: 1, xp: 0, emoji: '💻', prestige: 0, tags: ['React Backend', 'Vite CSS', 'Solução de Bugs'] },
-    { name: 'Alquimia & Foco Geral', level: 1, xp: 0, emoji: '🧪', prestige: 0, tags: ['Exercício Físico', 'Planejamento Semanal', 'Meditação'] },
-    { name: 'Sábias Letras (Leitura)', level: 1, xp: 0, emoji: '📚', prestige: 0, tags: ['Direito Civil', 'História Geral', 'Filosofia Estoica'] },
+    { id: 'sk-1', name: 'Código Sagrado (Programação)', level: 1, xp: 0, emoji: '💻', prestige: 0, tags: ['React Backend', 'Vite CSS', 'Solução de Bugs'] },
+    { id: 'sk-2', name: 'Alquimia & Foco Geral', level: 1, xp: 0, emoji: '🧪', prestige: 0, tags: ['Exercício Físico', 'Planejamento Semanal', 'Meditação'] },
+    { id: 'sk-3', name: 'Sábias Letras (Leitura)', level: 1, xp: 0, emoji: '📚', prestige: 0, tags: ['Direito Civil', 'História Geral', 'Filosofia Estoica'] },
   ],
   history: [],
   inventory: [],
@@ -48,11 +48,11 @@ export const INITIAL_STATE: CharacterState = {
     { id: 'h-3', title: 'Estudar / procrastinar', notes: 'Estudar 1 hora ganha +, procrastinar ganha -', up: true, down: true, difficulty: 'Medium', upCount: 0, downCount: 0, streak: 0, tags: ['study'] },
   ],
   dailies: [
-    { id: 'd-1', title: 'Duolingo', notes: 'Lição diária de idiomas estrangeiros', difficulty: 'Easy', completed: false, streak: 62, repeats: 'Daily', every: 1, tags: ['study'], checklist: [] },
-    { id: 'd-2', title: 'Remédio da Milk', notes: 'Dar medicação da querida companheira', difficulty: 'Trivial', completed: false, streak: 5, repeats: 'Daily', every: 1, tags: [], checklist: [] },
+    { id: 'd-1', title: 'Duolingo', notes: 'Lição diária de idiomas estrangeiros', difficulty: 'Easy', completed: false, streak: 62, repeats: 'Daily', every: 1, tags: ['study'], checklist: [], value: 0, createdAt: new Date().toISOString() },
+    { id: 'd-2', title: 'Remédio da Milk', notes: 'Dar medicação da querida companheira', difficulty: 'Trivial', completed: false, streak: 5, repeats: 'Daily', every: 1, tags: [], checklist: [], value: 0, createdAt: new Date().toISOString() },
   ],
   todos: [
-    { id: 't-1', title: 'Ler WAY OF THE KINGS', notes: 'Completar o capítulo pendente do épico de Brandon Sanderson', difficulty: 'Medium', completed: false, tags: ['study'], checklist: [] },
+    { id: 't-1', title: 'Ler WAY OF THE KINGS', notes: 'Completar o capítulo pendente do épico de Brandon Sanderson', difficulty: 'Medium', completed: false, tags: ['study'], checklist: [], createdAt: new Date().toISOString() },
   ],
   equippedEquipment: [null, null, null],
   pomodoroSettings: {
@@ -88,8 +88,24 @@ export function normalizeGameState(parsed: any): CharacterState {
   if (baseState.skills) {
     baseState.skills = baseState.skills.map((sk: any, idx: number) => ({
       ...sk,
+      id: sk.id || `sk-${idx + 1}`,
       emoji: sk.emoji || (idx === 0 ? '💻' : idx === 1 ? '🧪' : idx === 2 ? '📚' : '🎯'),
       prestige: sk.prestige ?? 0,
+    }));
+  }
+
+  if (baseState.dailies) {
+    baseState.dailies = baseState.dailies.map((d: any) => ({
+      ...d,
+      value: d.value ?? 0,
+      createdAt: d.createdAt ?? new Date().toISOString(),
+    }));
+  }
+
+  if (baseState.todos) {
+    baseState.todos = baseState.todos.map((t: any) => ({
+      ...t,
+      createdAt: t.createdAt ?? new Date().toISOString(),
     }));
   }
 
@@ -134,14 +150,12 @@ const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 
 async function fetchRemoteSave(userId: string): Promise<{ game_state: any; updated_at: string } | null> {
   if (!isUUID(userId)) return null;
-
   try {
     const { data, error } = await supabase
       .from('saves')
       .select('game_state, updated_at')
       .eq('user_id', userId)
       .single();
-
     if (error) {
       if (error.code !== 'PGRST116') {
         console.warn('[HeroLog] Erro ao buscar save remoto:', error.message);
@@ -157,13 +171,11 @@ async function fetchRemoteSave(userId: string): Promise<{ game_state: any; updat
 
 async function pushRemoteSave(userId: string, state: CharacterState): Promise<string | null> {
   if (!isUUID(userId)) return null;
-
   const now = new Date().toISOString();
   try {
     const { error } = await supabase
       .from('saves')
       .upsert({ user_id: userId, game_state: state, updated_at: now });
-
     if (error) {
       console.error('[HeroLog] Erro ao sincronizar com Supabase:', error.message);
       return null;
@@ -173,6 +185,245 @@ async function pushRemoteSave(userId: string, state: CharacterState): Promise<st
     console.error('[HeroLog] Erro ao sincronizar com Supabase:', err?.message || err);
     return null;
   }
+}
+
+export async function fetchReconstructedRemoteState(userId: string): Promise<CharacterState | null> {
+  if (!isUUID(userId)) return null;
+
+  try {
+    const [
+      { data: charData, error: charErr },
+      { data: sessionsData },
+      { data: skillsData },
+      { data: inventoryData },
+      { data: habitsData },
+      { data: dailiesData },
+      { data: todosData },
+    ] = await Promise.all([
+      supabase.from('characters').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('sessions').select('*').eq('user_id', userId),
+      supabase.from('skills').select('*').eq('user_id', userId),
+      supabase.from('inventory').select('*').eq('user_id', userId),
+      supabase.from('habits').select('*').eq('user_id', userId),
+      supabase.from('dailies').select('*').eq('user_id', userId),
+      supabase.from('todos').select('*').eq('user_id', userId),
+    ]);
+
+    if (charErr || !charData) {
+      return null;
+    }
+
+    const c = charData;
+
+    const reconstructed: CharacterState = {
+      gold: c.gold,
+      totalXP: c.total_xp,
+      totalGoldEarned: c.total_gold_earned,
+      totalSessions: c.total_sessions,
+      totalMinutes: c.total_minutes,
+      combatLevel: c.combat_level,
+      combatXP: c.combat_xp,
+      streak: c.streak,
+      bestStreak: c.best_streak,
+      lastStudyDate: c.last_study_date,
+      wildernessWins: c.wilderness_wins,
+      combo: c.combo,
+      dungeonProgress: c.dungeon_progress,
+      isDungeonMode: c.is_dungeon_mode,
+      dungeonSessions: c.dungeon_sessions,
+      charName: c.char_name,
+      charClass: c.char_class,
+      todayXP: c.today_xp,
+      todayMinutes: c.today_minutes,
+      todayDate: c.today_date,
+      hasClaimedLogin: c.has_claimed_login,
+      hp: c.hp,
+      maxHp: c.max_hp,
+      equippedTitle: c.equipped_title,
+      achievements: c.achievements || [],
+      ownedTitles: c.owned_titles || [],
+      pomodoroSettings: c.pomodoro_settings,
+      equippedEquipment: c.equipped_equipment || [null, null, null],
+
+      history: (sessionsData || []).map((s: any) => ({
+        id: s.id,
+        skillName: s.skill_name,
+        date: s.session_date,
+        duration: s.duration,
+        xp: s.xp,
+        gold: s.gold,
+        notes: s.notes,
+        subskillTag: s.subskill_tag,
+        wilderness: s.wilderness,
+        aiChronicle: s.ai_chronicle,
+      })),
+
+      skills: (skillsData || []).map((sk: any) => ({
+        id: sk.id,
+        name: sk.name,
+        level: sk.level,
+        xp: sk.xp,
+        emoji: sk.emoji,
+        prestige: sk.prestige,
+        tags: sk.tags,
+      })),
+
+      inventory: (inventoryData || []).map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        emoji: i.emoji,
+        desc: i.description,
+        buff: i.buff,
+        price: i.price,
+        isEquipment: i.is_equipment,
+        charges: i.charges,
+        maxCharges: i.max_charges,
+        rarity: i.rarity,
+      })),
+
+      habits: (habitsData || []).map((h: any) => ({
+        id: h.id,
+        title: h.title,
+        notes: h.notes,
+        up: h.up,
+        down: h.down,
+        difficulty: h.difficulty,
+        upCount: h.up_count,
+        downCount: h.down_count,
+        streak: h.streak,
+        tags: h.tags || [],
+      })),
+
+      dailies: (dailiesData || []).map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        notes: d.notes,
+        difficulty: d.difficulty,
+        completed: d.completed,
+        streak: d.streak,
+        repeats: d.repeats,
+        every: d.every,
+        tags: d.tags || [],
+        checklist: d.checklist || [],
+        value: d.value,
+        createdAt: d.created_at,
+      })),
+
+      todos: (todosData || []).map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        notes: t.notes,
+        difficulty: t.difficulty,
+        completed: t.completed,
+        tags: t.tags || [],
+        checklist: t.checklist || [],
+        createdAt: t.created_at,
+        completedAt: t.completed_at,
+      })),
+    };
+
+    return normalizeGameState(reconstructed);
+  } catch (err) {
+    console.error('[HeroLog] Erro ao reconstruir estado remoto:', err);
+    return null;
+  }
+}
+
+function diffArrayById<T extends { id: string }>(prevArr: T[] | undefined, nextArr: T[]): { upsert: T[]; deleteIds: string[] } {
+  const prevMap = new Map((prevArr || []).map((item) => [item.id, item]));
+  const nextMap = new Map(nextArr.map((item) => [item.id, item]));
+  const upsert = nextArr.filter((item) => {
+    const prev = prevMap.get(item.id);
+    return !prev || JSON.stringify(prev) !== JSON.stringify(item);
+  });
+  const deleteIds = (prevArr || []).filter((item) => !nextMap.has(item.id)).map((item) => item.id);
+  return { upsert, deleteIds };
+}
+
+export function buildDiff(prevState: CharacterState | null, nextState: CharacterState): Record<string, any> | null {
+  const diff: Record<string, any> = {};
+  const deviceLabel = typeof window !== 'undefined'
+    ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome')
+    : 'Dispositivo sem nome';
+
+  const charactersChanged = !prevState ||
+    prevState.gold !== nextState.gold ||
+    prevState.totalXP !== nextState.totalXP ||
+    prevState.totalGoldEarned !== nextState.totalGoldEarned ||
+    prevState.totalSessions !== nextState.totalSessions ||
+    prevState.totalMinutes !== nextState.totalMinutes ||
+    prevState.combatLevel !== nextState.combatLevel ||
+    prevState.combatXP !== nextState.combatXP ||
+    prevState.streak !== nextState.streak ||
+    prevState.bestStreak !== nextState.bestStreak ||
+    prevState.lastStudyDate !== nextState.lastStudyDate ||
+    prevState.wildernessWins !== nextState.wildernessWins ||
+    prevState.combo !== nextState.combo ||
+    prevState.dungeonProgress !== nextState.dungeonProgress ||
+    prevState.isDungeonMode !== nextState.isDungeonMode ||
+    prevState.dungeonSessions !== nextState.dungeonSessions ||
+    prevState.charName !== nextState.charName ||
+    prevState.charClass !== nextState.charClass ||
+    prevState.todayXP !== nextState.todayXP ||
+    prevState.todayMinutes !== nextState.todayMinutes ||
+    prevState.todayDate !== nextState.todayDate ||
+    prevState.hasClaimedLogin !== nextState.hasClaimedLogin ||
+    prevState.hp !== nextState.hp ||
+    prevState.maxHp !== nextState.maxHp ||
+    prevState.equippedTitle !== nextState.equippedTitle ||
+    JSON.stringify(prevState.achievements) !== JSON.stringify(nextState.achievements) ||
+    JSON.stringify(prevState.ownedTitles) !== JSON.stringify(nextState.ownedTitles) ||
+    JSON.stringify(prevState.pomodoroSettings) !== JSON.stringify(nextState.pomodoroSettings) ||
+    JSON.stringify(prevState.equippedEquipment) !== JSON.stringify(nextState.equippedEquipment);
+
+  if (charactersChanged) {
+    diff.characters = {
+      gold: nextState.gold, total_xp: nextState.totalXP, total_gold_earned: nextState.totalGoldEarned,
+      total_sessions: nextState.totalSessions, total_minutes: nextState.totalMinutes,
+      combat_level: nextState.combatLevel, combat_xp: nextState.combatXP, streak: nextState.streak,
+      best_streak: nextState.bestStreak, last_study_date: nextState.lastStudyDate,
+      wilderness_wins: nextState.wildernessWins, combo: nextState.combo,
+      dungeon_progress: nextState.dungeonProgress, is_dungeon_mode: nextState.isDungeonMode,
+      dungeon_sessions: nextState.dungeonSessions, char_name: nextState.charName,
+      char_class: nextState.charClass, today_xp: nextState.todayXP, today_minutes: nextState.todayMinutes,
+      today_date: nextState.todayDate, has_claimed_login: nextState.hasClaimedLogin,
+      hp: nextState.hp, max_hp: nextState.maxHp, equipped_title: nextState.equippedTitle,
+      achievements: nextState.achievements, owned_titles: nextState.ownedTitles,
+      pomodoro_settings: nextState.pomodoroSettings, equipped_equipment: nextState.equippedEquipment,
+      device_label: deviceLabel,
+    };
+  }
+
+  const prevSessionIds = new Set((prevState?.history || []).map((s) => s.id));
+  const newSessions = nextState.history.filter((s) => !prevSessionIds.has(s.id));
+  if (newSessions.length > 0) {
+    diff.sessions_insert = newSessions.map((s) => ({
+      skill_name: s.skillName, session_date: s.date, duration: s.duration, xp: s.xp, gold: s.gold,
+      notes: s.notes, subskill_tag: s.subskillTag, wilderness: s.wilderness, ai_chronicle: s.aiChronicle,
+    }));
+  }
+
+  const skillsDiff = diffArrayById(prevState?.skills, nextState.skills);
+  if (skillsDiff.upsert.length > 0) diff.skills_upsert = skillsDiff.upsert.map((sk) => ({ id: sk.id, name: sk.name, level: sk.level, xp: sk.xp, emoji: sk.emoji, prestige: sk.prestige, tags: sk.tags }));
+  if (skillsDiff.deleteIds.length > 0) diff.skills_delete = skillsDiff.deleteIds;
+
+  const invDiff = diffArrayById(prevState?.inventory, nextState.inventory);
+  if (invDiff.upsert.length > 0) diff.inventory_upsert = invDiff.upsert.map((i) => ({ id: i.id, name: i.name, emoji: i.emoji, description: i.desc, buff: i.buff, price: i.price, is_equipment: i.isEquipment, charges: i.charges, max_charges: i.maxCharges, rarity: i.rarity }));
+  if (invDiff.deleteIds.length > 0) diff.inventory_delete = invDiff.deleteIds;
+
+  const habitsDiff = diffArrayById(prevState?.habits, nextState.habits);
+  if (habitsDiff.upsert.length > 0) diff.habits_upsert = habitsDiff.upsert.map((h) => ({ id: h.id, title: h.title, notes: h.notes, up: h.up, down: h.down, difficulty: h.difficulty, up_count: h.upCount, down_count: h.downCount, streak: h.streak, tags: h.tags }));
+  if (habitsDiff.deleteIds.length > 0) diff.habits_delete = habitsDiff.deleteIds;
+
+  const dailiesDiff = diffArrayById(prevState?.dailies, nextState.dailies);
+  if (dailiesDiff.upsert.length > 0) diff.dailies_upsert = dailiesDiff.upsert.map((d) => ({ id: d.id, title: d.title, notes: d.notes, difficulty: d.difficulty, completed: d.completed, streak: d.streak, repeats: d.repeats, every: d.every, tags: d.tags, checklist: d.checklist, value: d.value, created_at: d.createdAt }));
+  if (dailiesDiff.deleteIds.length > 0) diff.dailies_delete = dailiesDiff.deleteIds;
+
+  const todosDiff = diffArrayById(prevState?.todos, nextState.todos);
+  if (todosDiff.upsert.length > 0) diff.todos_upsert = todosDiff.upsert.map((t) => ({ id: t.id, title: t.title, notes: t.notes, difficulty: t.difficulty, completed: t.completed, tags: t.tags, checklist: t.checklist, created_at: t.createdAt, completed_at: t.completedAt }));
+  if (todosDiff.deleteIds.length > 0) diff.todos_delete = todosDiff.deleteIds;
+
+  return Object.keys(diff).length > 0 ? diff : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +439,7 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'conflict'>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstLoad = useRef(true);
+  const lastFlushedStateRef = useRef<CharacterState | null>(null);
 
   // -------------------------------------------------------------------------
   // 1. Ao fazer login: busca save remoto e resolve conflito se necessário
@@ -206,14 +458,11 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
         const remote = await fetchRemoteSave(user!.id);
 
         if (!remote) {
-          // Nenhum save na nuvem ainda — faz push do local imediatamente
           const ts = await pushRemoteSave(user!.id, gameState);
-          if (ts) {
-            setLocalUpdatedAt(ts);
-            setSyncStatus('idle');
-          } else {
-            setSyncStatus('error');
-          }
+          const diff = buildDiff(null, gameState);
+          if (diff) await supabase.rpc('flush_state', { p_diff: diff });
+          lastFlushedStateRef.current = gameState;
+          if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
           return;
         }
 
@@ -222,13 +471,12 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
         const localDate = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
 
         if (remoteDate <= localDate) {
-          // Local é mais recente ou igual — nada a fazer
+          lastFlushedStateRef.current = gameState;
           setSyncStatus('idle');
           return;
         }
 
-        // Remoto é mais novo que o local que tínhamos quando abrimos o app
-        const remoteState = normalizeGameState(remote.game_state);
+        const remoteState = await fetchReconstructedRemoteState(user!.id) || normalizeGameState(remote.game_state);
 
         if (onConflict) {
           setSyncStatus('conflict');
@@ -237,23 +485,20 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
             setGameState(remoteState);
             saveToLocalStorage(remoteState);
             setLocalUpdatedAt(remote.updated_at);
+            lastFlushedStateRef.current = remoteState;
           } else {
-            // Usuário escolheu manter o local — faz push para sobrescrever o remoto
             const ts = await pushRemoteSave(user!.id, gameState);
-            if (ts) {
-              setLocalUpdatedAt(ts);
-              setSyncStatus('idle');
-            } else {
-              setSyncStatus('error');
-            }
+            const diff = buildDiff(remoteState, gameState);
+            if (diff) await supabase.rpc('flush_state', { p_diff: diff });
+            lastFlushedStateRef.current = gameState;
+            if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
           }
         } else {
-          // Sem handler de conflito: aplica remoto automaticamente (comportamento padrão)
           setGameState(remoteState);
           saveToLocalStorage(remoteState);
           setLocalUpdatedAt(remote.updated_at);
+          lastFlushedStateRef.current = remoteState;
         }
-
         setSyncStatus('idle');
       } catch (err: any) {
         console.error('[HeroLog] Erro durante o carregamento do save remoto:', err);
@@ -266,7 +511,7 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
   }, [user?.id]);
 
   // -------------------------------------------------------------------------
-  // 2. A cada mudança de estado: salva local imediato + debounce remoto
+  // 2. A cada mudança de estado: salva local imediato + debounce remoto (flush_state RPC)
   // -------------------------------------------------------------------------
   useEffect(() => {
     // Pula o efeito na montagem inicial (já carregamos do localStorage acima)
@@ -275,10 +520,10 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
       return;
     }
 
-    // Salva local imediatamente (sem delay, igual ao comportamento anterior)
+    // Salva local imediatamente
     saveToLocalStorage(gameState);
 
-    // Debounce para o save remoto
+    // Debounce para o save remoto via RPC flush_state
     if (!user || !isUUID(user.id)) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -287,12 +532,13 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
       setSyncStatus('syncing');
       try {
         const ts = await pushRemoteSave(user.id, gameState);
-        if (ts) {
-          setLocalUpdatedAt(ts);
-          setSyncStatus('idle');
-        } else {
-          setSyncStatus('error');
+        const diff = buildDiff(lastFlushedStateRef.current, gameState);
+        if (diff) {
+          const { error } = await supabase.rpc('flush_state', { p_diff: diff });
+          if (error) console.error('[HeroLog] Erro ao executar RPC flush_state:', error.message);
         }
+        lastFlushedStateRef.current = gameState;
+        if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
       } catch (err: any) {
         console.error('[HeroLog] Erro no push automático do save:', err);
         setSyncStatus('error');
@@ -311,8 +557,12 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(`${STORAGE_KEY}_updated_at`);
     setGameState(INITIAL_STATE);
-    // Push do reset para a nuvem também, se logado
-    if (user && isUUID(user.id)) pushRemoteSave(user.id, INITIAL_STATE);
+    lastFlushedStateRef.current = INITIAL_STATE;
+    if (user && isUUID(user.id)) {
+      pushRemoteSave(user.id, INITIAL_STATE);
+      const diff = buildDiff(null, INITIAL_STATE);
+      if (diff) supabase.rpc('flush_state', { p_diff: diff });
+    }
   }
 
   const importGameState = useCallback((parsed: any): CharacterState => {

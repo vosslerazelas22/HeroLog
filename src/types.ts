@@ -14,6 +14,7 @@ export interface InventoryItem {
 }
 
 export interface Skill {
+  id: string;
   name: string;
   level: number;
   xp: number;

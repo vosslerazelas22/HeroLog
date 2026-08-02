@@ -32,7 +32,7 @@ export function useTodos(
 
         updatedTodos = prev.todos.map(t => {
           if (t.id === todoId) {
-            return { ...t, completed: true };
+            return { ...t, completed: true, completedAt: new Date().toISOString() };
           }
           return t;
         });
@@ -84,7 +84,7 @@ export function useTodos(
 
         updatedTodos = prev.todos.map(t => {
           if (t.id === todoId) {
-            return { ...t, completed: false };
+            return { ...t, completed: false, completedAt: undefined };
           }
           return t;
         });
@@ -153,6 +153,7 @@ export function useTodos(
         completed: false,
         tags: newTodo.tags,
         checklist: formattedChecklist,
+        createdAt: newTodo.createdAt ?? new Date().toISOString(),
       };
 
       return {
