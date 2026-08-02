@@ -15,6 +15,30 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.11] - 2026-08-01
+
+### Adicionado
+- **Campo "Nome deste Dispositivo"** — novo campo nos Ajustes da Campanha para identificar de qual aparelho veio cada sincronização.
+- **Detalhes do conflito de save** — a tela de conflito de save agora exibe data, horário e dispositivo de origem do progresso mais recente encontrado na nuvem, facilitando a escolha entre manter o save local ou aplicar o da nuvem.
+
+### Alterado
+- **Sincronização do save reestruturada** — o progresso deixou de ser reenviado por inteiro a cada sincronização; agora apenas as seções realmente alteradas (personagem, sessões, habilidades, inventário, hábitos, tarefas diárias, afazeres) são enviadas à nuvem.
+
+### Corrigido
+- **Cor das Tarefas Diárias** — a pontuação usada para colorir os cards voltou a refletir corretamente o progresso ao marcar ou desmarcar conclusões.
+- **Data de criação dos Afazeres** — novos Afazeres voltaram a registrar corretamente a data de criação, usada no cálculo de decaimento de prioridade.
+
+### Arquivos alterados
+
+- `/src/hooks/useGameState.ts`
+- `/src/types.ts`
+- `/src/modules/skills/useSkills.ts`
+- `/src/modules/quests/useDailies.ts`
+- `/src/modules/quests/useTodos.ts`
+- `/src/App.tsx`
+
+---
+
 ## [1.1.10] - 2026-07-26
 
 ### Corrigido
