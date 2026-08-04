@@ -15,6 +15,25 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.13] - 2026-08-04
+
+### Corrigido
+- **Duplicação massiva de sessões após resolução de conflito de sync** — causa raiz: o `id` gerado no client nunca era enviado no insert de `sessions`, e a reconstrução do estado remoto (`fetchReconstructedRemoteState`) usava o `id` gerado pelo banco. Ao escolher manter o save local após um conflito, o diff comparava esses dois espaços de id incompatíveis e reinseria o histórico inteiro. `buildDiff` agora envia o `id` do client no `sessions_insert`, e a RPC `flush_state` passou a usar `on conflict (user_id, id) do nothing` — reenviar uma sessão já existente não duplica mais, independente do caminho de sync.
+- **`device_label` não chegava ao banco quando era a única mudança em Ajustes** — o dispositivo salvo (ex: "Chrome - Casa") ficava preso no `localStorage` e nunca era incluído no diff, porque `charactersChanged` não considerava mudanças no device label isoladamente. `buildDiff` agora recebe o último device label enviado e compara contra o atual, incluído nas condições de `charactersChanged`.
+
+### Correção de dados
+- Tabela `public.sessions` em produção continha 947 linhas para 109 sessões reais (fator de duplicação uniforme de 9x, causado pelo bug acima em ciclos anteriores de conflito). Backup criado (`sessions_backup_20260804`), duplicatas removidas via de-duplicação por conteúdo, mantendo a cópia mais antiga de cada sessão real. Contagem final: 111.
+
+### Alterado
+- Schema da tabela `public.sessions`: coluna `id` migrada de `uuid` (gerado pelo Postgres) para `text` (valor enviado pelo client), com chave primária composta `(user_id, id)`, alinhando com o padrão já usado em `skills`, `inventory`, `habits`, `dailies` e `todos`.
+
+### Arquivos alterados
+- `/src/hooks/useGameState.ts`
+- RPC `flush_state` (Supabase, `sessions_insert`)
+- Schema da tabela `public.sessions` (Supabase)
+
+---
+
 ## [1.1.12] - 2026-08-03
 
 ### Adicionado
