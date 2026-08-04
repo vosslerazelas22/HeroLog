@@ -27,8 +27,6 @@ export interface UseFocusSessionReturn {
   setIsPlayerDead: React.Dispatch<React.SetStateAction<boolean>>;
   activeScreenEvent: any;
   rewardsModalData: RewardsModalData | null;
-  rewardsStep: number;
-  setRewardsStep: React.Dispatch<React.SetStateAction<number>>;
   startSession: () => void;
   cancelSession: () => void;
   togglePauseQuest: () => void;
@@ -63,7 +61,6 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
   const [isPlayerDead, setIsPlayerDead] = useState<boolean>(false);
   const [activeScreenEvent, setActiveScreenEvent] = useState<any>(null);
   const [rewardsModalData, setRewardsModalData] = useState<RewardsModalData | null>(null);
-  const [rewardsStep, setRewardsStep] = useState<number>(1);
 
   // References for background intervals & timeouts
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -569,8 +566,6 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
       }
     }
 
-    setRewardsStep(1);
-
     setRewardsModalData({
       visible: true,
       skillName: activeSkillName,
@@ -765,8 +760,6 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
     setIsPlayerDead,
     activeScreenEvent,
     rewardsModalData,
-    rewardsStep,
-    setRewardsStep,
     startSession,
     cancelSession,
     togglePauseQuest,

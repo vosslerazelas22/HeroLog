@@ -1,5 +1,6 @@
 export { QuestFab } from './QuestFab';
 export { FocusModeScreen } from './FocusModeScreen';
+export { FocusCompletionFlow } from './FocusCompletionFlow';
 export { FocusOrb } from './FocusOrb';
 export { useFocusSession } from './useFocusSession';
 export { useTimerControls } from './useTimerControls';
