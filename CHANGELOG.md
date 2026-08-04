@@ -15,6 +15,30 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.12] - 2026-08-03
+
+### Adicionado
+- **Fluxo de conclusão de foco em tela cheia** — nova experiência de encerramento de sessão (streak, resumo, saque e anotações em etapas dedicadas, ocupando toda a tela), substituindo o antigo modal compacto por etapas numeradas. A celebração de sequência de dias aparece apenas na primeira sessão concluída no dia.
+
+### Alterado
+- **Unificação do fluxo de conclusão entre o modo normal e o Modo Foco imersivo (tela cheia)** — ao concluir uma sessão dentro do modo imersivo, a transição para a tela de conclusão agora ocorre automaticamente, sem tela de avaliação intermediária nem clique adicional do usuário.
+
+### Corrigido
+- **Risco de recompensa duplicada na transição automática do modo imersivo** — adicionada proteção contra disparo duplo do cálculo de XP/Ouro/saque causado por instabilidade de dependências no efeito de transição de tela.
+
+### Conhecido
+- **Bônus do equipamento RunicStone**: confirmado que o bônus real é aplicado ao Ouro (não ao XP); validar se a descrição exibida ao usuário reflete isso corretamente. Candidato a revisão em ciclo futuro.
+- **Sessões recuperadas em segundo plano** (app reaberto após o timer expirar com o app fechado) continuam aplicando recompensas silenciosamente, sem passar pelo novo fluxo de conclusão — comportamento preexistente a este ciclo, não coberto aqui.
+
+### Arquivos alterados
+- `/src/App.tsx`
+- `/src/modules/focus/FocusCompletionFlow.tsx` (novo)
+- `/src/modules/focus/FocusModeScreen.tsx`
+- `/src/modules/focus/index.ts`
+- `/src/modules/focus/useFocusSession.ts`
+
+---
+
 ## [1.1.11] - 2026-08-01
 
 ### Adicionado
