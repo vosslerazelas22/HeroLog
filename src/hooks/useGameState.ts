@@ -340,7 +340,7 @@ function diffArrayById<T extends { id: string }>(prevArr: T[] | undefined, nextA
   return { upsert, deleteIds };
 }
 
-export function buildDiff(prevState: CharacterState | null, nextState: CharacterState): Record<string, any> | null {
+export function buildDiff(prevState: CharacterState | null, nextState: CharacterState, prevDeviceLabel: string | null): Record<string, any> | null {
   const diff: Record<string, any> = {};
   const deviceLabel = typeof window !== 'undefined'
     ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome')
@@ -374,7 +374,8 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
     JSON.stringify(prevState.achievements) !== JSON.stringify(nextState.achievements) ||
     JSON.stringify(prevState.ownedTitles) !== JSON.stringify(nextState.ownedTitles) ||
     JSON.stringify(prevState.pomodoroSettings) !== JSON.stringify(nextState.pomodoroSettings) ||
-    JSON.stringify(prevState.equippedEquipment) !== JSON.stringify(nextState.equippedEquipment);
+    JSON.stringify(prevState.equippedEquipment) !== JSON.stringify(nextState.equippedEquipment) ||
+    prevDeviceLabel !== deviceLabel;
 
   if (charactersChanged) {
     diff.characters = {
@@ -398,6 +399,7 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
   const newSessions = nextState.history.filter((s) => !prevSessionIds.has(s.id));
   if (newSessions.length > 0) {
     diff.sessions_insert = newSessions.map((s) => ({
+      id: s.id,
       skill_name: s.skillName, session_date: s.date, duration: s.duration, xp: s.xp, gold: s.gold,
       notes: s.notes, subskill_tag: s.subskillTag, wilderness: s.wilderness, ai_chronicle: s.aiChronicle,
     }));
@@ -440,6 +442,7 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstLoad = useRef(true);
   const lastFlushedStateRef = useRef<CharacterState | null>(null);
+  const lastFlushedDeviceLabelRef = useRef<string | null>(null);
 
   // -------------------------------------------------------------------------
   // 1. Ao fazer login: busca save remoto e resolve conflito se necessário
@@ -459,9 +462,12 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
 
         if (!remote) {
           const ts = await pushRemoteSave(user!.id, gameState);
-          const diff = buildDiff(null, gameState);
+          const diff = buildDiff(null, gameState, lastFlushedDeviceLabelRef.current);
           if (diff) await supabase.rpc('flush_state', { p_diff: diff });
           lastFlushedStateRef.current = gameState;
+          lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+            ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+            : 'Dispositivo sem nome');
           if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
           return;
         }
@@ -472,6 +478,9 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
 
         if (remoteDate <= localDate) {
           lastFlushedStateRef.current = gameState;
+          lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+            ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+            : 'Dispositivo sem nome');
           setSyncStatus('idle');
           return;
         }
@@ -486,11 +495,17 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
             saveToLocalStorage(remoteState);
             setLocalUpdatedAt(remote.updated_at);
             lastFlushedStateRef.current = remoteState;
+            lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+              ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+              : 'Dispositivo sem nome');
           } else {
             const ts = await pushRemoteSave(user!.id, gameState);
-            const diff = buildDiff(remoteState, gameState);
+            const diff = buildDiff(remoteState, gameState, lastFlushedDeviceLabelRef.current);
             if (diff) await supabase.rpc('flush_state', { p_diff: diff });
             lastFlushedStateRef.current = gameState;
+            lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+              ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+              : 'Dispositivo sem nome');
             if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
           }
         } else {
@@ -498,6 +513,9 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
           saveToLocalStorage(remoteState);
           setLocalUpdatedAt(remote.updated_at);
           lastFlushedStateRef.current = remoteState;
+          lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+            ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+            : 'Dispositivo sem nome');
         }
         setSyncStatus('idle');
       } catch (err: any) {
@@ -532,12 +550,15 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
       setSyncStatus('syncing');
       try {
         const ts = await pushRemoteSave(user.id, gameState);
-        const diff = buildDiff(lastFlushedStateRef.current, gameState);
+        const diff = buildDiff(lastFlushedStateRef.current, gameState, lastFlushedDeviceLabelRef.current);
         if (diff) {
           const { error } = await supabase.rpc('flush_state', { p_diff: diff });
           if (error) console.error('[HeroLog] Erro ao executar RPC flush_state:', error.message);
         }
         lastFlushedStateRef.current = gameState;
+        lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+          ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+          : 'Dispositivo sem nome');
         if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
       } catch (err: any) {
         console.error('[HeroLog] Erro no push automático do save:', err);
@@ -558,9 +579,12 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
     localStorage.removeItem(`${STORAGE_KEY}_updated_at`);
     setGameState(INITIAL_STATE);
     lastFlushedStateRef.current = INITIAL_STATE;
+    lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+      ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+      : 'Dispositivo sem nome');
     if (user && isUUID(user.id)) {
       pushRemoteSave(user.id, INITIAL_STATE);
-      const diff = buildDiff(null, INITIAL_STATE);
+      const diff = buildDiff(null, INITIAL_STATE, lastFlushedDeviceLabelRef.current);
       if (diff) supabase.rpc('flush_state', { p_diff: diff });
     }
   }
