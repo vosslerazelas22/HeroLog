@@ -15,6 +15,16 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.15] - 2026-08-09
+
+### Corrigido
+- **Espaço vazio na aba Foco (mobile Android, produção)** — após a introdução da Quick Actions Row mais compacta na v1.1.14, sobrou espaço não distribuído corretamente entre o timer e a navegação inferior, deixando um vazio grande visível abaixo dos ícones de ação. O timer central agora se centraliza no espaço vertical disponível, e o botão de ação, a faixa de status e a Quick Actions Row ficam colados no fundo da tela, sem folga.
+
+### Arquivos alterados
+- `/src/App.tsx`
+
+---
+
 ## [1.1.14] - 2026-08-09
 
 ### Adicionado

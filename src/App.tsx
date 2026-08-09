@@ -2332,7 +2332,7 @@ function App({ userId, signOut }: AppProps) {
                       )}
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col justify-center gap-2 md:gap-4 py-2">
+                    <div className="p-4 flex-1 flex flex-col gap-2 md:gap-4 py-2">
                       
                       {/* Choose focus skill active dropdown option */}
                       <div>
@@ -2455,7 +2455,7 @@ function App({ userId, signOut }: AppProps) {
                           </div>
                         </div>
                       ) : (
-                        <div className="text-center timer-container-responsive relative flex flex-col items-center justify-center">
+                        <div className="text-center timer-container-responsive relative flex flex-col items-center justify-center flex-1">
                           <FocusOrb
                             timeLeft={timeLeft}
                             totalSeconds={
