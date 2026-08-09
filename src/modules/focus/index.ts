@@ -9,6 +9,8 @@ export { useAmbientSound } from './useAmbientSound';
 export { AmbientSoundButton } from './AmbientSoundButton';
 export { AmbientSoundModal } from './AmbientSoundModal';
 export { ModeDescriptionModal } from './ModeDescriptionModal';
+export { IncursionModeModal } from './IncursionModeModal';
+export type { IncursionModeModalProps } from './IncursionModeModal';
 export type { ModeDescriptionBlock } from './ModeDescriptionModal';
 export { AMBIENT_SOUNDS } from './ambientSounds.constants';
 export type { AmbientTrack } from './ambientSounds.constants';

@@ -55,7 +55,7 @@ export const QuestFab: React.FC<QuestFabProps> = ({
           - Styled with `shadow-[0_8px_30px_rgba(0,0,0,0.85)]`, `border-[#E2B054]/40`, and `backdrop-blur-md`
             to explicitly convey high elevation and floating hierarchy.
       */}
-      <div className="fixed z-30 bottom-[72px] right-3 lg:bottom-6 lg:right-6 transition-all duration-300">
+      <div className="fixed z-30 bottom-[190px] right-3 lg:bottom-6 lg:right-6 transition-all duration-300">
         <button
           onClick={() => setIsOpen(true)}
           className="relative p-4 rounded-full border-2 border-[#E2B054]/40 bg-stone-900/90 backdrop-blur-md text-amber-400 hover:text-amber-300 hover:border-[#E2B054]/70 shadow-[0_8px_30px_rgba(0,0,0,0.85)] active:scale-95 transition-all cursor-pointer group flex items-center justify-center w-14 h-14"

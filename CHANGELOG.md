@@ -15,6 +15,28 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.14] - 2026-08-09
+
+### Adicionado
+- **Modal de seleção de Modo de Incursão (`IncursionModeModal.tsx`)** — modal dedicado para escolher entre Padrão, Masmorra e Selvagem, substituindo o segmented control fixo na tela de Foco; exibe contagem regressiva de recarga da Masmorra quando aplicável.
+- **Quick Actions Row na aba Foco** — nova fileira de 4 ícones flat (Modo, Som, Ajustes, Tela Cheia) substituindo os cards "Som Ambiente"/"Ajustes" e o antigo segmented control de Modo de Incursão.
+- **Propagação de cor do timer por Modo de Incursão** — número digital e líquido do FocusOrb (novos gradientes `liquid-dungeon`/`liquid-wilderness`) refletem o modo ativo (roxo para Masmorra, vermelho para Selvagem) enquanto a sessão está em execução; alerta de tempo crítico (<1min) mantém prioridade em vermelho sobre a cor do modo.
+
+### Alterado
+- **Botão "Tela Cheia"** — passou a ficar permanentemente visível e interativo na Quick Actions Row, independente do estado de execução do timer (antes só aparecia com sessão ativa).
+- **Faixa de status do modo ativo** (chance de saque / progresso de Masmorra / recarga) — realocada para entre o botão principal de ação e a Quick Actions Row, mantendo toda a lógica de cálculo já existente.
+- **Posição do `QuestFab`** no mobile — ajustada para `bottom-[190px] right-3`, evitando sobreposição com a Quick Actions Row; recuo direito (`pr-16`) adicionado à faixa de status para não ficar coberta em textos longos (ex.: Masmorra).
+
+### Arquivos alterados
+- `/src/App.tsx`
+- `/src/modules/focus/IncursionModeModal.tsx` (novo)
+- `/src/modules/focus/QuestFab.tsx`
+- `/src/modules/focus/FocusOrb.tsx`
+- `/src/modules/focus/FocusModeScreen.tsx`
+- `/src/modules/focus/index.ts`
+
+---
+
 ## [1.1.13] - 2026-08-04
 
 ### Corrigido

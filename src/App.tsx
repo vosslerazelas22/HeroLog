@@ -106,6 +106,7 @@ import {
   SessionConfig,
   ModeDescriptionModal,
   ModeDescriptionBlock,
+  IncursionModeModal,
 } from './modules/focus';
 
 import { BottomNav } from './components/navigation/BottomNav';
@@ -332,6 +333,7 @@ function App({ userId, signOut }: AppProps) {
   const [isSkillsModalOpen, setIsSkillsModalOpen] = useState<boolean>(false);
   const [isSkillSelectorOpen, setIsSkillSelectorOpen] = useState<boolean>(false);
   const [isTimerSettingsModalOpen, setIsTimerSettingsModalOpen] = useState<boolean>(false);
+  const [isIncursionModalOpen, setIsIncursionModalOpen] = useState<boolean>(false);
   const [newSkillNameInput, setNewSkillNameInput] = useState<string>('');
   const [selectedNewSkillEmoji, setSelectedNewSkillEmoji] = useState<string>('📚');
   const [showSkillsTooltip, setShowSkillsTooltip] = useState<boolean>(false);
@@ -2368,315 +2370,6 @@ function App({ userId, signOut }: AppProps) {
                         )}
                       </div>
 
-                      {/* Segmented Control for Raid Modes */}
-                      <div className="space-y-2 mt-1">
-                        <label className="text-[10px] uppercase font-serif tracking-widest text-amber-100/40 block">
-                          Modo de Incursão:
-                        </label>
-                        <div className="flex w-full bg-stone-950/60 p-0.5 rounded-lg border border-amber-500/15 overflow-hidden">
-                          <button
-                            type="button"
-                            disabled={isRunning}
-                            onClick={() => {
-                              setSessionConfig(prev => ({
-                                ...prev,
-                                isDungeonMode: false,
-                                isWildernessChecked: false
-                              }));
-                              addSystemLog('⚔️ Modo de Incursão Padrão selecionado.');
-                            }}
-                            className={`flex-1 py-1 px-1.5 rounded-l-md text-[10px] md:text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none flex items-center justify-center min-h-[38px] ${
-                              !sessionConfig.isDungeonMode && !sessionConfig.isWildernessChecked
-                                ? 'bg-amber-500/15 text-amber-300 shadow-[inset_0_1px_1px_rgba(251,191,36,0.15)]'
-                                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/40'
-                            }`}
-                          >
-                            Padrão
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isRunning || dungeonCooldownRemaining > 0}
-                            onClick={() => {
-                              setSessionConfig(prev => ({
-                                ...prev,
-                                isDungeonMode: true,
-                                isWildernessChecked: false
-                              }));
-                              addSystemLog('⚔️ Incursão por Masmorra Ativada! Comprometa-se a realizar 4 focos seguidos sem abandonar para adquirir GP bônus.');
-                            }}
-                            className={`flex-1 py-1 px-1.5 transition-all tracking-wider text-center cursor-pointer select-none border-l border-r border-amber-500/10 flex flex-col items-center justify-center min-h-[38px] ${
-                              sessionConfig.isDungeonMode
-                                ? 'bg-purple-950/90 text-purple-200 font-bold shadow-[inset_0_1px_1px_rgba(168,85,247,0.15)]'
-                                : dungeonCooldownRemaining > 0
-                                  ? 'opacity-40 cursor-not-allowed text-purple-400/50 bg-stone-950/40'
-                                  : 'text-purple-400/80 hover:text-purple-300 hover:bg-purple-950/20'
-                            }`}
-                          >
-                            <span className="text-[10px] md:text-[11px] font-serif uppercase font-bold leading-none whitespace-nowrap">Masmorra ⚔️</span>
-                            {dungeonCooldownRemaining > 0 && (
-                              <span className="text-[8px] font-mono font-medium tracking-normal mt-0.5 text-purple-300/90 bg-purple-950/60 px-1 py-0.5 rounded border border-purple-500/20 leading-none">
-                                ⏳ {formatDungeonCooldown(dungeonCooldownRemaining)}
-                              </span>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isRunning}
-                            onClick={() => {
-                              setSessionConfig(prev => ({
-                                ...prev,
-                                isWildernessChecked: true,
-                                isDungeonMode: false
-                              }));
-                              addSystemLog('🛡️ Ajuste: Terra Selvagem selecionada para a próxima Missão!');
-                            }}
-                            className={`flex-1 py-1 px-1.5 rounded-r-md text-[10px] md:text-[11px] font-serif font-bold uppercase transition-all tracking-wider text-center cursor-pointer select-none flex items-center justify-center min-h-[38px] ${
-                              sessionConfig.isWildernessChecked
-                                ? 'bg-red-950 border border-red-500/40 text-red-500 shadow-[inset_0_1px_1px_rgba(239,68,68,0.15)]'
-                                : 'text-red-400/80 hover:text-red-300 hover:bg-red-950/20'
-                            }`}
-                          >
-                            Selvagem 💀
-                          </button>
-                        </div>
-
-                        {/* Mode Context Information / Help Button */}
-                        <div className="bg-stone-950/40 py-1.5 px-2.5 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
-                          {sessionConfig.isDungeonMode && (
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="text-purple-300 font-serif">
-                                <span>⚔️ Explorando Masmorra </span>
-                                <span className="font-mono">({sessionConfig.dungeonSessions}/4)</span>
-                                {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
-                                  <span className="text-[9px] font-mono ml-2 text-purple-400">⏳ Cooldown</span>
-                                ) : (
-                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowDungeonTooltip(!showDungeonTooltip);
-                                }}
-                                className="px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-400 hover:bg-purple-500/10 font-bold transition-all cursor-pointer bg-purple-950/10 text-[9px]"
-                                title="Ajuda sobre a Masmorra"
-                              >
-                                ?
-                              </button>
-                            </div>
-                          )}
-
-                          {sessionConfig.isWildernessChecked && (
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="text-red-400 font-serif">
-                                <span>💀 Terra Selvagem Ativa </span>
-                                <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +25% XP & GP</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowWildernessTooltip(!showWildernessTooltip);
-                                }}
-                                className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold transition-all cursor-pointer bg-red-950/10 text-[9px]"
-                                title="Ajuda sobre a Terra Selvagem"
-                              >
-                                ?
-                              </button>
-                            </div>
-                          )}
-
-                          {!sessionConfig.isDungeonMode && !sessionConfig.isWildernessChecked && (() => {
-                            const currentDuration = gameState.pomodoroSettings.focusDuration;
-                            const eqTitleId = gameState.equippedTitle;
-                            const chanceInfo = calculateLootChance(currentDuration, false, eqTitleId);
-                            const chancePct = Math.round(chanceInfo.finalChance * 100);
-
-                            return (
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="text-amber-300 font-serif">
-                                  <span>🎯 Modo Padrão </span>
-                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">
-                                    • Chance de Saque: {chancePct}%
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowStandardLootTooltip(!showStandardLootTooltip);
-                                  }}
-                                  className="px-1.5 py-0.5 rounded border border-amber-500/20 text-amber-400 hover:bg-amber-500/10 font-bold transition-all cursor-pointer bg-amber-950/10 text-[9px]"
-                                  title="Ajuda sobre Chance de Saque"
-                                >
-                                  ?
-                                </button>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Dungeon Mode Modal */}
-                          <ModeDescriptionModal
-                            isOpen={showDungeonTooltip}
-                            onClose={() => setShowDungeonTooltip(false)}
-                            title="⚔️ Incursão em Masmorra"
-                            variant="purple"
-                            blocks={[
-                              {
-                                label: 'Regras da Jornada',
-                                icon: <Swords className="w-4 h-4" />,
-                                text: (
-                                  <span>
-                                    Comprometa-se a realizar <strong>4 sessões consecutivas</strong> de foco sem abandonar.
-                                  </span>
-                                ),
-                              },
-                              {
-                                label: 'Recompensas Magnas',
-                                icon: <Flame className="w-4 h-4" />,
-                                text: (
-                                  <span>
-                                    +50% de XP por minuto em cada sessão, rolos de saque quadruplicados (Quad Loot), 40% de chance de saque Lendário e um bônus monumental de <strong>+2.500 GP</strong> ao concluir as 4 sessões.
-                                  </span>
-                                ),
-                              },
-                              {
-                                label: 'Recarga para Masmorra',
-                                icon: <RotateCcw className="w-4 h-4" />,
-                                text: (
-                                  <span>
-                                    Tempo de recarga de 2 horas após a conclusão. Não acumulável com o Modo Terra Selvagem.
-                                  </span>
-                                ),
-                              },
-                            ]}
-                          />
-
-                          {/* Wilderness Mode Modal */}
-                          <ModeDescriptionModal
-                            isOpen={showWildernessTooltip}
-                            onClose={() => setShowWildernessTooltip(false)}
-                            title="💀 Terra Selvagem"
-                            variant="red"
-                            blocks={[
-                              {
-                                label: 'Regras da Jornada',
-                                icon: <Skull className="w-4 h-4" />,
-                                text: (
-                                  <span>
-                                    Regra severa: minimizar a aba durante a sessão cancela o bônus automaticamente.
-                                  </span>
-                                ),
-                              },
-                              {
-                                label: 'Recompensas Magnas',
-                                icon: <Coins className="w-4 h-4" />,
-                                text: (
-                                  <span>
-                                    Sobreviventes ganham um bônus monumental de <strong>+25% de XP & GP extras</strong> no fechamento do foco.
-                                  </span>
-                                ),
-                              },
-                            ]}
-                          />
-
-                          {/* Standard Mode Loot Chance Modal */}
-                          {(() => {
-                            const currentDuration = gameState.pomodoroSettings.focusDuration;
-                            const eqTitleId = gameState.equippedTitle;
-                            const chanceInfo = calculateLootChance(currentDuration, false, eqTitleId);
-                            const currentTitleObj = eqTitleId ? TITLE_CATALOG.find(t => t.id === eqTitleId) : null;
-                            const hasTitleBonus = !!(eqTitleId && eqTitleId in TITLE_LOOT_MULTIPLIERS);
-                            const titleBonusPct = hasTitleBonus ? Math.round(TITLE_LOOT_MULTIPLIERS[eqTitleId] * 100) : 0;
-
-                            return (
-                              <ModeDescriptionModal
-                                isOpen={showStandardLootTooltip}
-                                onClose={() => setShowStandardLootTooltip(false)}
-                                title="🎯 Modo Padrão"
-                                variant="amber"
-                                blocks={[
-                                  {
-                                    label: 'CHANCE DE SAQUE ATUAL',
-                                    icon: <Sparkles className="w-4 h-4" />,
-                                    text: (
-                                      <div className="space-y-1 font-sans">
-                                        <div>
-                                          Duração selecionada: <strong>{currentDuration} min</strong> (Base: {Math.round(chanceInfo.baseChance * 100)}%)
-                                        </div>
-                                        <div>
-                                          Título equipado: <strong>{currentTitleObj ? `${currentTitleObj.emoji} ${currentTitleObj.name}` : 'Nenhum'}</strong>
-                                          {hasTitleBonus ? (
-                                            <span className="text-amber-300 ml-1 font-semibold">
-                                              (+{titleBonusPct}% de bônus)
-                                            </span>
-                                          ) : (
-                                            <span className="text-stone-400 ml-1 font-normal">(Sem bônus de saque)</span>
-                                          )}
-                                        </div>
-                                        <div className="pt-1.5 border-t border-amber-500/10 font-bold text-amber-300">
-                                          Chance final de drop: {Math.round(chanceInfo.finalChance * 100)}% <span className="text-[10px] font-normal text-stone-400">(Teto máximo: {Math.round(MAX_LOOT_CHANCE_CAP * 100)}%)</span>
-                                        </div>
-                                      </div>
-                                    ),
-                                  },
-                                  {
-                                    label: 'CHANCE BASE POR DURAÇÃO',
-                                    icon: <Timer className="w-4 h-4" />,
-                                    text: (
-                                      <div className="space-y-1 font-mono text-[11px]">
-                                        <div className="flex justify-between items-center">
-                                          <span>Menos de 50 min:</span>
-                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.SHORT * 100)}%</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                          <span>50 a 89 min:</span>
-                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.MEDIUM * 100)}%</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                          <span>90 min ou mais:</span>
-                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.LONG * 100)}%</span>
-                                        </div>
-                                      </div>
-                                    ),
-                                  },
-                                  {
-                                    label: 'BÔNUS POR TÍTULO RARO',
-                                    icon: <Crown className="w-4 h-4" />,
-                                    text: (
-                                      <div className="space-y-1 font-mono text-[11px]">
-                                        {Object.entries(TITLE_LOOT_MULTIPLIERS).map(([titleId, mult]) => {
-                                          const tObj = TITLE_CATALOG.find((t) => t.id === titleId);
-                                          const name = tObj ? `${tObj.emoji} ${tObj.name}` : titleId;
-                                          const percentage = Math.round(mult * 100);
-                                          return (
-                                            <div key={titleId} className="flex justify-between items-center">
-                                              <span>{name}</span>
-                                              <span className="text-amber-300 font-bold">+{percentage}%</span>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    ),
-                                  },
-                                  {
-                                    label: 'REGRA DE CÁLCULO',
-                                    icon: <Scroll className="w-4 h-4" />,
-                                    text: (
-                                      <span>
-                                        Os bônus de título multiplicam a chance base da duração selecionada.
-                                        A chance final é limitada a um teto de {Math.round(MAX_LOOT_CHANCE_CAP * 100)}% por sessão.
-                                      </span>
-                                    ),
-                                  },
-                                ]}
-                              />
-                            );
-                          })()}
-                        </div>
-                      </div>
-
                       {/* Random screen interactive event notifier */}
                       <div className={`${activeScreenEvent ? 'h-8' : 'h-1.5 md:h-2'} flex items-center justify-center transition-all duration-300`}>
                         <AnimatePresence>
@@ -2773,6 +2466,8 @@ function App({ userId, signOut }: AppProps) {
                             isRunning={isRunning}
                             isPaused={isPaused}
                             isBreakActive={isBreakActive}
+                            isDungeonMode={sessionConfig.isDungeonMode}
+                            isWildernessMode={sessionConfig.isWildernessChecked}
                             size="standard"
                           />
                         </div>
@@ -3072,60 +2767,333 @@ function App({ userId, signOut }: AppProps) {
                           </div>
                         )}
 
-                        {/* Fullscreen Button / Placeholder */}
-                        {isRunning && !isBreakActive ? (
+                        {/* Status Bar: Mode Context Information / Help Button */}
+                        <div className="bg-stone-950/40 py-1.5 pl-2.5 pr-16 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
+                          {sessionConfig.isDungeonMode && (
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-purple-300 font-serif">
+                                <span>⚔️ Explorando Masmorra </span>
+                                <span className="font-mono">({sessionConfig.dungeonSessions}/4)</span>
+                                {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
+                                  <span className="text-[9px] font-mono ml-2 text-purple-400">⏳ Cooldown</span>
+                                ) : (
+                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDungeonTooltip(!showDungeonTooltip);
+                                }}
+                                className="px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-400 hover:bg-purple-500/10 font-bold transition-all cursor-pointer bg-purple-950/10 text-[9px]"
+                                title="Ajuda sobre a Masmorra"
+                              >
+                                ?
+                              </button>
+                            </div>
+                          )}
+
+                          {sessionConfig.isWildernessChecked && (
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-red-400 font-serif">
+                                <span>💀 Terra Selvagem Ativa </span>
+                                <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +25% XP & GP</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowWildernessTooltip(!showWildernessTooltip);
+                                }}
+                                className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 hover:bg-red-500/10 font-bold transition-all cursor-pointer bg-red-950/10 text-[9px]"
+                                title="Ajuda sobre a Terra Selvagem"
+                              >
+                                ?
+                              </button>
+                            </div>
+                          )}
+
+                          {!sessionConfig.isDungeonMode && !sessionConfig.isWildernessChecked && (() => {
+                            const currentDuration = gameState.pomodoroSettings.focusDuration;
+                            const eqTitleId = gameState.equippedTitle;
+                            const chanceInfo = calculateLootChance(currentDuration, false, eqTitleId);
+                            const chancePct = Math.round(chanceInfo.finalChance * 100);
+
+                            return (
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-amber-300 font-serif">
+                                  <span>🎯 Modo Padrão </span>
+                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">
+                                    • Chance de Saque: {chancePct}%
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowStandardLootTooltip(!showStandardLootTooltip);
+                                  }}
+                                  className="px-1.5 py-0.5 rounded border border-amber-500/20 text-amber-400 hover:bg-amber-500/10 font-bold transition-all cursor-pointer bg-amber-950/10 text-[9px]"
+                                  title="Ajuda sobre Chance de Saque"
+                                >
+                                  ?
+                                </button>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Dungeon Mode Modal */}
+                          <ModeDescriptionModal
+                            isOpen={showDungeonTooltip}
+                            onClose={() => setShowDungeonTooltip(false)}
+                            title="⚔️ Incursão em Masmorra"
+                            variant="purple"
+                            blocks={[
+                              {
+                                label: 'Regras da Jornada',
+                                icon: <Swords className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Comprometa-se a realizar <strong>4 sessões consecutivas</strong> de foco sem abandonar.
+                                  </span>
+                                ),
+                              },
+                              {
+                                label: 'Recompensas Magnas',
+                                icon: <Flame className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    +50% de XP por minuto em cada sessão, rolos de saque quadruplicados (Quad Loot), 40% de chance de saque Lendário e um bônus monumental de <strong>+2.500 GP</strong> ao concluir as 4 sessões.
+                                  </span>
+                                ),
+                              },
+                              {
+                                label: 'Recarga para Masmorra',
+                                icon: <RotateCcw className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Tempo de recarga de 2 horas após a conclusão. Não acumulável com o Modo Terra Selvagem.
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
+
+                          {/* Wilderness Mode Modal */}
+                          <ModeDescriptionModal
+                            isOpen={showWildernessTooltip}
+                            onClose={() => setShowWildernessTooltip(false)}
+                            title="💀 Terra Selvagem"
+                            variant="red"
+                            blocks={[
+                              {
+                                label: 'Regras da Jornada',
+                                icon: <Skull className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Regra severa: minimizar a aba durante a sessão cancela o bônus automaticamente.
+                                  </span>
+                                ),
+                              },
+                              {
+                                label: 'Recompensas Magnas',
+                                icon: <Coins className="w-4 h-4" />,
+                                text: (
+                                  <span>
+                                    Sobreviventes ganham um bônus monumental de <strong>+25% de XP & GP extras</strong> no fechamento do foco.
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
+
+                          {/* Standard Mode Loot Chance Modal */}
+                          {(() => {
+                            const currentDuration = gameState.pomodoroSettings.focusDuration;
+                            const eqTitleId = gameState.equippedTitle;
+                            const chanceInfo = calculateLootChance(currentDuration, false, eqTitleId);
+                            const currentTitleObj = eqTitleId ? TITLE_CATALOG.find(t => t.id === eqTitleId) : null;
+                            const hasTitleBonus = !!(eqTitleId && eqTitleId in TITLE_LOOT_MULTIPLIERS);
+                            const titleBonusPct = hasTitleBonus ? Math.round(TITLE_LOOT_MULTIPLIERS[eqTitleId] * 100) : 0;
+
+                            return (
+                              <ModeDescriptionModal
+                                isOpen={showStandardLootTooltip}
+                                onClose={() => setShowStandardLootTooltip(false)}
+                                title="🎯 Modo Padrão"
+                                variant="amber"
+                                blocks={[
+                                  {
+                                    label: 'CHANCE DE SAQUE ATUAL',
+                                    icon: <Sparkles className="w-4 h-4" />,
+                                    text: (
+                                      <div className="space-y-1 font-sans">
+                                        <div>
+                                          Duração selecionada: <strong>{currentDuration} min</strong> (Base: {Math.round(chanceInfo.baseChance * 100)}%)
+                                        </div>
+                                        <div>
+                                          Título equipado: <strong>{currentTitleObj ? `${currentTitleObj.emoji} ${currentTitleObj.name}` : 'Nenhum'}</strong>
+                                          {hasTitleBonus ? (
+                                            <span className="text-amber-300 ml-1 font-semibold">
+                                              (+{titleBonusPct}% de bônus)
+                                            </span>
+                                          ) : (
+                                            <span className="text-stone-400 ml-1 font-normal">(Sem bônus de saque)</span>
+                                          )}
+                                        </div>
+                                        <div className="pt-1.5 border-t border-amber-500/10 font-bold text-amber-300">
+                                          Chance final de drop: {Math.round(chanceInfo.finalChance * 100)}% <span className="text-[10px] font-normal text-stone-400">(Teto máximo: {Math.round(MAX_LOOT_CHANCE_CAP * 100)}%)</span>
+                                        </div>
+                                      </div>
+                                    ),
+                                  },
+                                  {
+                                    label: 'CHANCE BASE POR DURAÇÃO',
+                                    icon: <Timer className="w-4 h-4" />,
+                                    text: (
+                                      <div className="space-y-1 font-mono text-[11px]">
+                                        <div className="flex justify-between items-center">
+                                          <span>Menos de 50 min:</span>
+                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.SHORT * 100)}%</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span>50 a 89 min:</span>
+                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.MEDIUM * 100)}%</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span>90 min ou mais:</span>
+                                          <span className="text-amber-300 font-bold">{Math.round(BASE_LOOT_CHANCE.LONG * 100)}%</span>
+                                        </div>
+                                      </div>
+                                    ),
+                                  },
+                                  {
+                                    label: 'BÔNUS POR TÍTULO RARO',
+                                    icon: <Crown className="w-4 h-4" />,
+                                    text: (
+                                      <div className="space-y-1 font-mono text-[11px]">
+                                        {Object.entries(TITLE_LOOT_MULTIPLIERS).map(([titleId, mult]) => {
+                                          const tObj = TITLE_CATALOG.find((t) => t.id === titleId);
+                                          const name = tObj ? `${tObj.emoji} ${tObj.name}` : titleId;
+                                          const percentage = Math.round(mult * 100);
+                                          return (
+                                            <div key={titleId} className="flex justify-between items-center">
+                                              <span>{name}</span>
+                                              <span className="text-amber-300 font-bold">+{percentage}%</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ),
+                                  },
+                                  {
+                                    label: 'REGRA DE CÁLCULO',
+                                    icon: <Scroll className="w-4 h-4" />,
+                                    text: (
+                                      <span>
+                                        Os bônus de título multiplicam a chance base da duração selecionada.
+                                        A chance final é limitada a um teto de {Math.round(MAX_LOOT_CHANCE_CAP * 100)}% por sessão.
+                                      </span>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            );
+                          })()}
+                        </div>
+
+                        {/* Quick Actions Row */}
+                        <div className="grid grid-cols-4 gap-1 pt-2 border-t border-amber-500/10">
+                          {/* 1. Modo Foco */}
                           <button
+                            type="button"
+                            onClick={() => setIsIncursionModalOpen(true)}
+                            className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none"
+                          >
+                            {sessionConfig.isDungeonMode ? (
+                              <ShieldAlert className="w-5 h-5 text-purple-400" />
+                            ) : sessionConfig.isWildernessChecked ? (
+                              <Skull className="w-5 h-5 text-red-400" />
+                            ) : (
+                              <Sparkles className="w-5 h-5 text-amber-400" />
+                            )}
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Modo</span>
+                          </button>
+
+                          {/* 2. Som Ambiente */}
+                          <div className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px]">
+                            <AmbientSoundButton
+                              selectedTrack={ambientSound.selectedTrack}
+                              volume={ambientSound.volume}
+                              selectTrack={ambientSound.selectTrack}
+                              setVolume={ambientSound.setVolume}
+                              tracks={ambientSound.tracks}
+                              compact
+                            />
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Som</span>
+                          </div>
+
+                          {/* 3. Ajustes do Timer */}
+                          <button
+                            type="button"
+                            disabled={isRunning || isBreakActive}
+                            onClick={() => setIsTimerSettingsModalOpen(true)}
+                            className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Settings className="w-5 h-5 text-amber-400/80" />
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Ajustes</span>
+                          </button>
+
+                          {/* 4. Tela Cheia */}
+                          <button
+                            type="button"
                             onClick={() => {
                               document.documentElement.requestFullscreen().catch((err) => {
                                 console.warn("Fullscreen API not supported or blocked:", err);
                               });
                               setSessionConfig(prev => ({ ...prev, isFocusMode: true }));
                             }}
-                            className="w-full py-2.5 text-xs font-serif font-bold uppercase text-amber-100/50 hover:text-amber-100/80 bg-stone-900/20 hover:bg-stone-900/55 border border-amber-500/15 hover:border-amber-500/30 rounded tracking-widest transition-all cursor-pointer select-none text-center flex items-center justify-center gap-1.5"
+                            className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none"
                           >
-                            <span>⛶</span>
-                            <span>Tela Cheia</span>
-                          </button>
-                        ) : (
-                          <div
-                            className="w-full py-2.5 text-xs font-serif font-bold uppercase border border-transparent rounded tracking-widest text-center flex items-center justify-center gap-1.5 opacity-0 pointer-events-none select-none"
-                            aria-hidden="true"
-                          >
-                            <span>⛶</span>
-                            <span>Tela Cheia</span>
-                          </div>
-                        )}
-
-                        {/* CONTROLS ROW: AMBIENT SOUND & TIMER SETTINGS */}
-                        <div className="grid grid-cols-2 gap-2 relative z-20">
-                          {/* 🎵 Som Ambiente Button */}
-                          <AmbientSoundButton
-                            selectedTrack={ambientSound.selectedTrack}
-                            volume={ambientSound.volume}
-                            selectTrack={ambientSound.selectTrack}
-                            setVolume={ambientSound.setVolume}
-                            tracks={ambientSound.tracks}
-                          />
-
-                          {/* ⚙️ Ajustes Button */}
-                          <button
-                            disabled={isRunning || isBreakActive}
-                            onClick={() => setIsTimerSettingsModalOpen(true)}
-                            className="relative flex items-center justify-start p-3 rounded-lg border-2 border-amber-500/20 bg-stone-900/60 hover:bg-stone-850 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all cursor-pointer select-none shadow-sm group disabled:opacity-40 disabled:cursor-not-allowed min-h-[64px] w-full"
-                          >
-                            <div className="flex items-center gap-2 text-left">
-                              <Settings className="w-5 h-5 text-amber-400/80 group-hover:text-amber-300 transition-colors shrink-0" />
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-xs font-serif font-black uppercase tracking-wider text-amber-100 group-hover:text-amber-200 truncate">
-                                  Ajustes
-                                </span>
-                                <span className="text-[9px] font-medium text-amber-200/70">
-                                  Timer
-                                </span>
-                              </div>
-                            </div>
+                            <span className="text-base leading-none">⛶</span>
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Tela Cheia</span>
                           </button>
                         </div>
+
+                        {/* Incursion Mode Modal */}
+                        <IncursionModeModal
+                          isOpen={isIncursionModalOpen}
+                          onClose={() => setIsIncursionModalOpen(false)}
+                          isDungeonMode={sessionConfig.isDungeonMode}
+                          isWildernessChecked={sessionConfig.isWildernessChecked}
+                          dungeonCooldownRemaining={dungeonCooldownRemaining}
+                          formatDungeonCooldown={formatDungeonCooldown}
+                          onSelectMode={(mode) => {
+                            if (mode === 'standard') {
+                              setSessionConfig(prev => ({
+                                ...prev,
+                                isDungeonMode: false,
+                                isWildernessChecked: false
+                              }));
+                              addSystemLog('⚔️ Modo de Incursão Padrão selecionado.');
+                            } else if (mode === 'dungeon') {
+                              setSessionConfig(prev => ({
+                                ...prev,
+                                isDungeonMode: true,
+                                isWildernessChecked: false
+                              }));
+                              addSystemLog('⚔️ Incursão por Masmorra Ativada! Comprometa-se a realizar 4 focos seguidos sem abandonar para adquirir GP bônus.');
+                            } else if (mode === 'wilderness') {
+                              setSessionConfig(prev => ({
+                                ...prev,
+                                isWildernessChecked: true,
+                                isDungeonMode: false
+                              }));
+                              addSystemLog('🛡️ Ajuste: Terra Selvagem selecionada para a próxima Missão!');
+                            }
+                          }}
+                        />
                       </div>
 
                     </div>

@@ -188,6 +188,8 @@ export function FocusModeScreen(props: FocusModeScreenProps) {
           totalSeconds={gameState.pomodoroSettings.focusDuration * 60}
           isRunning={focusSession.isRunning}
           isPaused={isPaused}
+          isDungeonMode={isDungeonMode}
+          isWildernessMode={isWildernessChecked}
           size="fullscreen"
         />
       </div>

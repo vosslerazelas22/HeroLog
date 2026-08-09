@@ -6,6 +6,8 @@ interface FocusOrbProps {
   isRunning: boolean;
   isPaused: boolean;
   isBreakActive?: boolean;
+  isDungeonMode?: boolean;
+  isWildernessMode?: boolean;
   size?: 'compact' | 'standard' | 'fullscreen';
   className?: string;
 }
@@ -16,6 +18,8 @@ export function FocusOrb({
   isRunning,
   isPaused,
   isBreakActive = false,
+  isDungeonMode = false,
+  isWildernessMode = false,
   size = 'standard',
   className = '',
 }: FocusOrbProps) {
@@ -185,7 +189,11 @@ export function FocusOrb({
       ? 'url(#liquid-urgent)'
       : isPaused
         ? 'url(#liquid-paused)'
-        : 'url(#liquid-work)';
+        : isDungeonMode
+          ? 'url(#liquid-dungeon)'
+          : isWildernessMode
+            ? 'url(#liquid-wilderness)'
+            : 'url(#liquid-work)';
 
   const gradientBack = isBreakActive
     ? 'url(#liquid-break-back)'
@@ -193,7 +201,11 @@ export function FocusOrb({
       ? 'url(#liquid-urgent-back)'
       : isPaused
         ? 'url(#liquid-paused-back)'
-        : 'url(#liquid-work-back)';
+        : isDungeonMode
+          ? 'url(#liquid-dungeon-back)'
+          : isWildernessMode
+            ? 'url(#liquid-wilderness-back)'
+            : 'url(#liquid-work-back)';
 
   // Sizing styles
   const sizeClasses = {
@@ -210,7 +222,11 @@ export function FocusOrb({
       : isPaused
         ? 'text-amber-500/80 font-bold tracking-wider drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)]'
         : isRunning
-          ? 'text-amber-100 font-extrabold tracking-wider drop-shadow-[0_2px_8px_rgba(245,158,11,0.4)]'
+          ? isDungeonMode
+            ? 'text-purple-300 font-extrabold tracking-wider drop-shadow-[0_2px_12px_rgba(168,85,247,0.5)]'
+            : isWildernessMode
+              ? 'text-red-300 font-extrabold tracking-wider drop-shadow-[0_2px_12px_rgba(239,68,68,0.4)]'
+              : 'text-amber-100 font-extrabold tracking-wider drop-shadow-[0_2px_8px_rgba(245,158,11,0.4)]'
           : 'text-amber-200/75 font-semibold tracking-wider';
 
   const textSizes = size === 'fullscreen'
@@ -229,7 +245,11 @@ export function FocusOrb({
               : isPaused
                 ? 'bg-amber-600'
                 : isRunning
-                  ? 'bg-amber-500'
+                  ? isDungeonMode
+                    ? 'bg-purple-500'
+                    : isWildernessMode
+                      ? 'bg-red-500'
+                      : 'bg-amber-500'
                   : 'bg-amber-500/30'
         }`}
       />
@@ -288,6 +308,28 @@ export function FocusOrb({
           <linearGradient id="liquid-paused-back" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#b45309" stopOpacity="0.45" />
             <stop offset="100%" stopColor="#451a03" stopOpacity="0.55" />
+          </linearGradient>
+
+          {/* Dungeon (Masmorra) state */}
+          <linearGradient id="liquid-dungeon" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#c084fc" stopOpacity="0.85" />
+            <stop offset="50%" stopColor="#9333ea" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#4c1d95" stopOpacity="0.95" />
+          </linearGradient>
+          <linearGradient id="liquid-dungeon-back" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7e22ce" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#3b0764" stopOpacity="0.6" />
+          </linearGradient>
+
+          {/* Wilderness (Selvagem) state */}
+          <linearGradient id="liquid-wilderness" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fb7185" stopOpacity="0.85" />
+            <stop offset="50%" stopColor="#e11d48" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#881337" stopOpacity="0.95" />
+          </linearGradient>
+          <linearGradient id="liquid-wilderness-back" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#be123c" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#4c0519" stopOpacity="0.6" />
           </linearGradient>
 
           {/* Glossy rim gradient */}
