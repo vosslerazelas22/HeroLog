@@ -18,9 +18,13 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 ## [1.1.15] - 2026-08-09
 
 ### Corrigido
-- **Espaço vazio na aba Foco (mobile Android, produção)** — após a introdução da Quick Actions Row mais compacta na v1.1.14, sobrou espaço não distribuído corretamente entre o timer e a navegação inferior, deixando um vazio grande visível abaixo dos ícones de ação. O timer central agora se centraliza no espaço vertical disponível, e o botão de ação, a faixa de status e a Quick Actions Row ficam colados no fundo da tela, sem folga.
+
+- **Layout vertical da aba Foco no mobile** — corrigida a distribuição vertical da tela de Foco em dispositivos móveis, eliminando o espaço vazio entre o conteúdo e a navegação inferior e fazendo a Temple Chamber ocupar continuamente a área disponível.
+- **Proteção dos controles contra a BottomNav** — adicionada reserva de espaço interna no painel de Foco para impedir que Ajustes, Tela Cheia, Som e demais controles fiquem ocultos atrás da navegação inferior fixa.
+- **Preservação do layout desktop** — ajustes de flexbox e CSS Grid foram aplicados de forma compatível com a estrutura desktop existente, sem alterar a organização horizontal da interface.
 
 ### Arquivos alterados
+
 - `/src/App.tsx`
 
 ---
