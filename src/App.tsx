@@ -204,6 +204,7 @@ function App({ userId, signOut }: AppProps) {
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<string>('focus');
+
   const [shopSubTab, setShopSubTab] = useState<'items' | 'titles'>('items');
   const [questsSubTab, setQuestsSubTab] = useState<'daily' | 'journey'>('daily');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -2087,7 +2088,7 @@ function App({ userId, signOut }: AppProps) {
       </div>
 
       {/* PRIMARY TWO-COLUMN INTEGRATED GRID */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-4 py-0 sm:py-5 grid grid-cols-1 lg:grid-cols-12 lg:gap-6 relative">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-4 py-0 sm:py-5 grid grid-cols-1 lg:grid-cols-12 lg:gap-6 relative [align-content:stretch]">
         
         {/* LEFT SIDEBAR - NAVIGATION CABINET */}
         <aside
@@ -2275,7 +2276,7 @@ function App({ userId, signOut }: AppProps) {
         </aside>
 
         {/* RIGHT WORKSPACE COLUMN */}
-        <main className="lg:col-span-9 flex flex-col gap-6 w-full pb-14 lg:pb-0 flex-1">
+        <main className={`lg:col-span-9 flex flex-col gap-6 w-full ${activeTab === 'focus' ? 'pb-0 lg:pb-0' : 'pb-14 lg:pb-0'} flex-1`}>
           
           <AnimatePresence mode="wait">
             <motion.div
@@ -2284,13 +2285,13 @@ function App({ userId, signOut }: AppProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.15 }}
-              className="w-full h-full flex flex-col flex-1"
+              className="w-full flex flex-col flex-1 lg:h-full"
             >
               {/* TARGET VIEWPORT TABS */}
               
               {activeTab === 'focus' && (
                 <div className="mobile-focus-container w-full flex flex-col min-h-[500px] flex-1 bg-quest-panel lg:bg-transparent">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full lg:items-start">
+                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full lg:items-start [align-content:stretch]">
                     
                     {/* LEFT SUB-COLUMN: THE TEMPLE CHAMBER & POMODORO TIMER CORE */}
                     <section className="bg-quest-panel border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] lg:col-span-7 flex flex-col justify-between relative">
@@ -2332,7 +2333,7 @@ function App({ userId, signOut }: AppProps) {
                       )}
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col gap-2 md:gap-4 py-2">
+                    <div className="p-4 flex-1 flex flex-col gap-2 md:gap-4 py-2 pb-[60px]">
                       
                       {/* Choose focus skill active dropdown option */}
                       <div>
@@ -4563,7 +4564,6 @@ function App({ userId, signOut }: AppProps) {
       </div>
 
       <BottomNav activeTab={activeTab} onChangeTab={setActiveTab} />
-
     </div>
   );
 }
