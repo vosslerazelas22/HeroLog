@@ -1,5 +1,4 @@
 # ⚔️ HeroLog
-
 > Transforme sua produtividade em uma jornada de RPG.
 
 HeroLog é um app de produtividade gamificado baseado na técnica Pomodoro. A cada sessão de foco concluída, seu personagem ganha XP, sobe de nível, coleta loot e evolui suas habilidades — tornando o trabalho do dia a dia uma aventura.
@@ -12,8 +11,8 @@ HeroLog é um app de produtividade gamificado baseado na técnica Pomodoro. A ca
 - **Dungeon Mode** — 4 sessões consecutivas com recompensas elevadas
 - **Mecânicas de RPG** — XP, HP, Gold, Loot e Equipamentos
 - **Sistema de Skills e Subskills** — categorize suas sessões por área de foco
-- **Reflexão pós-sessão** — anote aprendizados e aplique tags de subskills
-- **Design system Obsidiana** — interface dark e imersiva
+- **Anotações de sessão** — ao concluir um foco, registre uma nota livre e marque a subskill trabalhada, formando um histórico consultável
+- **Autenticação e persistência de dados** via Supabase
 
 ---
 
@@ -22,6 +21,10 @@ HeroLog é um app de produtividade gamificado baseado na técnica Pomodoro. A ca
 | Camada | Tecnologia |
 |---|---|
 | Frontend | React + TypeScript + Vite |
+| Estilo | Tailwind CSS |
+| Animações | Framer Motion |
+| Backend / Auth / Dados | Supabase |
+| Servidor de dev/build | Express (via `server.ts`, com Vite em middleware mode) |
 | Mobile | Capacitor (Android) |
 | Hospedagem | GitHub Pages |
 | CI/CD | GitHub Actions |
@@ -50,11 +53,13 @@ npm run build
 
 ### Deploy no GitHub Pages
 
-O deploy é feito automaticamente via GitHub Actions a cada push na branch `main`.
+O deploy é feito automaticamente via GitHub Actions a cada push na branch `main`. O build gerado (`dist/`) é publicado como site estático — o servidor Express (`server.ts`) é usado apenas em desenvolvimento local.
 
 ---
 
 ## 📱 Build Android (Capacitor)
+
+> A pasta `android/` é mantida apenas localmente e não está versionada neste repositório.
 
 ```bash
 # Gera o build web
@@ -76,12 +81,14 @@ npx cap open android
 ```
 herolog/
 ├── src/
-│   ├── components/       # Componentes React
-│   ├── hooks/            # Hooks customizados (ex: useGameState.ts)
-│   ├── styles/           # Design system Obsidiana
+│   ├── components/       # Componentes React compartilhados (modais, navegação)
+│   ├── hooks/            # Hooks customizados (ex: useGameState.ts, useAuth.ts)
+│   ├── modules/          # Lógica de domínio por área (focus, skills, kingdom, quests, character)
+│   ├── lib/              # Integrações externas (Supabase client, auth)
+│   ├── utils/            # Funções utilitárias (áudio, scheduling, cores, etc.)
 │   └── main.tsx
-├── android/              # Projeto Capacitor/Android
 ├── public/
+├── server.ts             # Servidor Express (dev local + build)
 ├── vite.config.ts
 └── CHANGELOG.md
 ```
