@@ -208,7 +208,7 @@ export function SessionSummaryScreen({
             SEQUÊNCIA DE CHAMA
           </span>
           <span className="text-[#F14D2A] font-bold text-right flex items-center justify-end gap-1 font-serif">
-            🔥 {gameState.streak || 1} {gameState.streak === 1 ? 'DIA' : 'DIAS'}
+            <Flame className="w-3.5 h-3.5" /> {gameState.streak || 1} {gameState.streak === 1 ? 'DIA' : 'DIAS'}
           </span>
         </div>
 

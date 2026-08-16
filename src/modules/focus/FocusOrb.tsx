@@ -210,7 +210,7 @@ export function FocusOrb({
   // Sizing styles
   const sizeClasses = {
     compact: 'w-[172px] h-[172px]',
-    standard: 'w-[172px] h-[172px] min-[390px]:w-[218px] min-[390px]:h-[218px] lg:w-[288px] lg:h-[288px]',
+    standard: 'w-[215px] h-[215px] min-[390px]:w-[273px] min-[390px]:h-[273px] lg:w-[288px] lg:h-[288px]',
     fullscreen: 'w-[253px] h-[253px] sm:w-[345px] sm:h-[345px] lg:w-[437px] lg:h-[437px]',
   };
 

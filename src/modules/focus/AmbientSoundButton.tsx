@@ -30,21 +30,22 @@ export function AmbientSoundButton({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="relative w-10 h-10 rounded-full border border-amber-500/25 bg-stone-900/90 hover:bg-stone-850 hover:border-amber-400/50 text-amber-400 hover:text-amber-300 transition-all cursor-pointer select-none flex items-center justify-center shadow-lg group z-30"
+          className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none"
           title="Sons Ambiente"
         >
-          <span className="relative flex items-center justify-center">
+          <span className="relative w-5 h-5 flex items-center justify-center">
             {activeTrack ? (
-              <span className="text-base filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] group-hover:scale-110 transition-transform">
+              <span className="text-base leading-none select-none">
                 {activeTrack.icone}
               </span>
             ) : (
-              <VolumeX className="w-4 h-4 text-stone-400 group-hover:text-amber-400 transition-colors" />
+              <VolumeX className="w-5 h-5 text-amber-400/80" />
             )}
             {activeTrack && (
-              <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-400 rounded-full animate-pulse border border-stone-950" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse border border-stone-950" />
             )}
           </span>
+          <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Som</span>
         </button>
 
         <AmbientSoundModal

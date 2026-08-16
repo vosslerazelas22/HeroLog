@@ -213,7 +213,7 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
     onLog?.(`⚔️ Jornada de Foco Ativada: Canalizando forças mentais focando em "${activeSkillName}" por ${focusDurationRef.current}m!`, true);
 
     if (configRef.current.isWildernessChecked) {
-      onLog?.('💀 ALERTA DE PERIGO: Adentraste a Terra Selvagem (Wilderness)! Não minimizes esta janela ou sofrerás Morte Cognitiva.', true);
+      onLog?.('💀 ALERTA DE PERIGO: Você entrou na Terra Selvagem! Minimizar a tela resultará em morte.', true);
     }
 
     if (!muteSfx && sound?.playFocusBell) sound.playFocusBell();
@@ -259,7 +259,7 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
     setIsGraceActive(false);
     setActiveScreenEvent(null);
     localStorage.removeItem('herolog_active_session');
-    onLog?.('⚠️ Missão abandonada tragicamente pelo aventureiro.');
+    onLog?.('⚠️ Missão abandonada pelo aventureiro.');
   };
 
   // Complete Study Session successfully
@@ -553,7 +553,7 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
       if (filteredPool.length > 0) {
         droppedTitle = filteredPool[Math.floor(Math.random() * filteredPool.length)];
         setTimeout(() => {
-          onLog?.(`✨ SORTUDO UNMISSABLE: O reino abençoou sua constância e você dropou o TÍTULO RARO [${droppedTitle?.name}]!`, true);
+          onLog?.(`✨ SORTUDO: Como recompensa por sua constância, você recebeu o TÍTULO RARO [${droppedTitle?.name}]!`, true);
         }, 180);
       }
     }
@@ -692,7 +692,7 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
       if (roll >= saveChance && prev.streak > 0) {
         finalStreak = 0;
         setTimeout(() => {
-          onLog?.('⚠️ Sua streak de dias ininterruptos de foco colapsou de volta ao zero.', false);
+          onLog?.('⚠️ Sua sequência de dias ininterruptos de foco voltou ao zero.', false);
         }, 100);
       } else if (prev.streak > 0) {
         setTimeout(() => {
@@ -721,7 +721,7 @@ export function useFocusSession(params: UseFocusSessionParams): UseFocusSessionR
         combatXP: 0,
       };
     });
-    onLog?.('🛡️ Ressurgindo na capela do Santuário. Sacuda as cinzas da desatenção! Tua integridade (HP) foi totalmente restaurada, mas pagaste com o rebaixamento de 1 Nível de Combate e a perda de -50 GP.', true);
+    onLog?.('🛡️ Ressurgindo na capela do Santuário. Sacuda as cinzas da desatenção! Seus pontos de vida foram totalmente restaurados, mas você perdeu 1 Nível de Combate e -50 GP.', true);
   };
 
   const handleReturnToFocusCap = () => {

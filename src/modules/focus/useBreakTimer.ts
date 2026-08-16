@@ -38,7 +38,7 @@ export function useBreakTimer(params: UseBreakTimerParams) {
         if (remaining <= 0) {
           if (breakTimerIntervalRef.current) clearInterval(breakTimerIntervalRef.current);
           setIsBreakActive(false);
-          onLog?.('🍃 O intervalo sagrado foi concluído! Suas forças foram recarregadas para o próximo ciclo de foco.', true);
+          onLog?.('🍃 O intervalo foi concluído! Suas forças foram recarregadas para o próximo ciclo de foco.', true);
           if (!muteSfx) sound.playLevelUp();
           onBreakComplete?.();
         }
@@ -83,7 +83,7 @@ export function useBreakTimer(params: UseBreakTimerParams) {
       if (remaining <= 0) {
         clearInterval(breakTimerIntervalRef.current!);
         setIsBreakActive(false);
-        onLog?.('🍃 O intervalo sagrado foi concluído! Suas forças foram recarregadas para o próximo ciclo de foco.', true);
+        onLog?.('🍃 O intervalo foi concluído! Suas forças foram recarregadas para o próximo ciclo de foco.', true);
         if (!muteSfx) sound.playLevelUp();
         onBreakComplete?.();
       }
@@ -95,7 +95,7 @@ export function useBreakTimer(params: UseBreakTimerParams) {
     setIsBreakActive(false);
     setIsBreakPrep(false);
     exitBreak();
-    onLog?.('🍃 Intervalo pulado voluntariamente. Que o foco retorne à sua mente.', false);
+    onLog?.('🍃 Intervalo pulado.', false);
   };
 
   return {
