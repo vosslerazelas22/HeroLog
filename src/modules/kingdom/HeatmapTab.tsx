@@ -1,4 +1,5 @@
 import React from 'react';
+import { Flame } from 'lucide-react';
 import { HistoryEntry } from '../../types';
 
 interface HeatmapTabProps {
@@ -281,8 +282,8 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ history, streak }) => {
               </button>
             </div>
 
-            <div className="text-[10px] font-mono text-[#E2B054] font-black bg-[#C29544]/5 px-2 py-0.5 rounded border border-[#C29544]/20">
-              Streak Atual: {streak} {streak === 1 ? 'Dia' : 'Dias'} 🔥
+            <div className="text-[10px] font-mono text-[#E2B054] font-black bg-[#C29544]/5 px-2 py-0.5 rounded border border-[#C29544]/20 flex items-center gap-1 w-fit">
+              Streak Atual: {streak} {streak === 1 ? 'Dia' : 'Dias'} <Flame className="w-3 h-3" />
             </div>
           </div>
         </div>
