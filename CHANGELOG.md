@@ -15,6 +15,40 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.16] - 2026-08-16
+
+### Adicionado
+- **Ícones Lucide substituindo emojis** — ícone vetorial `Flame` substitui o emoji 🔥 nos 6 pontos ativos de exibição de sequência (pílula do header, rodapé da aba Herói, relatório diário, modal de conclusão, Heatmap e estatísticas). Os 14 sub-itens dos submenus Herói/Missões/Reino também migraram de emoji para ícone Lucide com cor própria.
+- **Indicador de aba ativa deslizante** na navegação inferior — pill animada com transição spring substitui o destaque estático do item ativo.
+
+### Alterado
+- **Navegação inferior redesenhada** — container migrado para grid fixo de 5 colunas com rótulo de texto exibido apenas na aba ativa, corrigindo definitivamente o corte do item "Reino" em viewports estreitos. Bottom sheet de sub-abas reduzido em duas etapas (padding, fonte, ícones, altura máxima).
+- **Tema "Herói"** — "Personagem" renomeado para "Herói" na navegação e nos textos internos ("Ficha de Personagem" → "Ficha do Herói", "Equipamentos & Itens" → "Equipamentos"); "Trompeta de Foco" renomeada para "Câmara de Foco" em todos os pontos (nav lateral, header do painel, tooltip).
+- Ícones da navegação principal: "Herói" (`ShieldUser`) e "Reino" (`Castle`); cor do sub-item "Títulos" alterada de âmbar para violeta; ícones de Hábitos, Heatmap e Estatísticas ajustados.
+- Ícone `Flame` do header destacado em laranja, mantendo o número de dias em âmbar.
+- Botão "Som" da Quick Actions Row padronizado visualmente com os demais botões da fileira (Modo, Ajustes, Tela Cheia).
+- **FocusOrb ampliado** — cronômetro central no perfil padrão aumentado de 215px para até 288px em desktop, com respiro inferior do painel de Foco expandido.
+- Mensagens de log do cronômetro de foco e intervalo simplificadas.
+- Texto da tela de preparação de pausa simplificado, removendo título redundante.
+
+### Corrigido
+- **Fechamento prematuro do bottom sheet de sub-abas** — tocar em um sub-item dentro do painel fechava a navegação sem trocar de aba, pois a detecção de clique externo não considerava o sheet como parte da área de navegação.
+- **Botão de nova missão exibido indevidamente** durante a preparação da tela de pausa.
+- **Troca de Modo de Incursão e de Título honorífico** agora bloqueadas durante sessão de foco ativa, evitando alteração de estado em meio a uma sessão em andamento.
+
+### Arquivos alterados
+- `/src/App.tsx`
+- `/src/modules/focus/AmbientSoundButton.tsx`
+- `/src/modules/focus/FocusCompletionFlow.tsx`
+- `/src/modules/focus/FocusOrb.tsx`
+- `/src/modules/focus/useBreakTimer.ts`
+- `/src/modules/focus/useFocusSession.ts`
+- `/src/modules/kingdom/HeatmapTab.tsx`
+- `/src/modules/character/CharacterScreen.tsx`
+- `/src/components/navigation/BottomNav.tsx`
+
+---
+
 ## [1.1.15] - 2026-08-09
 
 ### Corrigido
