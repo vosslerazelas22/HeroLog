@@ -1,14 +1,14 @@
 import React from 'react';
-import { Shield, Heart } from 'lucide-react';
+import { Shield, Heart, Flame } from 'lucide-react';
 import { InventoryItem } from '../../types';
 import { TITLE_CATALOG } from './titleCatalog';
 import { TitleEquipModal } from '../../components/TitleEquipModal';
 import { ItemInspectModal } from '../../components/ItemInspectModal';
 
 const CLASS_AVATAR_MAP: Record<'Mage' | 'Warrior' | 'Ranger', string> = {
-  Mage: 'avatars/mage-idle.png',
-  Warrior: 'avatars/warrior-idle.png',
-  Ranger: 'avatars/ranger-idle.png',
+  Mage: '/avatars/mage-idle.png',
+  Warrior: '/avatars/warrior-idle.png',
+  Ranger: '/avatars/ranger-idle.png',
 };
 const DEFAULT_AVATAR = CLASS_AVATAR_MAP.Warrior;
 
@@ -32,6 +32,7 @@ export interface CharacterScreenProps {
   onUnequipItem: (slotIdx: number) => void;
   ownedTitles?: string[];
   onEquipTitle?: (titleId: string | null) => void;
+  isRunning?: boolean;
 }
 
 export const CharacterScreen: React.FC<CharacterScreenProps> = ({
@@ -41,6 +42,7 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
   onUnequipItem,
   ownedTitles = [],
   onEquipTitle = () => {},
+  isRunning = false,
 }) => {
   const {
     charName,
@@ -104,8 +106,9 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
               return (
                 <button
                   type="button"
+                  disabled={isRunning}
                   onClick={() => setIsTitleModalOpen(true)}
-                  className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[9px] px-2 py-0.5 rounded tracking-wider select-none shrink-0 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                  className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[9px] px-2 py-0.5 rounded tracking-wider select-none shrink-0 cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                   title="Clique para alterar seu Título"
                 >
                   {found.emoji} {found.name}
@@ -114,8 +117,9 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
             })() : (
               <button
                 type="button"
+                disabled={isRunning}
                 onClick={() => setIsTitleModalOpen(true)}
-                className="bg-stone-900/60 hover:bg-amber-500/10 border border-stone-800 hover:border-amber-500/30 text-stone-400 hover:text-amber-300 font-serif uppercase font-black text-[9px] px-2 py-0.5 rounded tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95"
+                className="bg-stone-900/60 hover:bg-amber-500/10 border border-stone-800 hover:border-amber-500/30 text-stone-400 hover:text-amber-300 font-serif uppercase font-black text-[9px] px-2 py-0.5 rounded tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                 title="Clique para equipar um Título"
               >
                 + Equipar Título
@@ -132,7 +136,7 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
           {/* Tile 1: Sequência */}
           <div className="bg-stone-950/60 border border-amber-500/20 p-2.5 rounded-lg flex flex-col justify-between text-center shadow-sm">
             <div className="text-[9px] text-amber-100/50 uppercase tracking-[0.12em] font-serif flex items-center justify-center gap-1 select-none">
-              <span>🔥</span> Sequência
+              <Flame className="w-2.5 h-2.5" /> Sequência
             </div>
             <div className="text-2xl font-mono font-black text-amber-400 my-1">
               {streak} <span className="text-xs font-normal text-amber-400/80">{streak === 1 ? 'dia' : 'dias'}</span>
@@ -214,7 +218,7 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
           <div className="space-y-2 mt-4">
             <div className="bg-stone-950/40 border border-amber-500/10 p-2.5 rounded text-center transition-all hover:bg-stone-950/60 shadow-sm">
               <div className="text-[9px] text-amber-100/40 uppercase tracking-[0.12em] font-serif flex items-center justify-center gap-1 select-none">
-                <span>🔥</span> Sequência Atual
+                <Flame className="w-2.5 h-2.5" /> Sequência Atual
               </div>
               <div className="text-xs font-mono font-black text-amber-400 mt-1">
                 {streak} {streak === 1 ? 'dia' : 'dias'}
@@ -251,8 +255,9 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
                   return (
                     <button
                       type="button"
+                      disabled={isRunning}
                       onClick={() => setIsTitleModalOpen(true)}
-                      className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider select-none animate-pulse hover:animate-none shrink-0 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                      className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider select-none animate-pulse hover:animate-none shrink-0 cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                       title="Clique para alterar seu Título"
                     >
                       {found.emoji} {found.name}
@@ -261,8 +266,9 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
                 })() : (
                   <button
                     type="button"
+                    disabled={isRunning}
                     onClick={() => setIsTitleModalOpen(true)}
-                    className="bg-stone-900/60 hover:bg-amber-500/10 border border-stone-800 hover:border-amber-500/30 text-stone-400 hover:text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95"
+                    className="bg-stone-900/60 hover:bg-amber-500/10 border border-stone-800 hover:border-amber-500/30 text-stone-400 hover:text-amber-300 font-serif uppercase font-black text-[8px] px-1.5 py-0.5 rounded tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                     title="Clique para equipar um Título"
                   >
                     + Equipar Título
@@ -336,7 +342,7 @@ export const CharacterScreen: React.FC<CharacterScreenProps> = ({
       {/* ACTIVE EQUIPMENT SLOTS (3 total) */}
       <div className="space-y-2">
         <h4 className="text-[10px] font-serif font-bold tracking-wider uppercase text-amber-100/40 pb-0.5 border-b border-amber-500/5">
-          🛡️ Equipamentos Equipados (3 Slots)
+          🛡️ Itens Equipados (3 Slots)
         </h4>
         <div className="grid grid-cols-3 gap-2">
           {[0, 1, 2].map((slotIdx) => {
