@@ -2053,7 +2053,8 @@ function App({ userId, signOut }: AppProps) {
         {/* Global indicators pills */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold shadow-inner whitespace-nowrap flex-shrink-0" title="Combo de Consistência (Streak)">
-            <span className="whitespace-nowrap">🔥 {gameState.streak}</span>
+            <Flame className="w-3 h-3 flex-shrink-0 text-orange-500" />
+            <span className="whitespace-nowrap">{gameState.streak}</span>
           </div>
 
           <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold font-serif shadow-inner whitespace-nowrap flex-shrink-0">
@@ -2110,7 +2111,7 @@ function App({ userId, signOut }: AppProps) {
                   }`}
                 >
                   <Timer className="w-4 h-4 text-amber-500/70" />
-                  TROMPETA (POMODORO)
+                  Câmara do Herói
                 </button>
               </div>
 
@@ -2300,7 +2301,7 @@ function App({ userId, signOut }: AppProps) {
                     <div className="bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 p-3.5 flex justify-center items-center relative">
                       <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
                         <Timer className="w-4 h-4 text-amber-500" />
-                        TROMPETA DE FOCO
+                        CÂMARA DE FOCO
                       </h2>
                       <button
                         onClick={(e) => {
@@ -2317,7 +2318,7 @@ function App({ userId, signOut }: AppProps) {
                         <div className="absolute right-4 top-12 bg-stone-950/95 border border-amber-500/40 p-4 rounded shadow-2xl z-50 text-xs text-amber-200 font-serif max-w-sm leading-relaxed space-y-2">
                           <div className="flex justify-between items-center pb-1 border-b border-amber-500/10">
                             <strong className="text-amber-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
-                              Trompeta de foco (POMODORO)
+                              Câmara de Foco (POMODORO)
                             </strong>
                             <button 
                               onClick={() => setShowActionWindowTooltip(false)}
@@ -2333,7 +2334,7 @@ function App({ userId, signOut }: AppProps) {
                       )}
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col gap-2 md:gap-4 py-2 pb-[60px]">
+                    <div className="p-4 flex-1 flex flex-col gap-2 md:gap-4 py-2 pb-[80px]">
                       
                       {/* Choose focus skill active dropdown option */}
                       <div>
@@ -2395,12 +2396,9 @@ function App({ userId, signOut }: AppProps) {
                           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
                           
                           <div className="relative z-10 space-y-2">
-                            <span className="text-emerald-500 text-[10px] tracking-[0.25em] uppercase font-serif font-black block">A jornada desta missão chegou ao fim.</span>
-                            <h3 className="text-lg md:text-xl font-serif font-black text-stone-100 tracking-wide uppercase">
-                              DESCANSE. O PRÓXIMO DESAFIO ESPERA.
-                            </h3>
+                            <span className="text-emerald-500 text-[10px] tracking-[0.25em] uppercase font-serif font-black block">Missão concluída.</span>
                             <p className="text-xs text-stone-100/50 max-w-sm mx-auto leading-relaxed font-serif">
-                              Todo guerreiro sabe a hora de avançar e a hora de recuperar as forças. Escolha quanto tempo deseja descansar.
+                              Escolha a duração da pausa.
                             </p>
                           </div>
 
@@ -2729,7 +2727,7 @@ function App({ userId, signOut }: AppProps) {
 
                       {/* TRANSIT CONTROL PLAYER TRIGGERS */}
                       <div className="space-y-3">
-                        {isBreakActive ? (
+                        {isBreakPrep ? null : isBreakActive ? (
                           <button
                             onClick={skipBreak}
                             className="w-full py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300 hover:from-green-400 hover:to-emerald-200 border border-emerald-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(16,185,129,0.3)] transition-all shadow-lg text-center font-bold animate-pulse"
@@ -3009,8 +3007,9 @@ function App({ userId, signOut }: AppProps) {
                           {/* 1. Modo Foco */}
                           <button
                             type="button"
+                            disabled={isRunning}
                             onClick={() => setIsIncursionModalOpen(true)}
-                            className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none"
+                            className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             {sessionConfig.isDungeonMode ? (
                               <ShieldAlert className="w-5 h-5 text-purple-400" />
@@ -3023,17 +3022,14 @@ function App({ userId, signOut }: AppProps) {
                           </button>
 
                           {/* 2. Som Ambiente */}
-                          <div className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px]">
-                            <AmbientSoundButton
-                              selectedTrack={ambientSound.selectedTrack}
-                              volume={ambientSound.volume}
-                              selectTrack={ambientSound.selectTrack}
-                              setVolume={ambientSound.setVolume}
-                              tracks={ambientSound.tracks}
-                              compact
-                            />
-                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Som</span>
-                          </div>
+                          <AmbientSoundButton
+                            selectedTrack={ambientSound.selectedTrack}
+                            volume={ambientSound.volume}
+                            selectTrack={ambientSound.selectTrack}
+                            setVolume={ambientSound.setVolume}
+                            tracks={ambientSound.tracks}
+                            compact
+                          />
 
                           {/* 3. Ajustes do Timer */}
                           <button
@@ -3114,7 +3110,7 @@ function App({ userId, signOut }: AppProps) {
                     <div className="p-4 bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 flex justify-center items-center relative min-h-[49px]">
                       <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
                         <Shield className="w-4 h-4 text-amber-500" />
-                        Ficha de Personagem
+                        Ficha do Herói
                       </h2>
                       <button
                         onClick={() => setIsSkillsModalOpen(true)}
@@ -3143,6 +3139,7 @@ function App({ userId, signOut }: AppProps) {
                         onUnequipItem={handleUnequipItem}
                         ownedTitles={gameState.ownedTitles || []}
                         onEquipTitle={handleEquipTitle}
+                        isRunning={isRunning}
                       />
 
                       {/* QUICK SKILLS STATUS LISTS */}
@@ -3177,7 +3174,9 @@ function App({ userId, signOut }: AppProps) {
 
                     <div className="p-3 bg-stone-950/25 border-t border-amber-500/5 h-20 text-center flex flex-col justify-center">
                       <div className="flex justify-center gap-3 text-xs font-mono font-bold">
-                        <span className="text-amber-400">🔥 Streak: {gameState.streak} dias</span>
+                        <span className="text-amber-400 flex items-center gap-1">
+                          <Flame className="w-3 h-3" /> Streak: {gameState.streak} dias
+                        </span>
                         <span className="text-emerald-400">⚡ Combo: {gameState.combo}x</span>
                         <span className="text-purple-400">🏆 Focos: {gameState.totalSessions} incursões</span>
                       </div>
@@ -3193,7 +3192,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
                   <div className="flex justify-center items-center pb-2.5 border-b border-amber-500/10 relative min-h-[35px]">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Shield className="w-4 h-4 text-amber-500" /> FICHA DE PERSONAGEM
+                      <Shield className="w-4 h-4 text-amber-500" /> FICHA DO HERÓI
                     </h3>
                     <button
                       onClick={() => setIsSkillsModalOpen(true)}
@@ -3220,6 +3219,7 @@ function App({ userId, signOut }: AppProps) {
                     onUnequipItem={handleUnequipItem}
                     ownedTitles={gameState.ownedTitles || []}
                     onEquipTitle={handleEquipTitle}
+                    isRunning={isRunning}
                   />
                 </div>
               )}
@@ -3228,7 +3228,7 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
                   <div className="pb-2.5 border-b border-amber-500/10 flex justify-center items-center relative min-h-[35px]">
                     <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Coins className="w-4 h-4 text-amber-500" /> EQUIPAMENTOS & ITENS
+                      <Coins className="w-4 h-4 text-amber-500" /> EQUIPAMENTOS
                     </h3>
                   </div>
                   <InventoryScreen
@@ -4319,7 +4319,7 @@ function App({ userId, signOut }: AppProps) {
                     ) : (
                       <div className="text-xs text-amber-100/90 leading-relaxed bg-amber-500/[0.02] border border-amber-500/10 rounded-lg p-2.5 flex items-center justify-center">
                         <span className="font-mono font-bold text-amber-400 flex items-center gap-1.5 text-xs">
-                          🔥 Sua chama permanece acesa há {dailyReport.currentStreak} {dailyReport.currentStreak === 1 ? 'dia' : 'dias'}.
+                          <Flame className="w-3.5 h-3.5 flex-shrink-0" /> Sua chama permanece acesa há {dailyReport.currentStreak} {dailyReport.currentStreak === 1 ? 'dia' : 'dias'}.
                         </span>
                       </div>
                     )}
