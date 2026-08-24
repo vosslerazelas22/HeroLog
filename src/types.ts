@@ -110,6 +110,7 @@ export interface CharacterState {
   achievements: string[]; // achievement ids
   charName: string;
   charClass: 'Mage' | 'Warrior' | 'Ranger';
+  orbConcept: 'A' | 'B' | 'C' | 'D';
   todayXP: number;
   todayMinutes: number;
   todayDate: string;

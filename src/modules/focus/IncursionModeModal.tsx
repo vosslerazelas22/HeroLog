@@ -31,7 +31,7 @@ export const IncursionModeModal: React.FC<IncursionModeModalProps> = ({
       variant="amber"
     >
       <div className="space-y-3 font-sans">
-        <p className="text-xs text-amber-100/60 font-serif leading-relaxed">
+        <p className="text-xs text-zinc-300/60 font-serif leading-relaxed">
           Selecione o estilo de jornada para sua próxima sessão de foco:
         </p>
 
@@ -44,24 +44,24 @@ export const IncursionModeModal: React.FC<IncursionModeModalProps> = ({
           }}
           className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer select-none space-y-1.5 ${
             isStandardActive
-              ? 'bg-amber-500/15 border-amber-400/80 ring-1 ring-amber-400/30 shadow-md'
-              : 'bg-stone-900/40 border-amber-500/15 hover:bg-stone-900/80 hover:border-amber-500/40'
+              ? 'bg-champagne-500/15 border-champagne-400/80 ring-1 ring-champagne-400/30 shadow-md'
+              : 'bg-stone-900/40 border-white/10 hover:bg-stone-900/80 hover:border-champagne-400/40'
           }`}
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="font-serif font-bold text-sm text-amber-200">
+              <Sparkles className="w-4 h-4 text-champagne-400 shrink-0" />
+              <span className="font-serif font-bold text-sm text-champagne-300">
                 🎯 Padrão
               </span>
             </div>
             {isStandardActive && (
-              <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-champagne-500/20 text-champagne-300 border border-champagne-500/40">
                 Ativo
               </span>
             )}
           </div>
-          <p className="text-xs text-amber-100/70 leading-relaxed font-sans">
+          <p className="text-xs text-zinc-300/70 leading-relaxed font-sans">
             Chance de saque baseada na duração da sessão.
           </p>
         </button>

@@ -136,7 +136,7 @@ export const ShopTab: React.FC<ShopTabProps> = ({ gold, inventory, onBuyItem }) 
                     onClick={() => handlePurchase(item)}
                     className={`px-3 py-1.5 font-bold font-mono text-xs rounded border transition-all flex items-center gap-1 ${
                       canAfford
-                        ? 'bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border-amber-500/40 cursor-pointer select-none active:scale-95'
+                        ? 'bg-champagne-500/10 hover:bg-champagne-500 text-champagne-300 hover:text-stone-950 border-champagne-500/40 cursor-pointer select-none active:scale-95'
                         : 'bg-stone-800/10 text-stone-500 border-stone-800'
                     }`}
                   >

@@ -112,6 +112,7 @@ import {
 import { BottomNav } from './components/navigation/BottomNav';
 import { Modal } from './components/Modal';
 import { SkillSelectorModal } from './components/SkillSelectorModal';
+import { SkillInlineCarousel } from './components/SkillInlineCarousel';
 
 // Icons
 import {
@@ -1731,6 +1732,14 @@ function App({ userId, signOut }: AppProps) {
     applyCharacterSetupChanges(name, characterClass);
   };
 
+  const handleApplyOrbConceptChange = (conceptId: 'A' | 'B' | 'C' | 'D') => {
+    setGameState(prev => ({
+      ...prev,
+      orbConcept: conceptId
+    }));
+    addSystemLog(`🔮 Formato do Núcleo de Foco atualizado: Conceito ${conceptId}`, true);
+  };
+
   // Skills Manager actions
   const handleAddCustomSkillWithEmoji = (nameInput: string, emojiInput: string) => {
     addCustomSkill(nameInput, emojiInput);
@@ -2037,28 +2046,28 @@ function App({ userId, signOut }: AppProps) {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-950/20 via-transparent to-transparent pointer-events-none" />
 
       {/* HEADER BAR */}
-      <header className="sticky top-0 bg-quest-panel/95 border-b-2 border-amber-500/20 px-4 py-3 flex justify-between items-center z-40 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center gap-2">
+      <header className="sticky top-0 bg-quest-panel/95 border-b-2 border-white/10 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-40 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <span className="text-xl md:text-2xl animate-spin pausable-anim" style={{ animationDuration: '8s' }}>⚔️</span>
           <div>
-            <h1 className="font-serif font-black text-amber-400 text-sm md:text-base tracking-widest uppercase">
+            <h1 className="font-serif font-black text-champagne-400 text-base md:text-lg tracking-wider md:tracking-widest uppercase">
               HeroLog
             </h1>
-            <p className="text-[10px] text-amber-100/40 uppercase tracking-widest font-mono hidden md:block">
+            <p className="text-[10px] text-zinc-300/40 uppercase tracking-widest font-mono hidden md:block">
               RPG Pomodoro Gamificado
             </p>
           </div>
         </div>
 
         {/* Global indicators pills */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold shadow-inner whitespace-nowrap flex-shrink-0" title="Combo de Consistência (Streak)">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 bg-stone-900/60 border border-champagne-500/15 py-1 px-2.5 rounded text-xs text-champagne-400 font-mono font-bold shadow-inner whitespace-nowrap flex-shrink-0" title="Combo de Consistência (Streak)">
             <Flame className="w-3 h-3 flex-shrink-0 text-orange-500" />
-            <span className="whitespace-nowrap">{gameState.streak}</span>
+            <span className="whitespace-nowrap">{gameState.streak}d</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-stone-900/60 border border-amber-500/15 py-1 px-2.5 rounded text-xs text-amber-400 font-mono font-bold font-serif shadow-inner whitespace-nowrap flex-shrink-0">
-            <Coins className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+          <div className="flex items-center gap-1 bg-stone-900/60 border border-champagne-500/15 py-1 px-2.5 rounded text-xs text-champagne-400 font-mono font-bold font-serif shadow-inner whitespace-nowrap flex-shrink-0">
+            <Coins className="w-3.5 h-3.5 text-champagne-500 flex-shrink-0" />
             <span className="whitespace-nowrap">{gameState.gold}</span>
           </div>
 
@@ -2068,14 +2077,14 @@ function App({ userId, signOut }: AppProps) {
 
           <button
             onClick={() => setMuteSfx(!muteSfx)}
-            className="w-8 h-8 rounded bg-stone-950/40 border border-amber-500/10 text-amber-200/60 hover:text-amber-400 hover:border-amber-400 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
+            className="w-8 h-8 rounded bg-stone-950/40 border border-champagne-500/10 text-champagne-300/60 hover:text-champagne-400 hover:border-champagne-400 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
           >
-            {muteSfx ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
+            {muteSfx ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4 text-champagne-400" />}
           </button>
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="w-8 h-8 rounded bg-stone-950/40 border border-amber-500/10 text-amber-200/60 hover:text-amber-400 hover:border-amber-400 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
+            className="w-8 h-8 rounded bg-stone-950/40 border border-white/10 text-zinc-400 hover:text-ice-400 hover:border-ice-400 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
             title="Ajustes de Campanha"
           >
             <Settings className="w-4 h-4" />
@@ -2093,7 +2102,7 @@ function App({ userId, signOut }: AppProps) {
         
         {/* LEFT SIDEBAR - NAVIGATION CABINET */}
         <aside
-          className="hidden lg:flex lg:col-span-3 lg:relative lg:bg-quest-panel/95 lg:rounded-lg lg:border lg:border-amber-500/15 lg:py-4 lg:px-3 lg:flex-col lg:justify-between lg:w-auto lg:h-auto lg:z-30"
+          className="hidden lg:flex lg:col-span-3 lg:relative lg:bg-quest-panel/95 lg:rounded-lg lg:border lg:border-white/10 lg:py-4 lg:px-3 lg:flex-col lg:justify-between lg:w-auto lg:h-auto lg:z-30"
         >
           <div className="space-y-5">
 
@@ -2106,8 +2115,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('focus'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'focus' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Timer className="w-4 h-4 text-amber-500/70" />
@@ -2122,8 +2131,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('habits'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'habits' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Zap className="w-4 h-4 text-amber-400/80" />
@@ -2133,8 +2142,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('dailies'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'dailies' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Calendar className="w-4 h-4 text-sky-400/80" />
@@ -2144,8 +2153,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('todos'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'todos' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <CheckCircle className="w-4 h-4 text-emerald-400/80" />
@@ -2155,8 +2164,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('quests'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'quests' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Layers className="w-4 h-4 text-purple-400/80" />
@@ -2166,8 +2175,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('history'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'history' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <BookOpen className="w-4 h-4 text-yellow-600/70" />
@@ -2182,8 +2191,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('shop'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'shop' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Coins className="w-4 h-4 text-amber-400/80" />
@@ -2193,8 +2202,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('titles'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'titles' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Award className="w-4 h-4 text-rose-400/80" />
@@ -2204,8 +2213,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('heatmap'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'heatmap' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Clock className="w-4 h-4 text-amber-500/50" />
@@ -2215,8 +2224,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('stats'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'stats' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02] font-serif'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02] font-serif'
                   }`}
                 >
                   <Shield className="w-4 h-4 text-emerald-555/60" />
@@ -2226,8 +2235,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('achievements'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'achievements' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Award className="w-4 h-4 text-rose-500/50" />
@@ -2237,8 +2246,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('logs'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'logs' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <Scroll className="w-4 h-4 text-amber-400/60" />
@@ -2248,8 +2257,8 @@ function App({ userId, signOut }: AppProps) {
                   onClick={() => { setActiveTab('guide'); setIsMobileSidebarOpen(false); }}
                   className={`w-full text-left py-2 px-2.5 rounded font-serif text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
                     activeTab === 'guide' 
-                      ? 'bg-amber-500/[0.06] text-amber-300 font-bold border border-amber-500/20 border-l-2 border-l-amber-400 pl-3.5 scale-[1.02] shadow-inner' 
-                      : 'border border-transparent text-amber-100/50 hover:text-amber-300/90 hover:bg-amber-500/[0.02]'
+                      ? 'bg-ice-500/[0.06] text-ice-300 font-bold border border-ice-500/20 border-l-2 border-l-ice-400 pl-3.5 scale-[1.02] shadow-inner' 
+                      : 'border border-transparent text-zinc-300/50 hover:text-ice-300/90 hover:bg-ice-500/[0.02]'
                   }`}
                 >
                   <HelpCircle className="w-4 h-4 text-amber-400/40" />
@@ -2260,7 +2269,7 @@ function App({ userId, signOut }: AppProps) {
           </div>
 
           {/* Quick stats series footer inside sidebar */}
-          <div className="border-t border-amber-500/10 pt-3 mt-4 space-y-1.5 px-1 font-mono text-[9px] text-amber-100/40">
+          <div className="border-t border-white/10 pt-3 mt-4 space-y-1.5 px-1 font-mono text-[9px] text-zinc-300/40">
             <div className="flex justify-between">
               <span>Streak Geral:</span>
               <strong className="text-amber-400 font-bold">{gameState.streak} dias</strong>
@@ -2299,8 +2308,16 @@ function App({ userId, signOut }: AppProps) {
                     
                     {/* Header Title Section Banner */}
                     <div className="bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 p-3.5 flex justify-center items-center relative">
-                      <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                        <Timer className="w-4 h-4 text-amber-500" />
+                      {/* ACTIVE CONTRACTS / QUESTS INLINE TRIGGER & MODAL */}
+                      <QuestFab
+                        gameState={gameState}
+                        setActiveTab={setActiveTab}
+                        setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                        isRunning={isRunning}
+                      />
+
+                      <h2 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                        <Timer className="w-4 h-4 text-champagne-500" />
                         CÂMARA DE FOCO
                       </h2>
                       <button
@@ -2308,26 +2325,26 @@ function App({ userId, signOut }: AppProps) {
                           e.stopPropagation();
                           setShowActionWindowTooltip(!showActionWindowTooltip);
                         }}
-                        className="absolute right-3.5 w-4.5 h-4.5 rounded-full border border-amber-500/30 text-amber-400/80 hover:text-amber-200 flex items-center justify-center text-[10px] font-bold hover:bg-amber-500/10 transition-all cursor-pointer"
+                        className="absolute right-3.5 w-4.5 h-4.5 rounded-full border border-champagne-500/30 text-champagne-400/80 hover:text-champagne-200 flex items-center justify-center text-[10px] font-bold hover:bg-champagne-500/10 transition-all cursor-pointer"
                         title="Ajuda do Painel"
                       >
                         ?
                       </button>
 
                       {showActionWindowTooltip && (
-                        <div className="absolute right-4 top-12 bg-stone-950/95 border border-amber-500/40 p-4 rounded shadow-2xl z-50 text-xs text-amber-200 font-serif max-w-sm leading-relaxed space-y-2">
-                          <div className="flex justify-between items-center pb-1 border-b border-amber-500/10">
-                            <strong className="text-amber-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
+                        <div className="absolute right-4 top-12 bg-stone-950/95 border border-champagne-500/40 p-4 rounded shadow-2xl z-50 text-xs text-amber-200 font-serif max-w-sm leading-relaxed space-y-2">
+                          <div className="flex justify-between items-center pb-1 border-b border-champagne-500/10">
+                            <strong className="text-champagne-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
                               Câmara de Foco (POMODORO)
                             </strong>
                             <button 
                               onClick={() => setShowActionWindowTooltip(false)}
-                              className="text-amber-100/40 hover:text-amber-200 font-bold font-mono text-sm cursor-pointer"
+                              className="text-zinc-300/40 hover:text-zinc-100 font-bold font-mono text-sm cursor-pointer"
                             >
                               ×
                             </button>
                           </div>
-                          <p className="text-[11px] text-amber-100/80 leading-relaxed font-sans normal-case">
+                          <p className="text-[11px] text-zinc-300/80 leading-relaxed font-sans normal-case">
                             O painel principal de controle. Escolha o tipo de missão, defina uma duração e clique em "Iniciar Missão de Foco". Você ganha XP a cada minuto que estuda.
                           </p>
                         </div>
@@ -2336,41 +2353,15 @@ function App({ userId, signOut }: AppProps) {
 
                     <div className="p-4 flex-1 flex flex-col gap-2 md:gap-4 py-2 pb-[80px]">
                       
-                      {/* Choose focus skill active dropdown option */}
-                      <div>
-                        {gameState.skills.length > 0 ? (
-                           (() => {
-                             const activeSkill = gameState.skills[sessionConfig.selectedSkillIdx] || gameState.skills[0];
-                             return (
-                               <button
-                                 type="button"
-                                 disabled={isRunning}
-                                 onClick={() => setIsSkillSelectorOpen(true)}
-                                 className="w-full bg-stone-950/80 border border-amber-500/20 hover:border-amber-500/40 text-amber-200 px-3 py-2.5 rounded-lg font-serif text-sm transition-all flex items-center justify-between cursor-pointer disabled:opacity-50 select-none group"
-                               >
-                                 <span className="flex items-center gap-2 truncate pr-2">
-                                   <span className="text-lg shrink-0">{activeSkill.emoji || '🎯'}</span>
-                                   <span className="font-bold truncate text-amber-100 group-hover:text-amber-200">{activeSkill.name}</span>
-                                   <span className="text-amber-400/80 text-xs font-mono font-medium shrink-0">· Nv. {activeSkill.level}</span>
-                                   {activeSkill.prestige && activeSkill.prestige > 0 ? (
-                                     <span className="text-yellow-400 text-[10px] font-bold shrink-0">👑{'★'.repeat(activeSkill.prestige)}</span>
-                                   ) : null}
-                                 </span>
-                                 <span className="text-amber-400 text-xs opacity-60 shrink-0 group-hover:opacity-100 transition-opacity">
-                                   ▼
-                                 </span>
-                               </button>
-                             );
-                           })()
-                        ) : (
-                          <button
-                            onClick={() => setIsSkillsModalOpen(true)}
-                            className="w-full py-2 bg-stone-900 border border-dashed border-amber-500/20 text-xs text-amber-400 rounded hover:border-amber-400 transition-all font-serif italic cursor-pointer"
-                          >
-                            + Adicione sua primeira Habilidade Estudo
-                          </button>
-                        )}
-                      </div>
+                      {/* Skill Inline Carousel */}
+                      <SkillInlineCarousel
+                        skills={gameState.skills}
+                        selectedIndex={sessionConfig.selectedSkillIdx}
+                        onSelectIndex={(idx) => setSessionConfig(prev => ({ ...prev, selectedSkillIdx: idx }))}
+                        disabled={isRunning}
+                        onOpenSkillsManager={() => setIsSkillSelectorOpen(true)}
+                        muteSfx={muteSfx}
+                      />
 
                       {/* Random screen interactive event notifier */}
                       <div className={`${activeScreenEvent ? 'h-8' : 'h-1.5 md:h-2'} flex items-center justify-center transition-all duration-300`}>
@@ -2468,6 +2459,7 @@ function App({ userId, signOut }: AppProps) {
                             isDungeonMode={sessionConfig.isDungeonMode}
                             isWildernessMode={sessionConfig.isWildernessChecked}
                             size="standard"
+                            orbConcept={gameState.orbConcept}
                           />
                         </div>
                       )}
@@ -2491,10 +2483,10 @@ function App({ userId, signOut }: AppProps) {
                             title="⚙️ Ajustes do Timer"
                             variant="amber"
                           >
-                            <div className="space-y-4 font-sans text-amber-100">
+                            <div className="space-y-4 font-sans text-zinc-300">
                               {/* Section 1: Presets */}
                               <div className="space-y-2">
-                                <h3 className="text-xs font-serif font-bold uppercase tracking-wider text-amber-500">
+                                <h3 className="text-xs font-serif font-bold uppercase tracking-wider text-champagne-500">
                                   Presets de Duração
                                 </h3>
                                 <div className="grid grid-cols-3 gap-2">
@@ -2511,8 +2503,8 @@ function App({ userId, signOut }: AppProps) {
                                         }}
                                         className={`py-2 text-xs font-serif rounded border tracking-wider select-none transition-all cursor-pointer ${
                                           isActive
-                                            ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
-                                            : 'border-amber-500/10 bg-stone-900/40 text-amber-100/60 hover:text-amber-200 hover:bg-stone-900/80'
+                                            ? 'border-champagne-400 bg-champagne-500/10 text-champagne-300 font-bold'
+                                            : 'border-white/10 bg-stone-900/40 text-zinc-300/60 hover:text-champagne-300 hover:bg-stone-900/80'
                                         }`}
                                       >
                                         {duration} MIN
@@ -2523,14 +2515,14 @@ function App({ userId, signOut }: AppProps) {
                               </div>
 
                               {/* Section 2: Custom Toggles */}
-                              <div className="pt-2 border-t border-amber-500/10 space-y-3">
+                              <div className="pt-2 border-t border-white/10 space-y-3">
                                 {/* Duração Personalizada Toggle Row */}
-                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-amber-500/5">
+                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-white/10">
                                   <div className="max-w-[80%] text-left">
-                                    <span className="text-[11px] font-serif font-bold text-amber-100/90 block">
+                                    <span className="text-[11px] font-serif font-bold text-zinc-100/90 block">
                                       Duração Personalizada
                                     </span>
-                                    <span className="text-[9px] text-amber-100/50 leading-tight block">
+                                    <span className="text-[9px] text-zinc-300/50 leading-tight block">
                                       Define tempos customizados para foco e pausas
                                     </span>
                                   </div>
@@ -2544,7 +2536,7 @@ function App({ userId, signOut }: AppProps) {
                                         setIsCustomTime(true);
                                       }
                                     }}
-                                    className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                    className="text-champagne-400 hover:text-champagne-300 transition-colors cursor-pointer"
                                   >
                                     {isCustomActive ? (
                                       <ToggleRight className="w-8 h-8 text-emerald-400" />
@@ -2555,14 +2547,14 @@ function App({ userId, signOut }: AppProps) {
                                 </div>
 
                                 {/* Custom Fields Block - ALWAYS VISIBLE */}
-                                <div className={`bg-stone-950/60 border border-amber-500/20 rounded-lg p-3 space-y-4 transition-all duration-300 ${
+                                <div className={`bg-stone-950/60 border border-white/10 rounded-lg p-3 space-y-4 transition-all duration-300 ${
                                   isCustomActive ? 'opacity-100' : 'opacity-40'
                                 }`}>
                                   {/* Grid of 3 numeric controls */}
                                   <div className="grid grid-cols-3 gap-2">
                                     {/* Focus Duration */}
                                     <div className="bg-stone-900/40 border border-stone-800 p-2 rounded flex flex-col justify-between items-center text-center">
-                                      <span className="text-[10px] font-serif text-amber-100/50 uppercase tracking-wider block mb-1">
+                                      <span className="text-[10px] font-serif text-zinc-300/50 uppercase tracking-wider block mb-1">
                                         Foco
                                       </span>
                                       <input
@@ -2570,7 +2562,7 @@ function App({ userId, signOut }: AppProps) {
                                         value={ajustesFocus}
                                         onChange={(e) => setAjustesFocus(e.target.value)}
                                         disabled={!isCustomActive}
-                                        className={`w-full bg-stone-900 border ${!isFocusValid ? 'border-red-500/50 focus:border-red-500' : 'border-amber-500/10 focus:border-amber-500'} px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`w-full bg-stone-900 border ${!isFocusValid ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-champagne-500'} px-2 py-1 text-center font-mono text-sm text-champagne-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
                                         min="1"
                                         max="180"
                                       />
@@ -2579,7 +2571,7 @@ function App({ userId, signOut }: AppProps) {
 
                                     {/* Short Break Duration */}
                                     <div className="bg-stone-900/40 border border-stone-800 p-2 rounded flex flex-col justify-between items-center text-center">
-                                      <span className="text-[10px] font-serif text-amber-100/50 uppercase tracking-wider block mb-1">
+                                      <span className="text-[10px] font-serif text-zinc-300/50 uppercase tracking-wider block mb-1">
                                         Pausa Curta
                                       </span>
                                       <input
@@ -2587,7 +2579,7 @@ function App({ userId, signOut }: AppProps) {
                                         value={ajustesShortBreak}
                                         onChange={(e) => setAjustesShortBreak(e.target.value)}
                                         disabled={!isCustomActive}
-                                        className={`w-full bg-stone-900 border ${!isShortBreakValid ? 'border-red-500/50 focus:border-red-500' : 'border-amber-500/10 focus:border-amber-500'} px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`w-full bg-stone-900 border ${!isShortBreakValid ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-champagne-500'} px-2 py-1 text-center font-mono text-sm text-champagne-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
                                         min="1"
                                         max="60"
                                       />
@@ -2596,7 +2588,7 @@ function App({ userId, signOut }: AppProps) {
 
                                     {/* Long Break Duration */}
                                     <div className="bg-stone-900/40 border border-stone-800 p-2 rounded flex flex-col justify-between items-center text-center">
-                                      <span className="text-[10px] font-serif text-amber-100/50 uppercase tracking-wider block mb-1">
+                                      <span className="text-[10px] font-serif text-zinc-300/50 uppercase tracking-wider block mb-1">
                                         Pausa Longa
                                       </span>
                                       <input
@@ -2604,7 +2596,7 @@ function App({ userId, signOut }: AppProps) {
                                         value={ajustesLongBreak}
                                         onChange={(e) => setAjustesLongBreak(e.target.value)}
                                         disabled={!isCustomActive}
-                                        className={`w-full bg-stone-900 border ${!isLongBreakValid ? 'border-red-500/50 focus:border-red-500' : 'border-amber-500/10 focus:border-amber-500'} px-2 py-1 text-center font-mono text-sm text-yellow-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`w-full bg-stone-900 border ${!isLongBreakValid ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-champagne-500'} px-2 py-1 text-center font-mono text-sm text-champagne-300 rounded focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
                                         min="1"
                                         max="60"
                                       />
@@ -2645,7 +2637,7 @@ function App({ userId, signOut }: AppProps) {
                                       setIsCustomTime(true);
                                       setIsTimerSettingsModalOpen(false);
                                     }}
-                                    className="w-full py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400 text-amber-300 hover:text-amber-200 font-serif text-xs font-bold uppercase tracking-widest rounded transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="w-full py-2 bg-champagne-500/10 hover:bg-champagne-500/20 border border-champagne-500/30 hover:border-champagne-400 text-champagne-300 hover:text-champagne-200 font-serif text-xs font-bold uppercase tracking-widest rounded transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                   >
                                     Salvar Personalizado
                                   </button>
@@ -2653,18 +2645,18 @@ function App({ userId, signOut }: AppProps) {
                               </div>
 
                               {/* Section 3: Autostart preferences - ALWAYS VISIBLE & FUNCTIONAL */}
-                              <div className="pt-2 border-t border-amber-500/10 space-y-2">
-                                <h3 className="text-xs font-serif font-bold uppercase tracking-wider text-amber-500">
+                              <div className="pt-2 border-t border-white/10 space-y-2">
+                                <h3 className="text-xs font-serif font-bold uppercase tracking-wider text-champagne-500">
                                   Opções Adicionais
                                 </h3>
 
                                 {/* Auto-Start Break */}
-                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-amber-500/5">
+                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-white/10">
                                   <div className="max-w-[80%] text-left">
-                                    <span className="text-[11px] font-serif font-bold text-amber-100/90 block">
+                                    <span className="text-[11px] font-serif font-bold text-zinc-100/90 block">
                                       Auto-Iniciar Descanso
                                     </span>
-                                    <span className="text-[9px] text-amber-100/50 leading-tight block">
+                                    <span className="text-[9px] text-zinc-300/50 leading-tight block">
                                       Inicia o descanso automaticamente ao fim da sessão de foco
                                     </span>
                                   </div>
@@ -2679,7 +2671,7 @@ function App({ userId, signOut }: AppProps) {
                                         }
                                       }));
                                     }}
-                                    className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                    className="text-champagne-400 hover:text-champagne-300 transition-colors cursor-pointer"
                                   >
                                     {gameState.pomodoroSettings.autoStartBreak ? (
                                       <ToggleRight className="w-8 h-8 text-emerald-400" />
@@ -2690,12 +2682,12 @@ function App({ userId, signOut }: AppProps) {
                                 </div>
 
                                 {/* Auto-Start Focus */}
-                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-amber-500/5">
+                                <div className="flex items-center justify-between gap-4 bg-stone-900/20 p-2.5 rounded border border-white/10">
                                   <div className="max-w-[80%] text-left">
-                                    <span className="text-[11px] font-serif font-bold text-amber-100/90 block">
+                                    <span className="text-[11px] font-serif font-bold text-zinc-100/90 block">
                                       Auto-Iniciar Foco
                                     </span>
-                                    <span className="text-[9px] text-amber-100/50 leading-tight block">
+                                    <span className="text-[9px] text-zinc-300/50 leading-tight block">
                                       Inicia a próxima sessão de foco automaticamente ao fim do descanso
                                     </span>
                                   </div>
@@ -2710,7 +2702,7 @@ function App({ userId, signOut }: AppProps) {
                                         }
                                       }));
                                     }}
-                                    className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                    className="text-champagne-400 hover:text-champagne-300 transition-colors cursor-pointer"
                                   >
                                     {gameState.pomodoroSettings.autoStartFocus ? (
                                       <ToggleRight className="w-8 h-8 text-emerald-400" />
@@ -2737,7 +2729,7 @@ function App({ userId, signOut }: AppProps) {
                         ) : !isRunning ? (
                           <button
                             onClick={startQuestTimer}
-                            className="w-full py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 hover:from-yellow-400 hover:to-amber-200 border border-amber-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(200,162,60,0.3)] transition-all shadow-lg text-center font-bold"
+                            className="w-full py-3 text-sm font-serif font-black uppercase text-stone-950 bg-gradient-to-r from-champagne-600 via-champagne-400 to-champagne-300 hover:from-champagne-500 hover:to-champagne-300 border border-champagne-400 rounded tracking-widest hover:scale-101 active:scale-99 cursor-pointer select-none shadow-[2px_4px_rgba(229,193,88,0.3)] transition-all shadow-lg text-center font-bold"
                           >
                             ▶ Iniciar Missão de Foco
                           </button>
@@ -2748,7 +2740,7 @@ function App({ userId, signOut }: AppProps) {
                               className={`flex-1 py-3 text-sm font-serif font-black uppercase rounded border tracking-widest transition-all cursor-pointer ${
                                 isPaused 
                                   ? 'bg-purple-900/10 border-purple-500 text-purple-300' 
-                                  : 'bg-stone-950/40 border-amber-500/30 text-amber-300'
+                                  : 'bg-stone-950/40 border-champagne-500/30 text-champagne-300'
                               }`}
                             >
                               {isPaused ? '▶ Retomar Missão' : '⏸️ Pausar Missão'}
@@ -2767,16 +2759,16 @@ function App({ userId, signOut }: AppProps) {
                         )}
 
                         {/* Status Bar: Mode Context Information / Help Button */}
-                        <div className="bg-stone-950/40 py-1.5 pl-2.5 pr-16 rounded border border-amber-500/5 text-[10px] leading-relaxed relative">
+                        <div className="bg-stone-950/40 py-1.5 px-2.5 rounded border border-zinc-800 text-[10px] leading-relaxed relative">
                           {sessionConfig.isDungeonMode && (
                             <div className="flex items-center justify-between gap-2">
-                              <div className="text-purple-300 font-serif">
+                              <div className="text-purple-300 font-serif flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                                 <span>⚔️ Explorando Masmorra </span>
                                 <span className="font-mono">({sessionConfig.dungeonSessions}/4)</span>
                                 {Date.now() - lastDungeonClearedTime < 2 * 60 * 60 * 1000 ? (
                                   <span className="text-[9px] font-mono ml-2 text-purple-400">⏳ Cooldown</span>
                                 ) : (
-                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
+                                  <span className="text-[9px] ml-2 text-zinc-400 font-mono">Bônus +2.500 GP & Quad Loot</span>
                                 )}
                               </div>
                               <button
@@ -2795,9 +2787,9 @@ function App({ userId, signOut }: AppProps) {
 
                           {sessionConfig.isWildernessChecked && (
                             <div className="flex items-center justify-between gap-2">
-                              <div className="text-red-400 font-serif">
+                              <div className="text-red-400 font-serif flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                                 <span>💀 Terra Selvagem Ativa </span>
-                                <span className="text-[9px] ml-2 text-amber-400 font-mono">Bônus +25% XP & GP</span>
+                                <span className="text-[9px] ml-2 text-zinc-400 font-mono">Bônus +25% XP & GP</span>
                               </div>
                               <button
                                 type="button"
@@ -2821,9 +2813,9 @@ function App({ userId, signOut }: AppProps) {
 
                             return (
                               <div className="flex items-center justify-between gap-2">
-                                <div className="text-amber-300 font-serif">
+                                <div className="text-champagne-400 font-serif flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                                   <span>🎯 Modo Padrão </span>
-                                  <span className="text-[9px] ml-2 text-amber-400 font-mono">
+                                  <span className="text-[9px] ml-2 text-zinc-400 font-mono">
                                     • Chance de Saque: {chancePct}%
                                   </span>
                                 </div>
@@ -2833,7 +2825,7 @@ function App({ userId, signOut }: AppProps) {
                                     e.stopPropagation();
                                     setShowStandardLootTooltip(!showStandardLootTooltip);
                                   }}
-                                  className="px-1.5 py-0.5 rounded border border-amber-500/20 text-amber-400 hover:bg-amber-500/10 font-bold transition-all cursor-pointer bg-amber-950/10 text-[9px]"
+                                  className="px-1.5 py-0.5 rounded border border-champagne-500/20 text-champagne-400 hover:bg-champagne-500/10 hover:border-champagne-400/40 font-bold transition-all cursor-pointer bg-champagne-950/10 text-[9px]"
                                   title="Ajuda sobre Chance de Saque"
                                 >
                                   ?
@@ -3003,7 +2995,7 @@ function App({ userId, signOut }: AppProps) {
                         </div>
 
                         {/* Quick Actions Row */}
-                        <div className="grid grid-cols-4 gap-1 pt-2 border-t border-amber-500/10">
+                        <div className="grid grid-cols-4 gap-1 pt-2 border-t border-white/10">
                           {/* 1. Modo Foco */}
                           <button
                             type="button"
@@ -3016,9 +3008,9 @@ function App({ userId, signOut }: AppProps) {
                             ) : sessionConfig.isWildernessChecked ? (
                               <Skull className="w-5 h-5 text-red-400" />
                             ) : (
-                              <Sparkles className="w-5 h-5 text-amber-400" />
+                              <Sparkles className="w-5 h-5 text-champagne-400" />
                             )}
-                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Modo</span>
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-zinc-300/70">Modo</span>
                           </button>
 
                           {/* 2. Som Ambiente */}
@@ -3038,8 +3030,8 @@ function App({ userId, signOut }: AppProps) {
                             onClick={() => setIsTimerSettingsModalOpen(true)}
                             className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            <Settings className="w-5 h-5 text-amber-400/80" />
-                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Ajustes</span>
+                            <Settings className="w-5 h-5 text-zinc-400" />
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-zinc-300/70">Ajustes</span>
                           </button>
 
                           {/* 4. Tela Cheia */}
@@ -3054,7 +3046,7 @@ function App({ userId, signOut }: AppProps) {
                             className="flex flex-col items-center justify-center gap-1 py-2 min-h-[48px] rounded-lg hover:bg-stone-900/40 transition-all cursor-pointer select-none"
                           >
                             <span className="text-base leading-none">⛶</span>
-                            <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Tela Cheia</span>
+                            <span className="text-[9px] font-serif uppercase tracking-wider text-zinc-300/70">Tela Cheia</span>
                           </button>
                         </div>
 
@@ -3095,26 +3087,18 @@ function App({ userId, signOut }: AppProps) {
 
                     </div>
 
-                    {/* ACTIVE CONTRATS / QUESTS FAB & MODAL */}
-                    <QuestFab
-                      gameState={gameState}
-                      setActiveTab={setActiveTab}
-                      setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-                      isRunning={isRunning}
-                    />
-
                   </section>
 
                   {/* RIGHT SUB-COLUMN: HERO PROFILE & ACTIVE SKILLS SHEET */}
-                  <section className="bg-quest-panel border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] hidden lg:flex lg:col-span-5 flex-col justify-between">
-                    <div className="p-4 bg-gradient-to-r from-amber-500/5 to-purple-500/5 border-b border-amber-500/10 flex justify-center items-center relative min-h-[49px]">
-                      <h2 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                        <Shield className="w-4 h-4 text-amber-500" />
+                  <section className="bg-quest-panel border border-white/10 rounded-none sm:rounded-lg overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] hidden lg:flex lg:col-span-5 flex-col justify-between">
+                    <div className="p-4 bg-gradient-to-r from-champagne-500/5 to-purple-500/5 border-b border-white/10 flex justify-center items-center relative min-h-[49px]">
+                      <h2 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                        <Shield className="w-4 h-4 text-champagne-500" />
                         Ficha do Herói
                       </h2>
                       <button
                         onClick={() => setIsSkillsModalOpen(true)}
-                        className="absolute right-4 text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer"
+                        className="absolute right-4 text-[10px] uppercase font-bold text-champagne-400 hover:text-champagne-200 border border-champagne-500/20 px-2 py-0.5 rounded cursor-pointer"
                       >
                         + Gerenciar
                       </button>
@@ -3189,14 +3173,14 @@ function App({ userId, signOut }: AppProps) {
               )}
 
               {activeTab === 'character' && (
-                <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
-                  <div className="flex justify-center items-center pb-2.5 border-b border-amber-500/10 relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Shield className="w-4 h-4 text-amber-500" /> FICHA DO HERÓI
+                <div className="bg-quest-panel border border-white/10 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
+                  <div className="flex justify-center items-center pb-2.5 border-b border-white/10 relative min-h-[35px]">
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Shield className="w-4 h-4 text-champagne-500" /> FICHA DO HERÓI
                     </h3>
                     <button
                       onClick={() => setIsSkillsModalOpen(true)}
-                      className="absolute right-0 text-[10px] uppercase font-bold text-amber-400 hover:text-amber-200 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer hidden sm:inline-block"
+                      className="absolute right-0 text-[10px] uppercase font-bold text-champagne-400 hover:text-champagne-200 border border-champagne-500/20 px-2 py-0.5 rounded cursor-pointer hidden sm:inline-block"
                     >
                       + Gerenciar Habilidades
                     </button>
@@ -3227,8 +3211,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'inventory' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
                   <div className="pb-2.5 border-b border-amber-500/10 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Coins className="w-4 h-4 text-amber-500" /> EQUIPAMENTOS
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Coins className="w-4 h-4 text-champagne-500" /> EQUIPAMENTOS
                     </h3>
                   </div>
                   <InventoryScreen
@@ -3247,8 +3231,8 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-5 sm:p-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-6 flex flex-col min-h-[500px] w-full flex-1">
                   <div className="pb-2.5 border-b border-amber-500/10 flex justify-between items-center px-4 sm:px-0 min-h-[35px] relative">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-serif font-black text-sm md:text-base text-amber-400 tracking-wider uppercase flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-amber-400" /> HABILIDADES
+                      <h3 className="font-serif font-black text-sm md:text-base text-champagne-400 tracking-wider uppercase flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-champagne-400" /> HABILIDADES
                       </h3>
                       <button
                         type="button"
@@ -3256,7 +3240,7 @@ function App({ userId, signOut }: AppProps) {
                           e.stopPropagation();
                           setIsPrestigeInfoOpen(!isPrestigeInfoOpen);
                         }}
-                        className="w-4.5 h-4.5 rounded-full border border-amber-500/30 text-amber-400/80 hover:text-amber-200 flex items-center justify-center text-[10px] font-bold hover:bg-amber-500/10 transition-all cursor-pointer shrink-0"
+                        className="w-4.5 h-4.5 rounded-full border border-champagne-500/30 text-champagne-400/80 hover:text-champagne-200 flex items-center justify-center text-[10px] font-bold hover:bg-champagne-500/10 transition-all cursor-pointer shrink-0"
                         title="Saiba mais sobre Prestígio"
                       >
                         ?
@@ -3266,7 +3250,7 @@ function App({ userId, signOut }: AppProps) {
                     <button
                       type="button"
                       onClick={() => setIsCreateSkillModalOpen(true)}
-                      className="text-xs font-bold text-amber-400 hover:text-amber-200 border border-amber-500/30 px-3 py-1 rounded bg-amber-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
+                      className="text-xs font-bold text-champagne-400 hover:text-champagne-200 border border-champagne-500/30 px-3 py-1 rounded bg-champagne-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
                     >
                       <PlusCircle className="w-3.5 h-3.5" /> NOVA
                     </button>
@@ -3274,7 +3258,7 @@ function App({ userId, signOut }: AppProps) {
                     {isPrestigeInfoOpen && (
                       <div className="absolute right-4 top-12 bg-stone-950/95 border border-amber-500/40 p-4 rounded shadow-2xl z-50 text-xs text-amber-200 font-serif max-w-sm leading-relaxed space-y-2 text-left">
                         <div className="flex justify-between items-center pb-1 border-b border-amber-500/10">
-                          <strong className="text-amber-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
+                          <strong className="text-champagne-400 uppercase tracking-widest text-[11px] flex items-center gap-1">
                             👑 MECÂNICA DE PRESTÍGIO
                           </strong>
                           <button 
@@ -3345,8 +3329,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'history' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <BookOpen className="w-4 h-4 text-amber-400" /> Crônicas Diárias
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <BookOpen className="w-4 h-4 text-champagne-400" /> Crônicas Diárias
                     </h3>
                   </div>
                   <HistoryTab history={gameState.history} />
@@ -3356,8 +3340,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'heatmap' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Calendar className="w-4 h-4 text-amber-450" /> HEATMAP
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Calendar className="w-4 h-4 text-champagne-500" /> HEATMAP
                     </h3>
                   </div>
                   <HeatmapTab history={gameState.history} streak={gameState.streak} />
@@ -3368,8 +3352,8 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4 relative min-h-[45px]">
                     <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex justify-center w-full sm:w-auto">
-                      <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                        <Layers className="w-4 h-4 text-amber-500" /> CONTRATOS
+                      <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                        <Layers className="w-4 h-4 text-champagne-500" /> CONTRATOS
                       </h3>
                     </div>
                     
@@ -3379,7 +3363,7 @@ function App({ userId, signOut }: AppProps) {
                         onClick={() => setQuestsSubTab('daily')}
                         className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
                           questsSubTab === 'daily'
-                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            ? 'bg-champagne-500/10 text-champagne-300 border border-champagne-500/20'
                             : 'text-stone-500 hover:text-stone-300 border border-transparent'
                         }`}
                       >
@@ -3389,7 +3373,7 @@ function App({ userId, signOut }: AppProps) {
                         onClick={() => setQuestsSubTab('journey')}
                         className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
                           questsSubTab === 'journey'
-                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            ? 'bg-champagne-500/10 text-champagne-300 border border-champagne-500/20'
                             : 'text-stone-500 hover:text-stone-300 border border-transparent'
                         }`}
                       >
@@ -3411,8 +3395,8 @@ function App({ userId, signOut }: AppProps) {
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2.5 border-b border-amber-500/10 mb-4 relative min-h-[45px]">
                     <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex justify-center w-full sm:w-auto">
-                      <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                        <Coins className="w-4 h-4 text-amber-500" /> BAZAR DE MYSTARA
+                      <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                        <Coins className="w-4 h-4 text-champagne-500" /> BAZAR DE MYSTARA
                       </h3>
                     </div>
                     
@@ -3422,7 +3406,7 @@ function App({ userId, signOut }: AppProps) {
                         onClick={() => setShopSubTab('items')}
                         className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
                           shopSubTab === 'items'
-                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            ? 'bg-champagne-500/10 text-champagne-300 border border-champagne-500/20'
                             : 'text-stone-500 hover:text-stone-300 border border-transparent'
                         }`}
                       >
@@ -3432,7 +3416,7 @@ function App({ userId, signOut }: AppProps) {
                         onClick={() => setShopSubTab('titles')}
                         className={`px-3 py-1 text-[10px] uppercase font-bold rounded tracking-wider transition-all cursor-pointer ${
                           shopSubTab === 'titles'
-                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            ? 'bg-champagne-500/10 text-champagne-300 border border-champagne-500/20'
                             : 'text-stone-500 hover:text-stone-300 border border-transparent'
                         }`}
                       >
@@ -3456,8 +3440,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'titles' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Award className="w-4 h-4 text-amber-500" /> TÍTULOS
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Award className="w-4 h-4 text-champagne-500" /> TÍTULOS
                     </h3>
                   </div>
                   <TitleSelector
@@ -3471,8 +3455,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'stats' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Shield className="w-4 h-4 text-amber-500" /> ESTATÍSTICAS DO HERÓI
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Shield className="w-4 h-4 text-champagne-500" /> ESTATÍSTICAS DO HERÓI
                     </h3>
                   </div>
                   <StatsTab state={gameState} />
@@ -3482,8 +3466,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'achievements' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Award className="w-4 h-4 text-amber-500" /> CONQUISTAS
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Award className="w-4 h-4 text-champagne-500" /> CONQUISTAS
                     </h3>
                   </div>
                   <AchievementsTab state={gameState} />
@@ -3493,8 +3477,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'guide' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <HelpCircle className="w-4 h-4 text-amber-400" /> TUTORIAL
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <HelpCircle className="w-4 h-4 text-champagne-400" /> TUTORIAL
                     </h3>
                   </div>
                   <GuideTab />
@@ -3504,8 +3488,8 @@ function App({ userId, signOut }: AppProps) {
               {activeTab === 'logs' && (
                 <div className="bg-quest-panel border border-amber-500/15 rounded-lg overflow-hidden p-5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                   <div className="pb-2.5 border-b border-amber-500/10 mb-4 flex justify-center items-center relative min-h-[35px]">
-                    <h3 className="font-serif font-black text-xs md:text-sm text-amber-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
-                      <Scroll className="w-4 h-4 text-amber-500" /> REGISTRO DE ATIVIDADES
+                    <h3 className="font-serif font-black text-xs md:text-sm text-champagne-400 tracking-wider uppercase flex items-center justify-center gap-2 text-center">
+                      <Scroll className="w-4 h-4 text-champagne-500" /> REGISTRO DE ATIVIDADES
                     </h3>
                   </div>
                   <div className="bg-stone-950/90 text-amber-100/70 p-4 h-[420px] rounded-lg overflow-y-auto select-text border border-amber-500/10 shadow-inner">
@@ -3999,6 +3983,83 @@ function App({ userId, signOut }: AppProps) {
                         </div>
                       </div>
                     </div>
+
+                    {/* Selector de Orb (Conceito do Núcleo de Foco) */}
+                    <div className="pt-2 border-t border-amber-500/10">
+                      <label className="text-[10px] uppercase font-serif tracking-[0.2em] text-amber-100/60 block mb-1.5 font-semibold">
+                        Formato do Núcleo de Foco:
+                      </label>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {/* Concept A: Chrono-Relic */}
+                        <div
+                          onClick={() => handleApplyOrbConceptChange('A')}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.orbConcept === 'A'
+                              ? 'bg-champagne-500/[0.08] border-champagne-400 shadow-[0_0_0_1px_rgba(229,193,88,0.15)] scale-[1.01]'
+                              : 'bg-stone-900/70 border-white/10 opacity-70 hover:opacity-100 hover:border-champagne-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.orbConcept === 'A' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-champagne-400/0 via-champagne-300 to-champagne-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">⏳</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.14em] font-serif text-champagne-200 block leading-tight break-words whitespace-normal">Chrono-Relic</strong>
+                          <span className="text-[7.5px] sm:text-[8px] text-zinc-400 block mt-0.5 leading-tight">Relíquia Rúnica</span>
+                        </div>
+
+                        {/* Concept B: Obsidian Core */}
+                        <div
+                          onClick={() => handleApplyOrbConceptChange('B')}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.orbConcept === 'B'
+                              ? 'bg-champagne-500/[0.08] border-champagne-400 shadow-[0_0_0_1px_rgba(229,193,88,0.15)] scale-[1.01]'
+                              : 'bg-stone-900/70 border-white/10 opacity-70 hover:opacity-100 hover:border-champagne-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.orbConcept === 'B' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-champagne-400/0 via-champagne-300 to-champagne-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">🔮</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.14em] font-serif text-champagne-200 block leading-tight break-words whitespace-normal">Obsidian Core</strong>
+                          <span className="text-[7.5px] sm:text-[8px] text-zinc-400 block mt-0.5 leading-tight">Núcleo Cristalino</span>
+                        </div>
+
+                        {/* Concept C: Arcane Dial */}
+                        <div
+                          onClick={() => handleApplyOrbConceptChange('C')}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.orbConcept === 'C'
+                              ? 'bg-champagne-500/[0.08] border-champagne-400 shadow-[0_0_0_1px_rgba(229,193,88,0.15)] scale-[1.01]'
+                              : 'bg-stone-900/70 border-white/10 opacity-70 hover:opacity-100 hover:border-champagne-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.orbConcept === 'C' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-champagne-400/0 via-champagne-300 to-champagne-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">⏱️</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.14em] font-serif text-champagne-200 block leading-tight break-words whitespace-normal">Arcane Dial</strong>
+                          <span className="text-[7.5px] sm:text-[8px] text-zinc-400 block mt-0.5 leading-tight">Mostrador Arcano</span>
+                        </div>
+
+                        {/* Concept D: Alchemist Flask */}
+                        <div
+                          onClick={() => handleApplyOrbConceptChange('D')}
+                          className={`p-2.5 min-h-[96px] border rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                            gameState.orbConcept === 'D'
+                              ? 'bg-champagne-500/[0.08] border-champagne-400 shadow-[0_0_0_1px_rgba(229,193,88,0.15)] scale-[1.01]'
+                              : 'bg-stone-900/70 border-white/10 opacity-70 hover:opacity-100 hover:border-champagne-400/30 hover:bg-stone-800/80'
+                          }`}
+                        >
+                          {gameState.orbConcept === 'D' && (
+                            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-champagne-400/0 via-champagne-300 to-champagne-400/0" />
+                          )}
+                          <span className="text-xl leading-none block mb-1">🧪</span>
+                          <strong className="text-[8.5px] sm:text-[9px] uppercase tracking-[0.14em] font-serif text-champagne-200 block leading-tight break-words whitespace-normal">Alchemist Flask</strong>
+                          <span className="text-[7.5px] sm:text-[8px] text-zinc-400 block mt-0.5 leading-tight">Frasco Alquimista</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </section>
 
@@ -4319,7 +4380,7 @@ function App({ userId, signOut }: AppProps) {
                     ) : (
                       <div className="text-xs text-amber-100/90 leading-relaxed bg-amber-500/[0.02] border border-amber-500/10 rounded-lg p-2.5 flex items-center justify-center">
                         <span className="font-mono font-bold text-amber-400 flex items-center gap-1.5 text-xs">
-                          <Flame className="w-3.5 h-3.5 flex-shrink-0" /> Sua chama permanece acesa há {dailyReport.currentStreak} {dailyReport.currentStreak === 1 ? 'dia' : 'dias'}.
+                          <Flame className="w-3.5 h-3.5 flex-shrink-0 text-orange-500" /> Sua chama permanece acesa há {dailyReport.currentStreak} {dailyReport.currentStreak === 1 ? 'dia' : 'dias'}.
                         </span>
                       </div>
                     )}

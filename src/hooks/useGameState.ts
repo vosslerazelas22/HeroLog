@@ -34,6 +34,7 @@ export const INITIAL_STATE: CharacterState = {
   achievements: [],
   charName: 'Aventureiro do Foco',
   charClass: 'Mage',
+  orbConcept: 'D',
   equippedTitle: null,
   ownedTitles: [],
   todayXP: 0,
@@ -233,6 +234,7 @@ export async function fetchReconstructedRemoteState(userId: string): Promise<Cha
       dungeonSessions: c.dungeon_sessions,
       charName: c.char_name,
       charClass: c.char_class,
+      orbConcept: c.orb_concept ?? 'D',
       todayXP: c.today_xp,
       todayMinutes: c.today_minutes,
       todayDate: c.today_date,
@@ -364,6 +366,7 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
     prevState.dungeonSessions !== nextState.dungeonSessions ||
     prevState.charName !== nextState.charName ||
     prevState.charClass !== nextState.charClass ||
+    prevState.orbConcept !== nextState.orbConcept ||
     prevState.todayXP !== nextState.todayXP ||
     prevState.todayMinutes !== nextState.todayMinutes ||
     prevState.todayDate !== nextState.todayDate ||
@@ -386,7 +389,7 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
       wilderness_wins: nextState.wildernessWins, combo: nextState.combo,
       dungeon_progress: nextState.dungeonProgress, is_dungeon_mode: nextState.isDungeonMode,
       dungeon_sessions: nextState.dungeonSessions, char_name: nextState.charName,
-      char_class: nextState.charClass, today_xp: nextState.todayXP, today_minutes: nextState.todayMinutes,
+      char_class: nextState.charClass, orb_concept: nextState.orbConcept, today_xp: nextState.todayXP, today_minutes: nextState.todayMinutes,
       today_date: nextState.todayDate, has_claimed_login: nextState.hasClaimedLogin,
       hp: nextState.hp, max_hp: nextState.maxHp, equipped_title: nextState.equippedTitle,
       achievements: nextState.achievements, owned_titles: nextState.ownedTitles,

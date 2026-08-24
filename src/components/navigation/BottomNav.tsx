@@ -135,7 +135,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
     <>
       <nav
         ref={navRef}
-        className="fixed bottom-0 left-0 right-0 bg-stone-950 border-t-2 border-amber-500/20 px-3 py-1.5 grid grid-cols-5 items-center z-40 lg:hidden backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.6)]"
+        className="fixed bottom-0 left-0 right-0 bg-stone-950 border-t-2 border-white/10 px-3 py-1.5 grid grid-cols-5 items-center z-40 lg:hidden backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.6)]"
       >
         {navItems.map((item) => {
           const IconComponent = item.icon;
@@ -147,7 +147,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
               {isActive && (
                 <motion.div
                   layoutId="activeNavPill"
-                  className="absolute inset-0 rounded bg-amber-500/[0.05] border border-amber-500/10"
+                  className="absolute inset-0 rounded bg-champagne-500/[0.05] border border-champagne-500/10"
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
@@ -165,11 +165,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
                 }}
                 className={`relative z-10 flex flex-col items-center justify-center gap-0.5 py-1 w-full px-1 rounded transition-all cursor-pointer ${
                   isActive
-                    ? 'text-amber-400 font-bold scale-105 border border-transparent'
-                    : 'text-amber-100/40 hover:text-amber-100/75 border border-transparent'
+                    ? 'text-champagne-400 font-bold scale-105 border border-transparent'
+                    : 'text-zinc-300/40 hover:text-zinc-300/75 border border-transparent'
                 }`}
               >
-                <IconComponent className={`w-5 h-5 ${isActive ? 'text-amber-400' : 'text-amber-100/40'}`} />
+                <IconComponent className={`w-5 h-5 ${isActive ? 'text-champagne-400' : 'text-zinc-300/40'}`} />
                 {isActive && (
                   <span className="text-[10px] font-serif uppercase tracking-wider">{item.label}</span>
                 )}
@@ -198,16 +198,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed inset-x-0 bottom-0 z-[60] bg-stone-950 border-t-2 border-amber-500/30 rounded-t-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.8)] p-2.5 pb-4 max-h-[60vh] overflow-y-auto lg:hidden"
+              className="fixed inset-x-0 bottom-0 z-[60] bg-stone-950 border-t-2 border-champagne-500/30 rounded-t-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.8)] p-2.5 pb-4 max-h-[60vh] overflow-y-auto lg:hidden"
             >
-              <div className="flex items-center justify-between mb-2 pb-2 border-b border-amber-500/10">
-                <h3 className="font-serif font-black text-xs text-amber-400 tracking-wider uppercase">
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+                <h3 className="font-serif font-black text-xs text-champagne-400 tracking-wider uppercase">
                   {MODULE_TITLES[openDropdown]}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(null)}
-                  className="text-amber-100/50 hover:text-amber-200 cursor-pointer p-1"
+                  className="text-zinc-400 hover:text-champagne-300 cursor-pointer p-1"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -223,8 +223,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
                     }}
                     className={`w-full py-2 px-3 rounded-lg text-xs font-serif uppercase tracking-wider text-left transition-all cursor-pointer flex items-center justify-between gap-2 border ${
                       activeTab === sub.value
-                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/50 font-bold shadow-[0_0_10px_rgba(245,158,11,0.15)]'
-                        : 'bg-stone-900/60 text-amber-100/60 border-transparent hover:border-amber-500/20 hover:text-amber-100/90'
+                        ? 'bg-champagne-500/15 text-champagne-300 border-champagne-500/50 font-bold shadow-[0_0_10px_rgba(229,193,88,0.15)]'
+                        : 'bg-stone-900/60 text-zinc-300/60 border-transparent hover:border-champagne-500/20 hover:text-zinc-300/90'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -232,7 +232,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
                       <span className="truncate">{sub.label}</span>
                     </div>
                     {activeTab === sub.value && (
-                      <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-champagne-400 shrink-0" />
                     )}
                   </button>
                 ))}

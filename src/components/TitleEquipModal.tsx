@@ -91,15 +91,15 @@ export function TitleEquipModal({
       variant="amber"
     >
       <div className="space-y-5 max-h-[65vh] pr-1">
-        <p className="text-xs text-amber-100/60 font-serif leading-relaxed italic">
+        <p className="text-xs text-zinc-300/60 font-serif leading-relaxed italic">
           Selecione qual brasão ou título honorífico você deseja carregar em sua ficha de herói:
         </p>
 
         {unlockedTitles.length === 0 ? (
           <div className="py-10 text-center flex flex-col justify-center items-center bg-stone-950/40 border border-stone-850 rounded-lg p-5">
-            <Award className="w-10 h-10 text-amber-500/20 mb-2.5 animate-pulse" />
-            <span className="text-xs text-amber-400 font-serif font-semibold uppercase tracking-wider">Sua estante de brasões está vazia!</span>
-            <span className="text-[10px] text-amber-100/40 font-serif mt-1 max-w-xs leading-normal">
+            <Award className="w-10 h-10 text-zinc-600 mb-2.5 animate-pulse" />
+            <span className="text-xs text-zinc-400 font-serif font-semibold uppercase tracking-wider">Sua estante de brasões está vazia!</span>
+            <span className="text-[10px] text-zinc-300/40 font-serif mt-1 max-w-xs leading-normal">
               Nenhum título honorífico foi conquistado ainda. Cultive seu foco nas missões ou compre brasões no Bazar!
             </span>
           </div>
@@ -135,13 +135,13 @@ export function TitleEquipModal({
                           }}
                           className={`w-full text-left p-3.5 rounded-lg border transition-all duration-300 relative group flex flex-col justify-between cursor-pointer ${
                             isEquipped
-                              ? 'border-amber-400 bg-stone-950 shadow-[0_0_15px_rgba(245,158,11,0.15)] bg-amber-500/[0.04]'
-                              : title.colorClass || 'border-stone-800 bg-stone-950/40 hover:border-amber-500/35 hover:bg-amber-500/[0.01]'
+                              ? 'border-champagne-400 bg-stone-950 shadow-[0_0_15px_rgba(229,193,88,0.15)] bg-champagne-500/[0.04]'
+                              : title.colorClass || 'border-stone-800 bg-stone-950/40 hover:border-champagne-400/40 hover:bg-champagne-500/[0.01]'
                           }`}
                         >
                           {/* Active / Equipped Badge */}
                           {isEquipped && (
-                            <div className="absolute top-3.5 right-3.5 bg-amber-400 text-stone-950 text-[9px] uppercase font-serif font-black px-2 py-0.5 rounded shadow flex items-center gap-0.5">
+                            <div className="absolute top-3.5 right-3.5 bg-champagne-400 text-stone-950 text-[9px] uppercase font-serif font-black px-2 py-0.5 rounded shadow flex items-center gap-0.5">
                               <Check className="w-2.5 h-2.5" /> Equipado
                             </div>
                           )}
@@ -150,7 +150,7 @@ export function TitleEquipModal({
                           <div className="space-y-1.5 pr-20">
                             <div className="flex items-center gap-1.5">
                               <span className="text-base shrink-0 select-none">{title.emoji}</span>
-                              <h4 className={`text-xs font-serif font-bold uppercase tracking-wider ${title.textGlowClass || 'text-amber-100/90'}`}>
+                              <h4 className={`text-xs font-serif font-bold uppercase tracking-wider ${title.textGlowClass || 'text-zinc-300/90'}`}>
                                 {title.name}
                               </h4>
                             </div>

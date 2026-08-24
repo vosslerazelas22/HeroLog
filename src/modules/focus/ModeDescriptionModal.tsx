@@ -27,19 +27,19 @@ export function ModeDescriptionModal({
       ? 'text-purple-400'
       : variant === 'red'
       ? 'text-red-400'
-      : 'text-amber-400';
+      : 'text-champagne-400';
   const borderColor =
     variant === 'purple'
       ? 'border-purple-500/20'
       : variant === 'red'
       ? 'border-red-500/20'
-      : 'border-amber-500/20';
+      : 'border-champagne-500/20';
   const bgColor =
     variant === 'purple'
       ? 'bg-purple-950/10'
       : variant === 'red'
       ? 'bg-red-950/10'
-      : 'bg-amber-950/10';
+      : 'bg-champagne-950/10';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} variant={variant}>
@@ -74,7 +74,7 @@ export function ModeDescriptionModal({
                 ? 'bg-purple-950/40 text-purple-300 border-purple-500/30 hover:bg-purple-900/40 hover:text-purple-200'
                 : variant === 'red'
                 ? 'bg-red-950/40 text-red-300 border-red-500/30 hover:bg-red-900/40 hover:text-red-200'
-                : 'bg-amber-950/40 text-amber-300 border-amber-500/30 hover:bg-amber-900/40 hover:text-amber-200'
+                : 'bg-champagne-950/40 text-champagne-300 border-champagne-500/30 hover:bg-champagne-900/40 hover:text-champagne-200'
             }`}
           >
             Entendido

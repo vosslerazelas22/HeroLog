@@ -20,7 +20,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
     <div className="space-y-6 font-serif leading-relaxed text-amber-100/90">
       {/* Intro Header Section */}
       <div className="flex flex-col gap-1 border-b border-amber-500/10 pb-4">
-        <p className="text-xs uppercase font-serif tracking-[0.14em] text-amber-400 font-bold">
+        <p className="text-xs uppercase font-serif tracking-[0.14em] text-champagne-400 font-bold">
           Escolha o título que deseja exibir no seu perfil e ative os benefícios vinculados a ele.
         </p>
       </div>
@@ -28,7 +28,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
       {unlockedTitles.length === 0 ? (
         <div className="py-12 text-center flex flex-col justify-center items-center bg-stone-900/20 border border-amber-500/5 rounded-lg p-6">
           <Award className="w-12 h-12 text-amber-500/20 mb-3 animate-pulse" />
-          <span className="text-xs text-amber-400 font-serif font-semibold uppercase tracking-wider">Sua estante de brasões está vazia!</span>
+          <span className="text-xs text-champagne-400 font-serif font-semibold uppercase tracking-wider">Sua estante de brasões está vazia!</span>
           <span className="text-[10px] text-amber-100/40 font-serif mt-1 max-w-sm">
             Nenhum título honorífico foi conquistado ainda. Cultive sua força de vontade nas Missões de Foco ou compre patentes de prestígio no Bazar de Mystara!
           </span>
@@ -36,8 +36,8 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b border-amber-500/10 pb-1.5">
-            <Shield className="w-4 h-4 text-amber-400" />
-            <span className="text-xs uppercase font-bold tracking-widest text-amber-300">Seus Títulos Desbloqueados ({unlockedTitles.length})</span>
+            <Shield className="w-4 h-4 text-champagne-400" />
+            <span className="text-xs uppercase font-bold tracking-widest text-champagne-300">Seus Títulos Desbloqueados ({unlockedTitles.length})</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

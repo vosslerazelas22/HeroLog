@@ -26,7 +26,7 @@ export function SkillSelectorModal({
       variant="amber"
     >
       <div className="space-y-4 max-h-[65vh] pr-1">
-        <p className="text-xs text-amber-100/60 font-serif leading-relaxed italic">
+        <p className="text-xs text-zinc-300/60 font-serif leading-relaxed italic">
           Escolha qual habilidade receberá o bônus de XP obtido durante esta sessão de foco:
         </p>
 
@@ -46,13 +46,13 @@ export function SkillSelectorModal({
                 }}
                 className={`w-full text-left bg-stone-950/60 border rounded-xl p-3.5 transition-all duration-300 relative group flex flex-col gap-3 cursor-pointer ${
                   isActive
-                    ? 'border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)] bg-amber-500/[0.04]'
-                    : 'border-stone-800 hover:border-amber-500/35 hover:bg-amber-500/[0.02]'
+                    ? 'border-champagne-400 shadow-[0_0_15px_rgba(229,193,88,0.15)] bg-champagne-500/[0.04]'
+                    : 'border-stone-800 hover:border-champagne-400/40 hover:bg-champagne-500/[0.02]'
                 }`}
               >
                 {/* Active Badge / Indicator */}
                 {isActive && (
-                  <div className="absolute top-3.5 right-3.5 bg-amber-400 text-stone-950 text-[9px] uppercase font-serif font-black px-2 py-0.5 rounded-full tracking-wider shadow-md">
+                  <div className="absolute top-3.5 right-3.5 bg-champagne-400 text-stone-950 text-[9px] uppercase font-serif font-black px-2 py-0.5 rounded-full tracking-wider shadow-md">
                     Ativa
                   </div>
                 )}
@@ -61,8 +61,8 @@ export function SkillSelectorModal({
                 <div className="flex items-start gap-3 pr-12">
                   <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-2xl shrink-0 transition-transform duration-300 group-hover:scale-110 border ${
                     isActive
-                      ? 'bg-amber-500/10 border-amber-400/40'
-                      : 'bg-stone-900 border-stone-800 group-hover:border-amber-500/20'
+                      ? 'bg-champagne-500/10 border-champagne-400/40'
+                      : 'bg-stone-900 border-stone-800 group-hover:border-champagne-400/20'
                   }`}>
                     {sk.emoji || '🎯'}
                   </div>
@@ -70,7 +70,7 @@ export function SkillSelectorModal({
                   <div className="space-y-0.5 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h4 className={`font-serif font-bold text-sm truncate ${
-                        isActive ? 'text-amber-300' : 'text-amber-100/90 group-hover:text-amber-200'
+                        isActive ? 'text-champagne-300' : 'text-zinc-300/90 group-hover:text-champagne-300'
                       }`}>
                         {sk.name}
                       </h4>
@@ -82,7 +82,7 @@ export function SkillSelectorModal({
                     </div>
 
                     <div className="flex items-center gap-2 text-xs font-mono">
-                      <span className="text-amber-400 font-bold">Nível {sk.level}</span>
+                      <span className="text-champagne-400 font-bold">Nv. {sk.level}</span>
                       {sk.prestige ? (
                         <span className="text-yellow-500/70 text-[10px]">+{sk.prestige * 25}% XP</span>
                       ) : null}
@@ -95,12 +95,12 @@ export function SkillSelectorModal({
                   <div className="h-1.5 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-900">
                     <div
                       className={`h-full transition-all duration-500 rounded-full ${
-                        isActive ? 'bg-gradient-to-r from-amber-500 to-yellow-300' : 'bg-amber-500/70'
+                        isActive ? 'bg-gradient-to-r from-champagne-500 to-champagne-300' : 'bg-champagne-500/70'
                       }`}
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
-                  <div className="flex justify-between items-center text-[9px] text-amber-100/40 font-mono">
+                  <div className="flex justify-between items-center text-[9px] text-zinc-300/40 font-mono">
                     <span>Progresso: {sk.xp} / {reqXP} XP</span>
                     <span>{Math.round(progressPercent)}%</span>
                   </div>
@@ -112,7 +112,7 @@ export function SkillSelectorModal({
                     {sk.tags.map((tag, tIdx) => (
                       <span
                         key={tIdx}
-                        className="px-1.5 py-0.5 bg-stone-900/80 border border-stone-800 text-[9px] text-amber-100/50 rounded flex items-center gap-1 font-sans"
+                        className="px-1.5 py-0.5 bg-stone-900/80 border border-stone-800 text-[9px] text-zinc-300/50 rounded flex items-center gap-1 font-sans"
                       >
                         <Tag className="w-2 h-2 opacity-50" />
                         {tag}

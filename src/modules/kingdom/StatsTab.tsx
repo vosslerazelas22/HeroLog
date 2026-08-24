@@ -19,7 +19,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({ state }) => {
       value: state.totalSessions,
       desc: 'Missões completadas na gilda',
       icon: Swords,
-      color: 'text-amber-400 border-amber-500/10 bg-amber-500/[0.02]',
+      color: 'text-champagne-400 border-champagne-500/10 bg-champagne-500/[0.02]',
     },
     {
       label: 'Tempo Acumulado',

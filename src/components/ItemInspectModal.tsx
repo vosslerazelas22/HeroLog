@@ -43,10 +43,10 @@ export const ItemInspectModal: React.FC<ItemInspectModalProps> = ({
         return `${isSingle ? 'w-full' : ''} py-2 px-3 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 rounded text-xs font-serif uppercase tracking-wider text-center transition-all cursor-pointer`;
       case 'primary':
       case 'amber':
-        return `${isSingle ? 'w-full' : 'flex-1'} py-2 px-3 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/30 text-amber-300 rounded text-xs font-serif uppercase tracking-wider text-center transition-all cursor-pointer`;
+        return `${isSingle ? 'w-full' : 'flex-1'} py-2 px-3 bg-champagne-950/40 hover:bg-champagne-900/60 border border-champagne-500/30 text-champagne-300 rounded text-xs font-serif uppercase tracking-wider text-center transition-all cursor-pointer`;
       case 'stone':
       default:
-        return 'py-2 px-4 bg-stone-900 hover:bg-stone-850 border border-amber-500/20 text-amber-100/70 rounded text-xs font-serif uppercase tracking-wider cursor-pointer';
+        return 'py-2 px-4 bg-stone-900 hover:bg-stone-850 border border-white/10 text-zinc-300/70 rounded text-xs font-serif uppercase tracking-wider cursor-pointer';
     }
   };
 
@@ -73,7 +73,7 @@ export const ItemInspectModal: React.FC<ItemInspectModalProps> = ({
             <div className="p-4 bg-gradient-to-b from-stone-900 to-stone-950 border-b border-amber-500/10 flex items-center gap-3">
               <span className="text-3xl select-none">{item.emoji}</span>
               <div>
-                <h4 className="font-serif font-black text-amber-400 uppercase tracking-widest text-sm">
+                <h4 className="font-serif font-black text-champagne-400 uppercase tracking-widest text-sm">
                   {item.name}
                 </h4>
                 <span className="text-[9px] font-mono uppercase text-amber-100/40">
@@ -95,7 +95,7 @@ export const ItemInspectModal: React.FC<ItemInspectModalProps> = ({
 
               {item.isEquipment && (
                 <div className="bg-amber-500/[0.04] border border-amber-500/20 p-2.5 rounded-lg text-center space-y-1">
-                  <span className="text-[10px] uppercase font-serif text-amber-400 block tracking-wider">
+                  <span className="text-[10px] uppercase font-serif text-champagne-400 block tracking-wider">
                     📦 Informações de Durabilidade
                   </span>
                   <span className="text-sm font-mono font-bold text-emerald-400 block">

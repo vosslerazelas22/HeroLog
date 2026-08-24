@@ -191,6 +191,7 @@ export function FocusModeScreen(props: FocusModeScreenProps) {
           isDungeonMode={isDungeonMode}
           isWildernessMode={isWildernessChecked}
           size="fullscreen"
+          orbConcept={gameState.orbConcept}
         />
       </div>
 

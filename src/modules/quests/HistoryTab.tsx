@@ -33,7 +33,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
         onClick={() => setViewMode('all')}
         className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-serif font-bold rounded tracking-wider transition-all cursor-pointer ${
           viewMode === 'all'
-            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+            ? 'bg-champagne-500/10 text-champagne-300 border border-champagne-500/20'
             : 'text-stone-500 hover:text-stone-300 border border-transparent'
         }`}
         id="history-tab-all-btn"
@@ -44,7 +44,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
         onClick={() => setViewMode('notes')}
         className={`flex-1 text-center px-3 py-1 text-[10px] uppercase font-serif font-bold rounded tracking-wider transition-all cursor-pointer ${
           viewMode === 'notes'
-            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+            ? 'bg-champagne-500/10 text-champagne-300 border border-champagne-500/20'
             : 'text-stone-500 hover:text-stone-300 border border-transparent'
         }`}
         id="history-tab-notes-btn"
@@ -77,7 +77,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ history }) => {
                 className="bg-stone-950/40 border border-amber-500/10 rounded-lg p-4 space-y-2.5 relative shadow-md"
               >
                 <div className="flex justify-between items-center text-[10px] text-amber-100/40 font-mono pb-1.5 border-b border-amber-500/5">
-                  <span className="font-serif text-amber-400 font-bold uppercase tracking-wider">{entry.skillName}</span>
+                  <span className="font-serif text-champagne-400 font-bold uppercase tracking-wider">{entry.skillName}</span>
                   <span>{entry.date}</span>
                 </div>
                 <p className="text-xs text-amber-200/90 leading-relaxed font-serif italic pl-3.5 border-l-2 border-amber-500/30">

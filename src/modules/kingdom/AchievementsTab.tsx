@@ -90,7 +90,7 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({ state }) => {
                     {ach.name}
                   </h4>
                   {isUnlocked && (
-                    <span className="text-[9px] uppercase font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 flex items-center gap-0.5">
+                    <span className="text-[9px] uppercase font-bold text-champagne-400 bg-champagne-500/10 px-2 py-0.5 rounded-full border border-champagne-500/20 flex items-center gap-0.5">
                       <Sparkles className="w-2.5 h-2.5" /> Desbloqueado
                     </span>
                   )}

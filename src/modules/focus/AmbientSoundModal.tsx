@@ -26,19 +26,19 @@ export function AmbientSoundModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Sons Ambiente">
       <div className="space-y-6">
         {/* Volume Slider Section */}
-        <div className="bg-stone-950/40 p-4 rounded-xl border border-amber-500/10">
+        <div className="bg-stone-950/40 p-4 rounded-xl border border-white/10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               {volume === 0 ? (
                 <VolumeX className="w-4 h-4 text-stone-500" />
               ) : (
-                <Volume2 className="w-4 h-4 text-amber-400" />
+                <Volume2 className="w-4 h-4 text-champagne-400" />
               )}
-              <span className="text-xs font-serif font-black uppercase tracking-wider text-amber-100/80">
+              <span className="text-xs font-serif font-black uppercase tracking-wider text-zinc-300/80">
                 Volume do Eco
               </span>
             </div>
-            <span className="text-xs font-mono font-bold text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+            <span className="text-xs font-mono font-bold text-champagne-400/90 bg-champagne-500/10 px-2 py-0.5 rounded border border-champagne-500/20">
               {volume}%
             </span>
           </div>
@@ -48,13 +48,13 @@ export function AmbientSoundModal({
             max="100"
             value={volume}
             onChange={(e) => setVolume(Number(e.target.value))}
-            className="w-full h-1.5 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            className="w-full h-1.5 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-champagne-500"
           />
         </div>
 
         {/* Tracks List */}
         <div className="space-y-2.5">
-          <h3 className="text-xs font-serif font-black uppercase tracking-widest text-amber-500/60 pl-1 mb-2">
+          <h3 className="text-xs font-serif font-black uppercase tracking-widest text-champagne-500/60 pl-1 mb-2">
             Canalizar Sintonias
           </h3>
           <div className="grid grid-cols-1 gap-2 max-h-[40vh] overflow-y-auto pr-1">
@@ -65,7 +65,7 @@ export function AmbientSoundModal({
                   key={track.id}
                   className={`flex items-center justify-between gap-4 p-3 rounded-xl border transition-all ${
                     isActive
-                      ? 'bg-amber-500/5 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.05)]'
+                      ? 'bg-champagne-500/5 border-champagne-500/30 shadow-[0_0_10px_rgba(229,193,88,0.05)]'
                       : 'bg-stone-950/30 border-stone-800 hover:border-stone-700'
                   }`}
                 >
@@ -74,7 +74,7 @@ export function AmbientSoundModal({
                       {track.icone}
                     </span>
                     <div>
-                      <span className="text-xs font-serif font-black uppercase text-amber-100/90 block">
+                      <span className="text-xs font-serif font-black uppercase text-zinc-300/90 block">
                         {track.nome}
                       </span>
                       {isActive && (
@@ -103,7 +103,7 @@ export function AmbientSoundModal({
         </div>
         
         {/* Informative Footer */}
-        <p className="text-[10px] text-amber-100/40 font-serif leading-relaxed text-center italic mt-2">
+        <p className="text-[10px] text-zinc-300/40 font-serif leading-relaxed text-center italic mt-2">
           Os sussurros do santuário reverberam somente enquanto sua mente estiver focada de fato (durante sessões de foco ativas, não pausadas).
         </p>
       </div>

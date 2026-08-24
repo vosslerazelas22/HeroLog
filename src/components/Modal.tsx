@@ -52,11 +52,11 @@ export function Modal({
   // Variant classes mapping
   const variantStyles = {
     amber: {
-      border: 'border-amber-500/30',
-      topBorder: 'bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600',
-      glow: 'bg-gradient-to-b from-amber-500/[0.01]',
-      title: 'text-amber-400 drop-shadow-[0_1px_4px_rgba(245,158,11,0.2)]',
-      closeHover: 'hover:text-amber-400',
+      border: 'border-champagne-500/30',
+      topBorder: 'bg-gradient-to-r from-champagne-600 via-champagne-400 to-champagne-600',
+      glow: 'bg-gradient-to-b from-champagne-500/[0.01]',
+      title: 'text-champagne-400 drop-shadow-[0_1px_4px_rgba(229,193,88,0.2)]',
+      closeHover: 'hover:text-champagne-400',
     },
     purple: {
       border: 'border-purple-500/30',

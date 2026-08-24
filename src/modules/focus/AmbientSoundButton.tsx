@@ -39,13 +39,13 @@ export function AmbientSoundButton({
                 {activeTrack.icone}
               </span>
             ) : (
-              <VolumeX className="w-5 h-5 text-amber-400/80" />
+              <VolumeX className="w-5 h-5 text-zinc-400" />
             )}
             {activeTrack && (
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse border border-stone-950" />
             )}
           </span>
-          <span className="text-[9px] font-serif uppercase tracking-wider text-amber-100/70">Som</span>
+          <span className="text-[9px] font-serif uppercase tracking-wider text-zinc-300/70">Som</span>
         </button>
 
         <AmbientSoundModal
