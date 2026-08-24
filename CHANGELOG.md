@@ -15,6 +15,52 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.17] - 2026-08-23
+
+### Adicionado
+- **Seletor de habilidade em carrossel inline** — novo componente gestual (swipe, setas laterais, indicadores de página) na Câmara de Foco, substituindo o antigo botão de seleção em dropdown; inclui feedback sonoro tátil ao trocar de habilidade e suporte completo a navegação por teclado.
+- **4 novos visuais para o Núcleo de Foco** — Chrono-Relic (astrolábio), Obsidian Core (cristal vulcânico), Arcane Dial (mostrador minimalista) e Alchemist Flask (frasco alquímico, padrão), selecionáveis em Ajustes Gerais e sincronizados entre dispositivos.
+
+### Alterado
+- **Paleta de cor unificada em "champagne"** — substituição sistemática do tom âmbar disperso pela nova cor de marca em toda a interface (Ficha do Herói, Habilidades, Missões Avulsas, modais de Ajustes/Título/Habilidade/Som/Incursão, navegação inferior e demais telas do Reino); âmbar/dourado passa a ser reservado como acento raro.
+- **Texto de status do modo ativo** (Masmorra/Selvagem/Padrão) na Câmara de Foco agora quebra linha corretamente em telas estreitas, em vez de cortar no meio.
+- **Filtros da sub-aba Missões Avulsas** (Pendentes/Concluídos/Todos) migrados para a nova paleta de cor.
+
+### Corrigido
+- **Modal errado ao tocar no centro do carrossel de habilidade** — abria o gerenciador geral de habilidades em vez dos detalhes da habilidade ativa.
+- **Cor do ícone de chama (sequência)** padronizada para laranja, independente da cor do texto ao redor.
+
+### Arquivos alterados
+- `/src/index.css`
+- `/src/App.tsx`
+- `/src/types.ts`
+- `/src/hooks/useGameState.ts`
+- `/src/utils/audio.ts`
+- `/src/components/Modal.tsx`
+- `/src/components/ItemInspectModal.tsx`
+- `/src/components/SkillSelectorModal.tsx`
+- `/src/components/TitleEquipModal.tsx`
+- `/src/components/SkillInlineCarousel.tsx` (novo)
+- `/src/components/navigation/BottomNav.tsx`
+- `/src/modules/focus/FocusOrb.tsx`
+- `/src/modules/focus/FocusModeScreen.tsx`
+- `/src/modules/focus/FocusCompletionFlow.tsx`
+- `/src/modules/focus/QuestFab.tsx`
+- `/src/modules/focus/IncursionModeModal.tsx`
+- `/src/modules/focus/ModeDescriptionModal.tsx`
+- `/src/modules/focus/AmbientSoundModal.tsx`
+- `/src/modules/focus/AmbientSoundButton.tsx`
+- `/src/modules/character/CharacterScreen.tsx`
+- `/src/modules/character/TitleSelector.tsx`
+- `/src/modules/skills/SkillsScreen.tsx`
+- `/src/modules/quests/HistoryTab.tsx`
+- `/src/modules/quests/TodosTab.tsx`
+- `/src/modules/kingdom/ShopTab.tsx`
+- `/src/modules/kingdom/AchievementsTab.tsx`
+- `/src/modules/kingdom/StatsTab.tsx`
+
+---
+
 ## [1.1.16] - 2026-08-16
 
 ### Adicionado
