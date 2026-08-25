@@ -15,6 +15,20 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 
 ---
 
+## [1.1.18] - 2026-08-25
+
+### Corrigido
+- **Perda silenciosa de sessões no histórico ao trocar de dispositivo** — corrigido bug em que sessões concluídas podiam deixar de aparecer permanentemente no histórico de Crônicas Diárias em outro dispositivo, mesmo com ouro, XP e sequência sincronizados corretamente. Causa raiz: quando a sincronização remota de uma sessão falhava silenciosamente (ex.: instabilidade de rede), o aplicativo marcava a sessão como sincronizada mesmo assim, impedindo qualquer nova tentativa de envio. Agora uma sessão só é considerada sincronizada após confirmação real do servidor; caso contrário, é reenviada automaticamente na sincronização seguinte.
+
+### Adicionado
+- **Detalhes de dispositivo e horário na tela de conflito de save** — ao encontrar um progresso mais recente na nuvem, a tela de escolha entre manter o save local ou usar o da nuvem agora exibe qual dispositivo originou cada versão e a data/hora exata de cada uma, facilitando a decisão.
+
+### Arquivos alterados
+- `/src/hooks/useGameState.ts`
+- `/src/App.tsx`
+
+---
+
 ## [1.1.17] - 2026-08-23
 
 ### Adicionado
