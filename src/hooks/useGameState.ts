@@ -436,7 +436,16 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
 // ---------------------------------------------------------------------------
 interface UseGameStateOptions {
   user: { id: string } | null;
-  onConflict?: (remoteState: CharacterState, localState: CharacterState) => Promise<'remote' | 'local'>;
+  onConflict?: (
+    remoteState: CharacterState, 
+    localState: CharacterState, 
+    meta: { 
+      remoteUpdatedAt: string; 
+      remoteDeviceLabel: string | null; 
+      localUpdatedAt: string | null; 
+      localDeviceLabel: string; 
+    }
+  ) => Promise<'remote' | 'local'>;
 }
 
 export function useGameState({ user, onConflict }: UseGameStateOptions) {
@@ -466,12 +475,21 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
         if (!remote) {
           const ts = await pushRemoteSave(user!.id, gameState);
           const diff = buildDiff(null, gameState, lastFlushedDeviceLabelRef.current);
-          if (diff) await supabase.rpc('flush_state', { p_diff: diff });
-          lastFlushedStateRef.current = gameState;
-          lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
-            ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
-            : 'Dispositivo sem nome');
-          if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
+          let rpcError = false;
+          if (diff) {
+            const { error } = await supabase.rpc('flush_state', { p_diff: diff });
+            if (error) {
+              console.error('[HeroLog] Erro ao executar RPC flush_state:', error.message);
+              rpcError = true;
+            }
+          }
+          if (!rpcError) {
+            lastFlushedStateRef.current = gameState;
+            lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+              ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+              : 'Dispositivo sem nome');
+          }
+          if (ts && !rpcError) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
           return;
         }
 
@@ -488,11 +506,24 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
           return;
         }
 
-        const remoteState = await fetchReconstructedRemoteState(user!.id) || normalizeGameState(remote.game_state);
+        const [remoteStateReconstructed, characterRowRes] = await Promise.all([
+          fetchReconstructedRemoteState(user!.id),
+          supabase.from('characters').select('device_label').eq('user_id', user!.id).maybeSingle(),
+        ]);
+        const remoteState = remoteStateReconstructed || normalizeGameState(remote.game_state);
+        const remoteDeviceLabel = characterRowRes?.data?.device_label ?? null;
 
         if (onConflict) {
           setSyncStatus('conflict');
-          const choice = await onConflict(remoteState, gameState);
+          const meta = {
+            remoteUpdatedAt: remote.updated_at,
+            remoteDeviceLabel,
+            localUpdatedAt,
+            localDeviceLabel: (typeof window !== 'undefined' 
+              ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+              : 'Dispositivo sem nome'),
+          };
+          const choice = await onConflict(remoteState, gameState, meta);
           if (choice === 'remote') {
             setGameState(remoteState);
             saveToLocalStorage(remoteState);
@@ -504,12 +535,21 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
           } else {
             const ts = await pushRemoteSave(user!.id, gameState);
             const diff = buildDiff(remoteState, gameState, lastFlushedDeviceLabelRef.current);
-            if (diff) await supabase.rpc('flush_state', { p_diff: diff });
-            lastFlushedStateRef.current = gameState;
-            lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
-              ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
-              : 'Dispositivo sem nome');
-            if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
+            let rpcError = false;
+            if (diff) {
+              const { error } = await supabase.rpc('flush_state', { p_diff: diff });
+              if (error) {
+                console.error('[HeroLog] Erro ao executar RPC flush_state:', error.message);
+                rpcError = true;
+              }
+            }
+            if (!rpcError) {
+              lastFlushedStateRef.current = gameState;
+              lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+                ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+                : 'Dispositivo sem nome');
+            }
+            if (ts && !rpcError) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
           }
         } else {
           setGameState(remoteState);
@@ -554,15 +594,21 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
       try {
         const ts = await pushRemoteSave(user.id, gameState);
         const diff = buildDiff(lastFlushedStateRef.current, gameState, lastFlushedDeviceLabelRef.current);
+        let rpcError = false;
         if (diff) {
           const { error } = await supabase.rpc('flush_state', { p_diff: diff });
-          if (error) console.error('[HeroLog] Erro ao executar RPC flush_state:', error.message);
+          if (error) {
+            console.error('[HeroLog] Erro ao executar RPC flush_state:', error.message);
+            rpcError = true;
+          }
         }
-        lastFlushedStateRef.current = gameState;
-        lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
-          ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
-          : 'Dispositivo sem nome');
-        if (ts) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
+        if (!rpcError) {
+          lastFlushedStateRef.current = gameState;
+          lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+            ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+            : 'Dispositivo sem nome');
+        }
+        if (ts && !rpcError) { setLocalUpdatedAt(ts); setSyncStatus('idle'); } else { setSyncStatus('error'); }
       } catch (err: any) {
         console.error('[HeroLog] Erro no push automático do save:', err);
         setSyncStatus('error');
@@ -577,19 +623,25 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
   // -------------------------------------------------------------------------
   // 3. API pública (idêntica à versão anterior — App.tsx não muda)
   // -------------------------------------------------------------------------
-  function resetGameState() {
+  async function resetGameState() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(`${STORAGE_KEY}_updated_at`);
     setGameState(INITIAL_STATE);
+    if (user && isUUID(user.id)) {
+      pushRemoteSave(user.id, INITIAL_STATE);
+      const diff = buildDiff(null, INITIAL_STATE, lastFlushedDeviceLabelRef.current);
+      if (diff) {
+        const { error } = await supabase.rpc('flush_state', { p_diff: diff });
+        if (error) {
+          console.error('[HeroLog] Erro ao executar RPC flush_state no reset:', error.message);
+          return;
+        }
+      }
+    }
     lastFlushedStateRef.current = INITIAL_STATE;
     lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
       ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
       : 'Dispositivo sem nome');
-    if (user && isUUID(user.id)) {
-      pushRemoteSave(user.id, INITIAL_STATE);
-      const diff = buildDiff(null, INITIAL_STATE, lastFlushedDeviceLabelRef.current);
-      if (diff) supabase.rpc('flush_state', { p_diff: diff });
-    }
   }
 
   const importGameState = useCallback((parsed: any): CharacterState => {

@@ -192,14 +192,25 @@ const MOBILE_SIDEBAR_CLOSE_THRESHOLD = 176;
 
 function App({ userId, signOut }: AppProps) {
   // Ref para o onConflict — permite usar setCustomDialog antes de ele ser declarado
-  const onConflictRef = useRef<((r: any, l: any) => Promise<'remote' | 'local'>) | null>(null);
+  const onConflictRef = useRef<
+    ((
+      remoteState: CharacterState,
+      localState: CharacterState,
+      meta: {
+        remoteUpdatedAt: string;
+        remoteDeviceLabel: string | null;
+        localUpdatedAt: string | null;
+        localDeviceLabel: string;
+      }
+    ) => Promise<'remote' | 'local'>) | null
+  >(null);
 
   // Master Game State — sync com Supabase via userId
   const { gameState, setGameState, resetGameState, importGameState, syncStatus } = useGameState({
     user: { id: userId },
-    onConflict: (remoteState, localState) =>
+    onConflict: (remoteState, localState, meta) =>
       onConflictRef.current
-        ? onConflictRef.current(remoteState, localState)
+        ? onConflictRef.current(remoteState, localState, meta)
         : Promise.resolve<'remote' | 'local'>('remote'),
   });
 
@@ -373,14 +384,32 @@ function App({ userId, signOut }: AppProps) {
   } | null>(null);
 
   // Injeta handler de conflito de sync agora que setCustomDialog está disponível
-  onConflictRef.current = (_remoteState: any, _localState: any) =>
+  onConflictRef.current = (_remoteState, _localState, meta) =>
     new Promise<'remote' | 'local'>((resolve) => {
+      const formatTimestamp = (ts: string | null) => {
+        if (!ts) return 'sem registro';
+        try {
+          return new Date(ts).toLocaleString('pt-BR');
+        } catch {
+          return ts;
+        }
+      };
+
+      const remoteLabel = meta.remoteDeviceLabel || 'Dispositivo sem nome';
+      const remoteTime = formatTimestamp(meta.remoteUpdatedAt);
+      const localLabel = meta.localDeviceLabel || 'Dispositivo sem nome';
+      const localTime = formatTimestamp(meta.localUpdatedAt);
+
+      const message =
+        'Encontramos um progresso mais recente salvo na nuvem.\n\n' +
+        `☁️ Nuvem: ${remoteLabel} — ${remoteTime}\n` +
+        `💻 Este dispositivo: ${localLabel} — ${localTime}\n\n` +
+        'Usar o save da nuvem ou manter o progresso local atual?';
+
       setCustomDialog({
         isOpen: true,
         title: '⚡ Save mais recente encontrado',
-        message:
-          'Encontramos um progresso mais recente salvo na nuvem. ' +
-          'Usar o save da nuvem ou manter o progresso local atual?',
+        message,
         isConfirm: true,
         onConfirm: () => { setCustomDialog(null); resolve('remote'); },
         onCancel: () => resolve('local'),
@@ -4188,7 +4217,7 @@ function App({ userId, signOut }: AppProps) {
               <h4 className="font-serif font-bold text-amber-400 uppercase tracking-widest text-sm" id="rpg-dialog-title">
                 {customDialog.title}
               </h4>
-              <p className="text-xs text-amber-100/80 leading-relaxed font-mono" id="rpg-dialog-message">
+              <p className="text-xs text-amber-100/80 leading-relaxed font-mono whitespace-pre-line" id="rpg-dialog-message">
                 {customDialog.message}
               </p>
               
