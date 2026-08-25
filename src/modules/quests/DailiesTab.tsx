@@ -127,13 +127,13 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
   return (
     <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-4 sm:px-5 sm:py-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-4 font-serif text-amber-100/95 max-w-none sm:max-w-2xl mx-0 sm:mx-auto flex flex-col min-h-[500px] w-full flex-1">
       <div className="flex justify-between items-center border-b border-amber-500/15 pb-2 shrink-0 px-4 sm:px-0">
-        <h3 className="text-sm md:text-base text-amber-400 font-bold tracking-wider uppercase flex items-center gap-2">
+        <h3 className="text-sm md:text-base text-champagne-400 font-bold tracking-wider uppercase flex items-center gap-2">
           <span>📅</span> Tarefas Diárias
         </h3>
         {!isCreating && (
           <button
             onClick={() => setIsCreating(true)}
-            className="text-xs font-bold text-amber-400 hover:text-amber-200 border border-amber-500/30 px-3 py-1 rounded bg-amber-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
+            className="text-xs font-bold text-champagne-400 hover:text-champagne-200 border border-champagne-500/30 px-3 py-1 rounded bg-champagne-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
           >
             <PlusCircle className="w-3.5 h-3.5" /> Novo
           </button>
@@ -149,7 +149,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3">
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-amber-400">Título</label>
+            <label className="text-[10px] uppercase font-bold text-zinc-300">Título</label>
             <input
               type="text"
               placeholder="Ex: Beber medicação, Fazer Duolingo"
@@ -161,7 +161,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-amber-400">Notas</label>
+            <label className="text-[10px] uppercase font-bold text-zinc-300">Notas</label>
             <textarea
               placeholder="Ex: Ao acordar em jejum, abrir lição no celular..."
               value={notes}
@@ -172,7 +172,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-amber-400">Dificuldade</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300">Dificuldade</label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as Daily['difficulty'])}
@@ -186,7 +186,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-amber-400">Regularidade</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300">Regularidade</label>
               <div className="flex gap-1">
                 <select
                   value={repeats}
@@ -213,7 +213,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
           {/* Checklist Area (Only when creating, simplifies edits) */}
           {!editingDaily && (
             <div className="bg-stone-900/45 p-2 rounded border border-amber-500/5 space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-amber-400">Checklist</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300">Checklist</label>
               <div className="flex gap-1.5">
                 <input
                   type="text"
@@ -253,7 +253,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-bold text-amber-400">Série Inicial (Streak)</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300">Série Inicial (Streak)</label>
               <input
                 type="number"
                 min="0"
@@ -263,7 +263,7 @@ export const DailiesTab: React.FC<DailiesTabProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-bold text-amber-400">Categorias (Tags, separadas por vírgula)</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300">Categorias (Tags, separadas por vírgula)</label>
               <input
                 type="text"
                 placeholder="study, workout, health..."

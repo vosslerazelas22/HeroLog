@@ -102,14 +102,14 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
   return (
     <div className="bg-quest-panel border-0 sm:border border-amber-500/15 rounded-none sm:rounded-lg overflow-hidden px-0 py-4 sm:px-5 sm:py-5 shadow-none sm:shadow-[0_12px_40px_rgba(0,0,0,0.7)] space-y-4 font-serif text-amber-100/95 max-w-none sm:max-w-2xl mx-0 sm:mx-auto flex flex-col min-h-[500px] w-full flex-1">
       <div className="flex justify-between items-center border-b border-amber-500/15 pb-2 shrink-0 px-4 sm:px-0">
-        <h3 className="text-sm md:text-base text-amber-400 font-bold tracking-wider uppercase flex items-center gap-2">
+        <h3 className="text-sm md:text-base text-champagne-400 font-bold tracking-wider uppercase flex items-center gap-2">
           <span>⚡</span> Capela de Hábitos
         </h3>
         <div className="flex items-center gap-2">
           {!isCreating && (
             <button
               onClick={() => setIsCreating(true)}
-              className="text-xs font-bold text-amber-400 hover:text-amber-200 border border-amber-500/30 px-3 py-1 rounded bg-amber-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
+              className="text-xs font-bold text-champagne-400 hover:text-champagne-200 border border-champagne-500/30 px-3 py-1 rounded bg-champagne-500/5 cursor-pointer flex items-center gap-1.5 transition-all"
             >
               <PlusCircle className="w-3.5 h-3.5" /> Novo
             </button>
@@ -128,7 +128,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3">
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-amber-400">Título</label>
+            <label className="text-[10px] uppercase font-bold text-zinc-300">Título</label>
             <input
               type="text"
               placeholder="Ex: Beber água purificada, Estudar grimório, Procrastinar..."
@@ -140,7 +140,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-amber-400">Notas</label>
+            <label className="text-[10px] uppercase font-bold text-zinc-300">Notas</label>
             <textarea
               placeholder="Ex: Cada gole limpa a mente, estudar por 20 minutos consecutivamente..."
               value={notes}
@@ -151,7 +151,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-amber-400 block mb-1">Caminhos Permitidos</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300 block mb-1">Caminhos Permitidos</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -175,7 +175,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-amber-400">Dificuldade</label>
+              <label className="text-[10px] uppercase font-bold text-zinc-300">Dificuldade</label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as Habit['difficulty'])}
@@ -190,7 +190,7 @@ export const HabitsTab: React.FC<HabitsTabProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-amber-400">Categorias (Tags, separadas por vírgula)</label>
+            <label className="text-[10px] uppercase font-bold text-zinc-300">Categorias (Tags, separadas por vírgula)</label>
             <input
               type="text"
               placeholder="study, workout, health..."
