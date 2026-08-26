@@ -18,14 +18,18 @@ e este projeto segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/
 ## [1.1.18] - 2026-08-25
 
 ### Corrigido
-- **Perda silenciosa de sessões no histórico ao trocar de dispositivo** — corrigido bug em que sessões concluídas podiam deixar de aparecer permanentemente no histórico de Crônicas Diárias em outro dispositivo, mesmo com ouro, XP e sequência sincronizados corretamente. Causa raiz: quando a sincronização remota de uma sessão falhava silenciosamente (ex.: instabilidade de rede), o aplicativo marcava a sessão como sincronizada mesmo assim, impedindo qualquer nova tentativa de envio. Agora uma sessão só é considerada sincronizada após confirmação real do servidor; caso contrário, é reenviada automaticamente na sincronização seguinte.
+- **Perda silenciosa de progresso ao sincronizar entre dispositivos** — corrigido bug de reconciliação em que o app podia sobrescrever dados mais recentes da nuvem com um estado local desatualizado, sem avisar o usuário. Causa raiz: o timestamp de sincronização era atualizado a cada envio, mesmo quando o conteúdo local não mudava de fato, fazendo o app assumir erroneamente que o dispositivo local sempre tinha a versão mais recente. Agora, quando o timestamp local parecer mais recente que o remoto, o app reconstrói e compara o conteúdo real de ambos antes de decidir — e se houver dados na nuvem que não existem localmente (sessões, itens, hábitos, skills, entre outros), o usuário é avisado e pode escolher qual versão manter, em vez do sistema decidir sozinho.
+- **Itens pendentes de sincronização podiam ser descartados após falha de rede** — se o envio de dados para a nuvem (RPC `flush_state`) falhasse, o app marcava internamente esses dados como já sincronizados mesmo assim, impedindo que fossem reenviados na tentativa seguinte. Agora, em caso de falha, o app mantém o controle interno do que ainda não foi confirmado pelo servidor e tenta reenviar automaticamente na próxima sincronização.
 
 ### Adicionado
-- **Detalhes de dispositivo e horário na tela de conflito de save** — ao encontrar um progresso mais recente na nuvem, a tela de escolha entre manter o save local ou usar o da nuvem agora exibe qual dispositivo originou cada versão e a data/hora exata de cada uma, facilitando a decisão.
+- **Detalhes de dispositivo e horário na tela de conflito de save** — ao encontrar um progresso divergente na nuvem, a tela de escolha entre manter o save local ou usar o da nuvem agora exibe qual dispositivo originou cada versão e a data/hora de cada uma, formatada em pt-BR, facilitando a decisão.
+
+### Conhecido / pendente
+- Divergências limitadas a progresso do dia corrente (XP e minutos de hoje) ainda não acionam o aviso de conflito — item já mapeado para correção em versão futura.
 
 ### Arquivos alterados
-- `/src/hooks/useGameState.ts`
-- `/src/App.tsx`
+- `src/hooks/useGameState.ts`
+- `src/App.tsx`
 
 ---
 
