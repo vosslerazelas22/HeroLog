@@ -498,12 +498,57 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
         const localDate = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
 
         if (remoteDate <= localDate) {
-          lastFlushedStateRef.current = gameState;
-          lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
-            ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
-            : 'Dispositivo sem nome');
-          setSyncStatus('idle');
-          return;
+          const remoteStateReconstructed = await fetchReconstructedRemoteState(user!.id);
+          const remoteState = remoteStateReconstructed || normalizeGameState(remote.game_state);
+
+          const diff = buildDiff(gameState, remoteState, lastFlushedDeviceLabelRef.current);
+          let hasRealDivergence = false;
+          if (diff) {
+            const hasOtherKeys = Object.keys(diff).some((k) => k !== 'characters');
+            if (hasOtherKeys) {
+              hasRealDivergence = true;
+            } else if (diff.characters) {
+              const hasOtherCharDiff =
+                gameState.gold !== remoteState.gold ||
+                gameState.totalXP !== remoteState.totalXP ||
+                gameState.totalGoldEarned !== remoteState.totalGoldEarned ||
+                gameState.totalSessions !== remoteState.totalSessions ||
+                gameState.totalMinutes !== remoteState.totalMinutes ||
+                gameState.combatLevel !== remoteState.combatLevel ||
+                gameState.combatXP !== remoteState.combatXP ||
+                gameState.streak !== remoteState.streak ||
+                gameState.bestStreak !== remoteState.bestStreak ||
+                gameState.lastStudyDate !== remoteState.lastStudyDate ||
+                gameState.wildernessWins !== remoteState.wildernessWins ||
+                gameState.combo !== remoteState.combo ||
+                gameState.dungeonProgress !== remoteState.dungeonProgress ||
+                gameState.isDungeonMode !== remoteState.isDungeonMode ||
+                gameState.dungeonSessions !== remoteState.dungeonSessions ||
+                gameState.charName !== remoteState.charName ||
+                gameState.charClass !== remoteState.charClass ||
+                gameState.orbConcept !== remoteState.orbConcept ||
+                gameState.hp !== remoteState.hp ||
+                gameState.maxHp !== remoteState.maxHp ||
+                gameState.equippedTitle !== remoteState.equippedTitle ||
+                JSON.stringify(gameState.achievements) !== JSON.stringify(remoteState.achievements) ||
+                JSON.stringify(gameState.ownedTitles) !== JSON.stringify(remoteState.ownedTitles) ||
+                JSON.stringify(gameState.pomodoroSettings) !== JSON.stringify(remoteState.pomodoroSettings) ||
+                JSON.stringify(gameState.equippedEquipment) !== JSON.stringify(remoteState.equippedEquipment);
+
+              if (hasOtherCharDiff) {
+                hasRealDivergence = true;
+              }
+            }
+          }
+
+          if (!hasRealDivergence) {
+            lastFlushedStateRef.current = gameState;
+            lastFlushedDeviceLabelRef.current = (typeof window !== 'undefined' 
+              ? (localStorage.getItem('herolog_device_label') || 'Dispositivo sem nome') 
+              : 'Dispositivo sem nome');
+            setSyncStatus('idle');
+            return;
+          }
         }
 
         const [remoteStateReconstructed, characterRowRes] = await Promise.all([
