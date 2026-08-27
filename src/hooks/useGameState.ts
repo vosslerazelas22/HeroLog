@@ -188,6 +188,14 @@ async function pushRemoteSave(userId: string, state: CharacterState): Promise<st
   }
 }
 
+function parseSessionDate(dateStr: string): number {
+  if (!dateStr) return 0;
+  const [datePart, timePart] = dateStr.split(', ');
+  const [day, month, year] = datePart.split('/').map(Number);
+  const [hour, min, sec] = (timePart || '00:00:00').split(':').map(Number);
+  return new Date(year, month - 1, day, hour, min, sec).getTime();
+}
+
 export async function fetchReconstructedRemoteState(userId: string): Promise<CharacterState | null> {
   if (!isUUID(userId)) return null;
 
@@ -323,6 +331,10 @@ export async function fetchReconstructedRemoteState(userId: string): Promise<Cha
         completedAt: t.completed_at,
       })),
     };
+
+    reconstructed.history.sort(
+      (a, b) => parseSessionDate(b.date) - parseSessionDate(a.date)
+    );
 
     return normalizeGameState(reconstructed);
   } catch (err) {
