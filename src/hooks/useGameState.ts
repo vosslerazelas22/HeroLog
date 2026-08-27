@@ -350,10 +350,7 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
 
   const charactersChanged = !prevState ||
     prevState.gold !== nextState.gold ||
-    prevState.totalXP !== nextState.totalXP ||
     prevState.totalGoldEarned !== nextState.totalGoldEarned ||
-    prevState.totalSessions !== nextState.totalSessions ||
-    prevState.totalMinutes !== nextState.totalMinutes ||
     prevState.combatLevel !== nextState.combatLevel ||
     prevState.combatXP !== nextState.combatXP ||
     prevState.streak !== nextState.streak ||
@@ -382,8 +379,7 @@ export function buildDiff(prevState: CharacterState | null, nextState: Character
 
   if (charactersChanged) {
     diff.characters = {
-      gold: nextState.gold, total_xp: nextState.totalXP, total_gold_earned: nextState.totalGoldEarned,
-      total_sessions: nextState.totalSessions, total_minutes: nextState.totalMinutes,
+      gold: nextState.gold, total_gold_earned: nextState.totalGoldEarned,
       combat_level: nextState.combatLevel, combat_xp: nextState.combatXP, streak: nextState.streak,
       best_streak: nextState.bestStreak, last_study_date: nextState.lastStudyDate,
       wilderness_wins: nextState.wildernessWins, combo: nextState.combo,
@@ -503,7 +499,13 @@ export function useGameState({ user, onConflict }: UseGameStateOptions) {
 
           const diff = buildDiff(gameState, remoteState, lastFlushedDeviceLabelRef.current);
           let hasRealDivergence = false;
-          if (diff) {
+          const remoteSessionIds = new Set(remoteState.history.map((s) => s.id));
+          const localOnlySessions = gameState.history.filter((s) => !remoteSessionIds.has(s.id));
+          if (localOnlySessions.length > 0) {
+            hasRealDivergence = true;
+          }
+
+          if (!hasRealDivergence && diff) {
             const hasOtherKeys = Object.keys(diff).some((k) => k !== 'characters');
             if (hasOtherKeys) {
               hasRealDivergence = true;
